@@ -1,0 +1,107 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #121212;
+  --font-body: "Work Sans", "Avenir Next", "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Cormorant Garamond", "Iowan Old Style", "Times New Roman", serif;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-body);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body), "Helvetica Neue", sans-serif;
+}
+
+h1,
+h2,
+h3,
+h4,
+.font-display {
+  font-family: var(--font-display), "Times New Roman", serif;
+}
+
+@keyframes fade-up {
+  0% {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-left {
+  0% {
+    opacity: 0;
+    transform: translateX(-18px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.marquee-divider {
+  height: 50px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(15, 23, 42, 0.08),
+    inset 0 -1px 0 rgba(15, 23, 42, 0.08);
+  background: #e6e3da;
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee 35s linear infinite;
+}
+
+.marquee-segment {
+  display: flex;
+  gap: 20px;
+  padding: 0 12px;
+  white-space: nowrap;
+  align-items: center;
+}
+
+.marquee-text {
+  font-size: 12px;
+  line-height: 50px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: #a79974;
+}
+
+.marketpic {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.marketpic1,
+.marketpic2,
+.marketpic3,
+.marketpic4 {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
