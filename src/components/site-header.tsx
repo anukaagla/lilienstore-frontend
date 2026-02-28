@@ -14,7 +14,8 @@ import {
   type Language,
 } from "../lib/i18n";
 import type { Category } from "../types/catalog";
-import { useBrand } from "./brand-provider";
+import { useBrandState } from "./brand-provider";
+import { SkeletonBlock } from "./page-skeletons";
 import { useLanguage } from "./language-provider";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
@@ -147,8 +148,8 @@ export default function SiteHeader({
   categories,
 }: SiteHeaderProps) {
   const { language, toggleLanguage } = useLanguage();
-  const brand = useBrand();
-  const brandName = getLocalizedText(brand?.brand_name, language, "Lilien");
+  const { brand, isLoading: brandLoading } = useBrandState();
+  const brandName = getLocalizedText(brand?.brand_name, language, "Lilienstore");
   const brandLogoSrc = brand?.logo_url?.trim() || brand?.logo?.trim() || "/images/full.png";
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeCategorySlug, setActiveCategorySlug] = useState("");
@@ -415,22 +416,26 @@ export default function SiteHeader({
             )}
           </button>
           {showFullLogo && !menuOpen ? (
-            <Link
-              href="/"
-              aria-label={byLanguage(
-                {
-                  EN: `Go to ${brandName} blog`,
-                  KA: `${brandName}-ის ბლოგზე გადასვლა`,
-                },
-                language
-              )}
-            >
-              <img
-                src={brandLogoSrc}
-                alt={`${brandName} full logo`}
-                className="h-12 w-auto sm:h-14 md:h-16"
-              />
-            </Link>
+            brandLoading ? (
+              <SkeletonBlock className="h-12 w-32 rounded-2xl sm:h-14 sm:w-40 md:h-16 md:w-44" />
+            ) : (
+              <Link
+                href="/"
+                aria-label={byLanguage(
+                  {
+                    EN: `Go to ${brandName} blog`,
+                    KA: `${brandName}-ის ბლოგზე გადასვლა`,
+                  },
+                  language
+                )}
+              >
+                <img
+                  src={brandLogoSrc}
+                  alt={`${brandName} full logo`}
+                  className="h-12 w-auto sm:h-14 md:h-16"
+                />
+              </Link>
+            )
           ) : null}
         </div>
 

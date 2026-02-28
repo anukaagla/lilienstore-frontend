@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { byLanguage, getLocalizedText } from "../lib/i18n";
-import { useBrand } from "./brand-provider";
+import { useBrandState } from "./brand-provider";
 import { useLanguage } from "./language-provider";
 import type { BlogPost } from "../types/blog";
 import Footer from "./footer";
+import { HomePageSkeleton } from "./page-skeletons";
 import SiteHeader from "./site-header";
 
 type ShowRoomProps = {
@@ -57,8 +58,8 @@ const Divider = () => (
 
 export default function ShowRoom({ posts }: ShowRoomProps) {
   const { language } = useLanguage();
-  const brand = useBrand();
-  const brandName = getLocalizedText(brand?.brand_name, language, "Lilien");
+  const { brand, isLoading: brandLoading } = useBrandState();
+  const brandName = getLocalizedText(brand?.brand_name, language, "Lilienstore");
   const logoSrc = brand?.logo_url?.trim() || brand?.logo?.trim() || "/images/Logo.png";
   const heroSrc = brand?.hero_image_url?.trim() || brand?.hero_image?.trim() || "/images/HERO IMAGE.png";
   const mobileHeroSrc =
@@ -82,6 +83,10 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
 
   const visiblePosts = resolvedPosts.slice(0, visibleCount);
   const canShowMore = visibleCount < resolvedPosts.length;
+
+  if (brandLoading && !brand) {
+    return <HomePageSkeleton />;
+  }
 
   const renderPost = (post: BlogPost, index: number) => {
     const layoutIndex = index % 3;

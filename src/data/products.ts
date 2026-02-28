@@ -35,6 +35,7 @@ export type ProductVariant = {
   hexColor: string;
   price: number;
   stockQty: number;
+  allowOrder: boolean;
 };
 
 const detailImages = [

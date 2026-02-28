@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useBrand } from "../../components/brand-provider";
+import { useBrandState } from "../../components/brand-provider";
 import { useLanguage } from "../../components/language-provider";
+import { RegisterPageSkeleton } from "../../components/page-skeletons";
 import { byLanguage, getLocalizedText } from "../../lib/i18n";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
@@ -83,9 +84,10 @@ const buildApiUrl = (path: string) => {
 export default function RegisterPage() {
   const router = useRouter();
   const { language } = useLanguage();
-  const brand = useBrand();
-  const brandName = getLocalizedText(brand?.brand_name, language, "Lilien");
+  const { brand, isLoading: brandLoading } = useBrandState();
+  const brandName = getLocalizedText(brand?.brand_name, language, "Lilienstore");
   const [form, setForm] = useState<RegisterForm>(initialForm);
+  const [agreedToPolicies, setAgreedToPolicies] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -98,6 +100,11 @@ export default function RegisterPage() {
   const [requestingCode, setRequestingCode] = useState(false);
   const [resendingCode, setResendingCode] = useState(false);
   const [confirmingCode, setConfirmingCode] = useState(false);
+
+  if (brandLoading && !brand) {
+    return <RegisterPageSkeleton />;
+  }
+
   const text = {
     passwordsDoNotMatch: byLanguage(
       { EN: "Passwords do not match.", KA: "პაროლები არ ემთხვევა." },
@@ -139,6 +146,13 @@ export default function RegisterPage() {
       { EN: "Phone number (optional)", KA: "ტელეფონის ნომერი (არასავალდებულო)" },
       language
     ),
+    acceptPolicies: byLanguage({ EN: "I accept", KA: "ვეთანხმები" }, language),
+    privacyPolicy: byLanguage(
+      { EN: "Privacy Policy", KA: "კონფიდენციალურობის პოლიტიკას" },
+      language
+    ),
+    termsOfUse: byLanguage({ EN: "Terms of Use", KA: "მოხმარების წესებს" }, language),
+    and: byLanguage({ EN: "and", KA: "და" }, language),
     creating: byLanguage({ EN: "Creating...", KA: "მიმდინარეობს შექმნა..." }, language),
     createAccountButton: byLanguage(
       { EN: "Create Account", KA: "ანგარიშის შექმნა" },
@@ -212,6 +226,13 @@ export default function RegisterPage() {
       {
         EN: "Email verified, but automatic sign in failed. Please sign in manually.",
         KA: "ელ.ფოსტა დადასტურდა, თუმცა ავტომატური შესვლა ვერ მოხერხდა. გთხოვ შეხვიდე ხელით.",
+      },
+      language
+    ),
+    policyAgreementRequired: byLanguage(
+      {
+        EN: "Please accept the Privacy Policy and Terms of Use to register.",
+        KA: "რეგისტრაციისთვის დაეთანხმე კონფიდენციალურობის პოლიტიკას და მოხმარების წესებს.",
       },
       language
     ),
@@ -388,6 +409,11 @@ export default function RegisterPage() {
       return;
     }
 
+    if (!agreedToPolicies) {
+      setError(text.policyAgreementRequired);
+      return;
+    }
+
     const registerUrl = buildApiUrl("/api/auth/register/");
     if (!registerUrl) {
       setError(text.missingApiBaseUrl);
@@ -419,6 +445,7 @@ export default function RegisterPage() {
       setVerificationEmail(registeredEmail);
       setVerificationPassword(registeredPassword);
       setForm(initialForm);
+      setAgreedToPolicies(false);
       void requestVerificationCode(registeredEmail);
     } catch {
       setError(text.registrationFailedRetry);
@@ -532,6 +559,32 @@ export default function RegisterPage() {
                   onChange={handleChange}
                   className="mt-2 w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-black/40"
                 />
+              </label>
+              <label className="flex items-start gap-3 rounded-2xl border border-black/10 bg-slate-50 px-4 py-3 text-[11px] uppercase tracking-[0.18em] text-slate-500">
+                <input
+                  type="checkbox"
+                  checked={agreedToPolicies}
+                  onChange={(event) => setAgreedToPolicies(event.target.checked)}
+                  disabled={submitting}
+                  className="mt-0.5 h-4 w-4 rounded border border-black/20 accent-black"
+                />
+                <span className="leading-relaxed">
+                  {text.acceptPolicies}{" "}
+                  <Link
+                    href="/policies/privacy-policy"
+                    className="text-slate-900 underline transition hover:text-slate-700"
+                  >
+                    {text.privacyPolicy}
+                  </Link>{" "}
+                  {text.and}{" "}
+                  <Link
+                    href="/policies/terms-of-service"
+                    className="text-slate-900 underline transition hover:text-slate-700"
+                  >
+                    {text.termsOfUse}
+                  </Link>
+                  .
+                </span>
               </label>
               <button
                 type="submit"

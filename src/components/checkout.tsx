@@ -16,6 +16,7 @@ import { fetchWithAuthRetry } from "../lib/auth";
 import { byLanguage } from "../lib/i18n";
 import Footer from "./footer";
 import { useLanguage } from "./language-provider";
+import { CheckoutPageSkeleton } from "./page-skeletons";
 import SiteHeader from "./site-header";
 
 type CheckoutFormState = {
@@ -81,7 +82,9 @@ const getApiMessage = (payload: unknown, fallback: string) => {
 export default function Checkout() {
   const { language } = useLanguage();
   const [items, setItems] = useState<CartItem[]>([]);
+  const [cartReady, setCartReady] = useState(false);
   const [savedAddresses, setSavedAddresses] = useState<Address[]>([]);
+  const [addressesReady, setAddressesReady] = useState(false);
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(
     null,
   );
@@ -177,6 +180,7 @@ export default function Checkout() {
 
   useEffect(() => {
     setItems(readCart());
+    setCartReady(true);
     const unsubscribe = subscribeToCart((nextItems) => {
       setItems(nextItems);
     });
@@ -197,6 +201,7 @@ export default function Checkout() {
       );
     };
     load();
+    setAddressesReady(true);
     const unsubscribe = subscribeToAddresses((nextItems) => {
       setSavedAddresses(nextItems);
       setSelectedAddressId((prev) =>
@@ -233,6 +238,10 @@ export default function Checkout() {
     }
     return parsed;
   }, [savedAddresses, selectedAddressId]);
+
+  if (!cartReady || !addressesReady) {
+    return <CheckoutPageSkeleton />;
+  }
 
   const handleInputChange =
     (field: keyof CheckoutFormState) =>

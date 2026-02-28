@@ -4,6 +4,8 @@ export type CartItem = {
   name: string;
   price: number;
   size: string;
+  color?: string;
+  colorHex?: string;
   quantity: number;
   image: string;
 };
@@ -47,17 +49,37 @@ export const subscribeToCart = (handler: (items: CartItem[]) => void) => {
   return () => window.removeEventListener(EVENT_NAME, listener);
 };
 
+const getVariantKey = (item: { color?: string; colorHex?: string }) =>
+  (item.colorHex?.trim() || item.color?.trim() || "").toLowerCase();
+
+const buildCartItemId = (payload: {
+  productId: string;
+  size: string;
+  color?: string;
+  colorHex?: string;
+}) => {
+  const variantKey = getVariantKey(payload);
+  return variantKey
+    ? `${payload.productId}-${payload.size}-${variantKey}`
+    : `${payload.productId}-${payload.size}`;
+};
+
 export const addToCart = (payload: {
   productId: string;
   name: string;
   price: number;
   size: string;
+  color?: string;
+  colorHex?: string;
   image: string;
   quantity?: number;
 }) => {
   const items = readCart();
   const index = items.findIndex(
-    (item) => item.productId === payload.productId && item.size === payload.size,
+    (item) =>
+      item.productId === payload.productId &&
+      item.size === payload.size &&
+      getVariantKey(item) === getVariantKey(payload),
   );
   const quantityToAdd = payload.quantity ?? 1;
 
@@ -69,11 +91,13 @@ export const addToCart = (payload: {
     };
   } else {
     items.push({
-      id: `${payload.productId}-${payload.size}`,
+      id: buildCartItemId(payload),
       productId: payload.productId,
       name: payload.name,
       price: payload.price,
       size: payload.size,
+      color: payload.color?.trim() || undefined,
+      colorHex: payload.colorHex?.trim() || undefined,
       quantity: quantityToAdd,
       image: payload.image,
     });

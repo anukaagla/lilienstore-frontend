@@ -23,6 +23,7 @@ type ApiCartItem = {
     id: number;
     size: string;
     color: string;
+    hex_color?: string | null;
   } | null;
   quantity: number;
   added_at: string;
@@ -61,6 +62,9 @@ const mapCartItems = (cart: ApiCart): CartItem[] =>
     name: getLocalizedText(item.product.name, getCurrentLanguage(), item.product.slug),
     price: item.unit_price,
     size: item.variant?.size?.trim() || "One Size",
+    color:
+      item.variant?.color?.trim() || item.variant?.hex_color?.trim() || undefined,
+    colorHex: item.variant?.hex_color?.trim() || undefined,
     quantity: item.quantity,
     image: item.product.primary_image || "/images/dress.png",
   }));

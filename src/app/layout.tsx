@@ -2,24 +2,28 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { BrandProvider } from "../components/brand-provider";
 import { LanguageProvider } from "../components/language-provider";
-import { fetchBrand } from "../lib/brand";
+import { STATIC_BRAND_NAME, STATIC_FAVICON_PATH } from "../lib/site-config";
 
 export const metadata: Metadata = {
-  title: "Lilien Atelier",
+  title: STATIC_BRAND_NAME.EN,
   description: "A contemporary fashion showroom for curated silhouettes.",
+  icons: {
+    icon: STATIC_FAVICON_PATH,
+    shortcut: STATIC_FAVICON_PATH,
+    apple: STATIC_FAVICON_PATH,
+  },
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const brand = await fetchBrand();
   return (
     <html lang="en">
       <body className="antialiased" suppressHydrationWarning>
         <LanguageProvider>
-          <BrandProvider brand={brand}>{children}</BrandProvider>
+          <BrandProvider>{children}</BrandProvider>
         </LanguageProvider>
       </body>
     </html>

@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import type { ChangeEvent, FormEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 import Footer from "./footer";
+import { ProfilePageSkeleton, SkeletonBlock } from "./page-skeletons";
 import SiteHeader from "./site-header";
 import { writeAddresses } from "../lib/addresses";
 import { clearLegacyAuthStorage, fetchWithAuthRetry } from "../lib/auth";
@@ -592,6 +593,7 @@ export default function Profile() {
   const [accountSnapshot, setAccountSnapshot] = useState<AccountFormState>(emptyAccountForm);
   const [accountEditable, setAccountEditable] = useState(false);
   const [accountSubmitting, setAccountSubmitting] = useState(false);
+  const [accountDeleting, setAccountDeleting] = useState(false);
   const [accountError, setAccountError] = useState<string | null>(null);
   const [accountSuccess, setAccountSuccess] = useState<string | null>(null);
   const [verificationOpen, setVerificationOpen] = useState(false);
@@ -731,6 +733,7 @@ export default function Profile() {
     ),
     cancel: byLanguage({ EN: "Cancel", KA: "გაუქმება" }, language),
     delete: byLanguage({ EN: "Delete", KA: "წაშლა" }, language),
+    deleteAccount: byLanguage({ EN: "DELETE", KA: "წაშლა" }, language),
     edit: byLanguage({ EN: "EDIT", KA: "ჩასწორება" }, language),
     cancelEdit: byLanguage({ EN: "CANCEL", KA: "გაუქმება" }, language),
     updating: byLanguage({ EN: "UPDATING...", KA: "მიმდინარეობს განახლება..." }, language),
@@ -763,6 +766,10 @@ export default function Profile() {
     ),
     profileUpdateFailed: byLanguage(
       { EN: "Failed to update profile.", KA: "პროფილის განახლება ვერ მოხერხდა." },
+      language
+    ),
+    profileDeleteFailed: byLanguage(
+      { EN: "Failed to delete account.", KA: "ანგარიშის წაშლა ვერ მოხერხდა." },
       language
     ),
     loadingProfile: byLanguage(
@@ -900,6 +907,7 @@ export default function Profile() {
   const hasAddresses = addresses.length > 0;
   const isEditingAddress = editingAddressId !== null;
   const isAddressBusy = addressDetailsLoading || addressSubmitting || addressDeleting;
+  const isInitialProfileLoading = profile === null && profileError === null;
   const activeMenuLabel =
     menuItems.find((item) => item.id === activeItem)?.label ?? text.myAccount;
 
@@ -1219,6 +1227,7 @@ export default function Profile() {
       normalizeTrimmedString(accountSnapshot.email).toLowerCase() ||
     normalizeTrimmedString(accountForm.phone_number) !==
       normalizeTrimmedString(accountSnapshot.phone_number);
+  const accountBusy = accountSubmitting || accountDeleting || profileLoading;
 
   const toggleAccountEditMode = () => {
     if (accountEditable) {
@@ -1304,6 +1313,83 @@ export default function Profile() {
       setAccountError(text.profileUpdateFailed);
     } finally {
       setAccountSubmitting(false);
+    }
+  };
+
+  const resetAuthenticatedState = () => {
+    clearLegacyAuthStorage();
+
+    closeOrderDetails();
+    closeAddressForm();
+    setMobileMenuOpen(false);
+    setIsLoggedIn(false);
+    setProfile(null);
+    setAddresses([]);
+    setDeleteMode(false);
+    setSelectedAddressIds(new Set());
+    setConfirmDeleteOpen(false);
+    setProfileError(null);
+    setAccountError(null);
+    setAccountSuccess(null);
+    setAccountEditable(false);
+    setAccountSubmitting(false);
+    setAccountDeleting(false);
+    setAccountForm(emptyAccountForm);
+    setAccountSnapshot(emptyAccountForm);
+    setVerificationOpen(false);
+    setVerificationEmail("");
+    setVerificationCode("");
+    setVerificationError(null);
+    setVerificationMessage(null);
+    setRequestingCode(false);
+    setResendingCode(false);
+    setConfirmingCode(false);
+    setActiveItem("logout");
+    setConfirmLogoutOpen(false);
+    setNewPassword("");
+    setConfirmNewPassword("");
+    setPasswordSubmitting(false);
+    setPasswordError(null);
+    setPasswordSuccess(null);
+    setLogoutSubmitting(false);
+  };
+
+  const handleAccountDelete = async () => {
+    if (accountBusy) {
+      return;
+    }
+
+    setAccountError(null);
+    setAccountSuccess(null);
+
+    try {
+      setAccountDeleting(true);
+      const response = await fetch("/api/auth/delete-account/", {
+        method: "DELETE",
+        cache: "no-store",
+        credentials: "include",
+      });
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          setIsLoggedIn(false);
+          setAccountError(text.missingAccessToken);
+          return;
+        }
+        setAccountError(getApiMessage(payload, text.profileDeleteFailed));
+        return;
+      }
+
+      resetAuthenticatedState();
+
+      if (typeof window !== "undefined") {
+        window.location.replace("/");
+      }
+    } catch {
+      setAccountError(text.profileDeleteFailed);
+    } finally {
+      setAccountDeleting(false);
     }
   };
 
@@ -1675,30 +1761,7 @@ export default function Profile() {
       // Best effort logout request; continue with local logout flow.
     }
 
-    clearLegacyAuthStorage();
-
-    closeOrderDetails();
-    closeAddressForm();
-    setMobileMenuOpen(false);
-    setIsLoggedIn(false);
-    setProfile(null);
-    setAddresses([]);
-    setProfileError(null);
-    setAccountError(null);
-    setAccountSuccess(null);
-    setAccountEditable(false);
-    setAccountForm(emptyAccountForm);
-    setAccountSnapshot(emptyAccountForm);
-    setVerificationOpen(false);
-    setVerificationEmail("");
-    setVerificationCode("");
-    setActiveItem("logout");
-    setConfirmLogoutOpen(false);
-    setNewPassword("");
-    setConfirmNewPassword("");
-    setPasswordError(null);
-    setPasswordSuccess(null);
-    setLogoutSubmitting(false);
+    resetAuthenticatedState();
 
     if (typeof window !== "undefined") {
       window.location.replace("/");
@@ -1884,6 +1947,10 @@ export default function Profile() {
     setActiveItem("addresses");
   };
 
+  if (isInitialProfileLoading) {
+    return <ProfilePageSkeleton />;
+  }
+
   return (
     <div className="relative flex min-h-screen flex-col overflow-x-hidden bg-white text-slate-900">
       <SiteHeader showFullLogo isFixed={false} />
@@ -1933,8 +2000,9 @@ export default function Profile() {
               </div>
 
               {orderDetailsLoading ? (
-                <div className="mt-8 rounded-xl border border-black/10 bg-black/[0.03] px-4 py-3 text-center text-[10px] uppercase tracking-[0.2em] text-slate-600">
-                  {text.loadingOrderDetails}
+                <div className="mt-8 space-y-3 rounded-xl border border-black/10 bg-black/[0.03] px-4 py-4">
+                  <SkeletonBlock className="h-3 w-36 rounded-full" />
+                  <SkeletonBlock className="h-3 w-full rounded-full" />
                 </div>
               ) : orderDetailsError ? (
                 <div className="mt-8 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-center text-[10px] uppercase tracking-[0.2em] text-red-600">
@@ -2223,8 +2291,9 @@ export default function Profile() {
                     className="mt-3 space-y-6 text-[9px] uppercase tracking-[0.16em] text-slate-500 sm:mt-4 sm:space-y-6 sm:text-[10px] sm:tracking-[0.2em]"
                   >
                     {addressDetailsLoading ? (
-                      <div className="rounded-xl border border-black/10 bg-black/[0.03] px-4 py-3 text-center text-[10px] uppercase tracking-[0.2em] text-slate-600">
-                        {text.loadingAddressDetails}
+                      <div className="space-y-3 rounded-xl border border-black/10 bg-black/[0.03] px-4 py-4">
+                        <SkeletonBlock className="h-3 w-40 rounded-full" />
+                        <SkeletonBlock className="h-3 w-full rounded-full" />
                       </div>
                     ) : null}
                     {addressError ? (
@@ -2528,8 +2597,9 @@ export default function Profile() {
                 {activeItem === "account" ? (
                   <div className="mt-6 flex h-auto flex-1 flex-col pl-0 pr-0 text-[10px] uppercase tracking-[0.16em] text-slate-500 sm:pl-6 sm:pr-4 sm:text-[11px] sm:tracking-[0.2em] lg:mt-10 lg:h-[calc(100%-80px)]">
                     {profileLoading ? (
-                      <div className="mb-4 rounded-xl border border-black/10 bg-black/[0.03] px-4 py-3 text-[10px] uppercase tracking-[0.2em] text-slate-600">
-                        {text.loadingProfile}
+                      <div className="mb-4 space-y-3 rounded-xl border border-black/10 bg-black/[0.03] px-4 py-4">
+                        <SkeletonBlock className="h-3 w-32 rounded-full" />
+                        <SkeletonBlock className="h-3 w-full rounded-full" />
                       </div>
                     ) : null}
                     {profileError ? (
@@ -2550,7 +2620,7 @@ export default function Profile() {
                             placeholder="JANE"
                             value={accountForm.first_name}
                             onChange={handleAccountFormChange("first_name")}
-                            readOnly={!accountEditable || accountSubmitting}
+                            readOnly={!accountEditable || accountBusy}
                             className={`w-full border border-slate-300 px-4 py-2 text-sm tracking-[0.08em] shadow-[0_2px_0_rgba(0,0,0,0.12)] outline-none ${
                               accountEditable
                                 ? "bg-transparent text-slate-700"
@@ -2565,7 +2635,7 @@ export default function Profile() {
                             placeholder="DOE"
                             value={accountForm.last_name}
                             onChange={handleAccountFormChange("last_name")}
-                            readOnly={!accountEditable || accountSubmitting}
+                            readOnly={!accountEditable || accountBusy}
                             className={`w-full border border-slate-300 px-4 py-2 text-sm tracking-[0.08em] shadow-[0_2px_0_rgba(0,0,0,0.12)] outline-none ${
                               accountEditable
                                 ? "bg-transparent text-slate-700"
@@ -2582,7 +2652,7 @@ export default function Profile() {
                           placeholder="testmail@gmail.com"
                           value={accountForm.email}
                           onChange={handleAccountFormChange("email")}
-                          readOnly={!accountEditable || accountSubmitting}
+                          readOnly={!accountEditable || accountBusy}
                           className={`w-full border border-slate-300 px-4 py-2 text-sm shadow-[0_2px_0_rgba(0,0,0,0.12)] outline-none ${
                             accountEditable
                               ? "bg-transparent text-slate-700"
@@ -2598,7 +2668,7 @@ export default function Profile() {
                           placeholder="+995 123 123 123"
                           value={accountForm.phone_number}
                           onChange={handleAccountFormChange("phone_number")}
-                          readOnly={!accountEditable || accountSubmitting}
+                          readOnly={!accountEditable || accountBusy}
                           className={`w-full border border-slate-300 px-4 py-2 text-sm shadow-[0_2px_0_rgba(0,0,0,0.12)] outline-none ${
                             accountEditable
                               ? "bg-transparent text-slate-700"
@@ -2611,19 +2681,30 @@ export default function Profile() {
                         <button
                           type="button"
                           onClick={toggleAccountEditMode}
-                          disabled={accountSubmitting || profileLoading}
+                          disabled={accountBusy}
                           className="w-full max-w-none border border-black py-3 text-xs font-semibold tracking-[0.3em] text-slate-900 transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-60 sm:max-w-[200px]"
                         >
                           {accountEditable ? text.cancelEdit : text.edit}
                         </button>
                         <button
                           type="submit"
-                          disabled={!accountEditable || accountSubmitting || profileLoading}
+                          disabled={!accountEditable || accountBusy}
                           className="w-full max-w-none bg-black py-3 text-xs font-semibold tracking-[0.35em] text-white shadow-[0_10px_20px_-12px_rgba(0,0,0,0.7)] transition-transform duration-200 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60 sm:max-w-[320px]"
                         >
                           {accountSubmitting ? text.updating : text.update}
                         </button>
                       </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void handleAccountDelete();
+                        }}
+                        disabled={accountBusy}
+                        className="w-full border border-red-300 py-3 text-xs font-semibold tracking-[0.3em] text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {accountDeleting ? text.deleting : text.deleteAccount}
+                      </button>
 
                       {accountError ? (
                         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[10px] uppercase tracking-[0.2em] text-red-600">

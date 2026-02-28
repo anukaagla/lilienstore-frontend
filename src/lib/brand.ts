@@ -1,4 +1,5 @@
 import type { Brand } from "../types/brand";
+import { STATIC_BRAND_NAME } from "./site-config";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
@@ -31,6 +32,7 @@ export const fetchBrand = async (): Promise<Brand | null> => {
 
     return {
       ...(data as Brand),
+      brand_name: STATIC_BRAND_NAME,
       logo: logoUrl,
       hero_image: heroImageUrl,
       logo_url: logoUrl,

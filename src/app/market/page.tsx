@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 
 import Market from "../../components/market";
+import { MarketPageSkeleton } from "../../components/page-skeletons";
 import type { ApiProductListItem, Category } from "../../types/catalog";
 
 type MarketPageProps = {
@@ -131,7 +132,7 @@ export default async function MarketPage({ searchParams }: MarketPageProps) {
   }
 
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<MarketPageSkeleton />}>
       <Market products={products} categories={categories} />
     </Suspense>
   );

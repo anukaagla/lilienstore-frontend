@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 
+import { ProductPageSkeleton } from "../../../components/page-skeletons";
 import ProductDetail from "../../../components/product-detail";
 import { products, type Product } from "../../../data/products";
 import { toLocalizedText } from "../../../lib/i18n";
@@ -69,6 +70,7 @@ const mapApiProduct = (item: ApiProductDetail): Product => {
         typeof variant.stock_qty === "number" && Number.isFinite(variant.stock_qty)
           ? Math.max(0, Math.floor(variant.stock_qty))
           : 0,
+      allowOrder: variant.allow_order === true,
     }))
     .filter((variant) => variant.size);
 
@@ -130,7 +132,7 @@ export default async function MarketProductPage({
     const apiProduct = await fetchApiProduct(slug);
     if (apiProduct) {
       return (
-        <Suspense fallback={null}>
+        <Suspense fallback={<ProductPageSkeleton />}>
           <ProductDetail product={apiProduct} />
         </Suspense>
       );
@@ -138,7 +140,7 @@ export default async function MarketProductPage({
 
     if (fallbackProduct) {
       return (
-        <Suspense fallback={null}>
+        <Suspense fallback={<ProductPageSkeleton />}>
           <ProductDetail product={fallbackProduct} />
         </Suspense>
       );
@@ -152,7 +154,7 @@ export default async function MarketProductPage({
   }
 
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<ProductPageSkeleton />}>
       <ProductDetail product={fallbackProduct} />
     </Suspense>
   );

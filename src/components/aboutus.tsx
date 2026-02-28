@@ -3,13 +3,14 @@
 import Footer from "./footer";
 import { byLanguage, getLocalizedText } from "../lib/i18n";
 import SiteHeader from "./site-header";
-import { useBrand } from "./brand-provider";
+import { useBrandState } from "./brand-provider";
 import { useLanguage } from "./language-provider";
+import { StaticContentPageSkeleton } from "./page-skeletons";
 
 export default function AboutUs() {
   const { language } = useLanguage();
-  const brand = useBrand();
-  const brandName = getLocalizedText(brand?.brand_name, language, "Lilien");
+  const { brand, isLoading: brandLoading } = useBrandState();
+  const brandName = getLocalizedText(brand?.brand_name, language, "Lilienstore");
   const brandNameUpper = brandName.toUpperCase();
   const description = getLocalizedText(brand?.description, language, "");
   const text = {
@@ -47,10 +48,16 @@ export default function AboutUs() {
     ),
   };
   const descriptionParts = description
+    .replace(/\r\n?/g, "\n")
     .split(/\n+/)
     .map((part) => part.trim())
     .filter(Boolean);
   const hasDescription = descriptionParts.length > 0;
+
+  if (brandLoading && !brand) {
+    return <StaticContentPageSkeleton />;
+  }
+
   return (
     <div className="relative flex min-h-screen flex-col overflow-hidden bg-white text-slate-900">
       <SiteHeader showFullLogo />

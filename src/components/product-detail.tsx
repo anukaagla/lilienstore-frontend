@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState, useSyncExternalStore } from "react";
 import { useSearchParams } from "next/navigation";
 
-import type { Product } from "../data/products";
+import type { Product, ProductVariant } from "../data/products";
 import { addToCart, readCart, subscribeToCart } from "../lib/cart";
 import { addCartItem } from "../lib/cart-api";
 import { byLanguage, getLocalizedText } from "../lib/i18n";
@@ -25,6 +25,9 @@ const normalizeHexColor = (value: string) => {
   }
   return "#000000";
 };
+
+const canPurchaseVariant = (variant: ProductVariant) =>
+  variant.stockQty > 0 || variant.allowOrder;
 
 export default function ProductDetail({ product }: ProductDetailProps) {
   const { language } = useLanguage();
@@ -90,7 +93,31 @@ export default function ProductDetail({ product }: ProductDetailProps) {
         resolvedSelectedColor.toLowerCase()
     );
   }, [colorOptions.length, hasVariantData, resolvedSelectedColor, variants]);
-  const stockBySize = useMemo(() => {
+  const sizeOrder = useMemo(() => {
+    if (!hasVariantData) {
+      return defaultSizeOrder;
+    }
+    const orderedSizes = [...defaultSizeOrder];
+    variants.forEach((variant) => {
+      const size = variant.size.trim();
+      if (size && !orderedSizes.includes(size)) {
+        orderedSizes.push(size);
+      }
+    });
+    return orderedSizes;
+  }, [hasVariantData, variants]);
+  const purchasableBySize = useMemo(() => {
+    const stock = new Map<string, boolean>();
+    filteredVariants.forEach((variant) => {
+      const size = variant.size.trim();
+      if (!size) {
+        return;
+      }
+      stock.set(size, (stock.get(size) ?? false) || canPurchaseVariant(variant));
+    });
+    return stock;
+  }, [filteredVariants]);
+  const inStoreStockBySize = useMemo(() => {
     const stock = new Map<string, number>();
     filteredVariants.forEach((variant) => {
       const size = variant.size.trim();
@@ -103,23 +130,22 @@ export default function ProductDetail({ product }: ProductDetailProps) {
   }, [filteredVariants]);
   const sizeOptions = useMemo(() => {
     if (!hasVariantData) {
-      return defaultSizeOrder.map((size) => ({
+      return sizeOrder.map((size) => ({
         size,
         available: true,
       }));
     }
-    const orderedSizes = [...defaultSizeOrder];
-    variants.forEach((variant) => {
-      const size = variant.size.trim();
-      if (size && !orderedSizes.includes(size)) {
-        orderedSizes.push(size);
-      }
-    });
-    return orderedSizes.map((size) => ({
+    return sizeOrder.map((size) => ({
       size,
-      available: (stockBySize.get(size) ?? 0) > 0,
+      available: purchasableBySize.get(size) ?? false,
     }));
-  }, [hasVariantData, stockBySize, variants]);
+  }, [hasVariantData, purchasableBySize, sizeOrder]);
+  const availabilitySizeOptions = useMemo(() => {
+    if (!hasVariantData) {
+      return sizeOrder;
+    }
+    return sizeOrder.filter((size) => (inStoreStockBySize.get(size) ?? 0) > 0);
+  }, [hasVariantData, inStoreStockBySize, sizeOrder]);
   const resolvedSelectedSize = sizeOptions.some(
     (option) => option.size === selectedSize && option.available
   )
@@ -136,7 +162,11 @@ export default function ProductDetail({ product }: ProductDetailProps) {
     if (!matches.length) {
       return null;
     }
-    return matches.find((variant) => variant.stockQty > 0) ?? matches[0];
+    return (
+      matches.find((variant) => variant.stockQty > 0) ??
+      matches.find((variant) => variant.allowOrder) ??
+      null
+    );
   }, [filteredVariants, hasVariantData, resolvedSelectedSize]);
   const displayPrice = selectedVariant?.price ?? product.price;
   const thumbnails = useMemo(() => {
@@ -223,9 +253,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
     : defaultMainImage;
   const resolvedAvailabilitySize =
     availabilitySize &&
-    sizeOptions.some(
-      (option) => option.size === availabilitySize && option.available
-    )
+    availabilitySizeOptions.includes(availabilitySize)
       ? availabilitySize
       : null;
 
@@ -401,6 +429,11 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                           name: displayName,
                           price: displayPrice,
                           size: resolvedSelectedSize,
+                          color:
+                            selectedVariant?.color.trim() ||
+                            selectedVariant?.hexColor ||
+                            undefined,
+                          colorHex: selectedVariant?.hexColor || undefined,
                           image: product.primaryImage,
                           quantity: 1,
                         });
@@ -518,36 +551,34 @@ export default function ProductDetail({ product }: ProductDetailProps) {
           </div>
           <div className="absolute left-1/2 top-[36%] w-[88%] -translate-x-1/2">
             <div className="flex flex-nowrap justify-center gap-3">
-              {sizeOptions.map((option) => {
-                const isActive = resolvedAvailabilitySize === option.size;
+              {availabilitySizeOptions.map((size) => {
+                const isActive = resolvedAvailabilitySize === size;
                 return (
                   <button
-                    key={`availability-${option.size}`}
+                    key={`availability-${size}`}
                     type="button"
-                    disabled={!option.available}
-                    aria-disabled={!option.available}
                     onClick={() => {
-                      if (!option.available) {
-                        return;
-                      }
                       setAvailabilitySize((current) =>
-                        current === option.size ? null : option.size
+                        current === size ? null : size
                       );
                       setAvailabilityResults([]);
                     }}
                     className={`h-11 w-20 border text-[11px] uppercase tracking-[0.3em] transition ${
-                      !option.available
-                        ? "cursor-not-allowed border-black/10 bg-slate-100 text-slate-300"
-                        : isActive
+                      isActive
                         ? "border-black bg-black text-white"
                         : "border-black/25 bg-white text-[#6B6B6B] hover:border-black/40"
                     }`}
                   >
-                    {option.size}
+                    {size}
                   </button>
                 );
               })}
             </div>
+            {hasVariantData && availabilitySizeOptions.length === 0 ? (
+              <p className="mt-4 text-center text-[10px] uppercase tracking-[0.24em] text-slate-400">
+                {text.outOfStock}
+              </p>
+            ) : null}
           </div>
           <div className="absolute left-1/2 top-[48%] w-[88%] -translate-x-1/2">
             <button
@@ -561,7 +592,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                   {
                     size: resolvedAvailabilitySize,
                     inStock: hasVariantData
-                      ? (stockBySize.get(resolvedAvailabilitySize) ?? 0) > 0
+                      ? (inStoreStockBySize.get(resolvedAvailabilitySize) ?? 0) > 0
                       : true,
                   },
                 ]);

@@ -7,6 +7,7 @@ import {
 
 const ALLOWED_METHODS = new Set(["GET", "POST", "PUT", "PATCH", "DELETE"]);
 const ALLOWED_ROOT_SEGMENTS = new Set(["auth", "cart", "me", "orders"]);
+const BODYLESS_RESPONSE_STATUSES = new Set([204, 205, 304]);
 const VALID_PATH_SEGMENT = /^[A-Za-z0-9._~:@-]+$/;
 const MAX_JSON_BODY_SIZE = 64_000;
 
@@ -116,8 +117,16 @@ const proxyRequest = async (request: NextRequest, context: RouteContext) => {
 
     const responseHeaders = new Headers();
     const contentType = upstreamResponse.headers.get("content-type");
-    if (contentType) {
+    const isBodylessResponse = BODYLESS_RESPONSE_STATUSES.has(upstreamResponse.status);
+    if (contentType && !isBodylessResponse) {
       responseHeaders.set("Content-Type", contentType);
+    }
+
+    if (isBodylessResponse) {
+      return new NextResponse(null, {
+        status: upstreamResponse.status,
+        headers: responseHeaders,
+      });
     }
 
     const buffer = await upstreamResponse.arrayBuffer();

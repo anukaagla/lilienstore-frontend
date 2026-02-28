@@ -4,8 +4,9 @@ import { useState, type FormEvent } from "react";
 import { byLanguage, getLocalizedText } from "../lib/i18n";
 import Footer from "./footer";
 import SiteHeader from "./site-header";
-import { useBrand } from "./brand-provider";
+import { useBrandState } from "./brand-provider";
 import { useLanguage } from "./language-provider";
+import { ContactPageSkeleton } from "./page-skeletons";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -15,7 +16,7 @@ const sanitizeInput = (value: string, maxLength: number) =>
 
 export default function ContactUs() {
   const { language } = useLanguage();
-  const brand = useBrand();
+  const { brand, isLoading: brandLoading } = useBrandState();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
@@ -23,7 +24,7 @@ export default function ContactUs() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
 
-  const brandName = getLocalizedText(brand?.brand_name, language, "Lilien");
+  const brandName = getLocalizedText(brand?.brand_name, language, "Lilienstore");
 
   const toSocialUrl = (value: string, platform: "instagram" | "facebook" | "tiktok") => {
     const trimmed = value.trim();
@@ -112,6 +113,10 @@ export default function ContactUs() {
       language
     ),
   };
+
+  if (brandLoading && !brand) {
+    return <ContactPageSkeleton />;
+  }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

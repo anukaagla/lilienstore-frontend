@@ -81,6 +81,7 @@ export type ApiProductDetail = {
     hex_color: string;
     price: number | string;
     stock_qty: number;
+    allow_order?: boolean;
   }>;
   created_at?: string;
 };

@@ -20,6 +20,7 @@ import {
 import { byLanguage } from "../lib/i18n";
 import Footer from "./footer";
 import { useLanguage } from "./language-provider";
+import { ShoppingBagPageSkeleton } from "./page-skeletons";
 import SiteHeader from "./site-header";
 
 const formatPrice = (value: number) => `${value.toFixed(2)} GEL`;
@@ -28,6 +29,7 @@ export default function ShoppingBag() {
   const { language } = useLanguage();
   const router = useRouter();
   const [items, setItems] = useState<CartItem[]>([]);
+  const [cartLoading, setCartLoading] = useState(true);
   const text = {
     back: byLanguage({ EN: "Back", KA: "უკან" }, language),
     product: byLanguage({ EN: "Product", KA: "პროდუქტი" }, language),
@@ -37,6 +39,7 @@ export default function ShoppingBag() {
       language
     ),
     remove: byLanguage({ EN: "Remove", KA: "წაშლა" }, language),
+    color: byLanguage({ EN: "Colour", KA: "ფერი" }, language),
     size: byLanguage({ EN: "Size", KA: "ზომა" }, language),
     clearBag: byLanguage(
       { EN: "Clear Shopping Bag", KA: "კალათის გასუფთავება" },
@@ -62,10 +65,16 @@ export default function ShoppingBag() {
       const localItems = readCart();
       if (isActive) {
         setItems(localItems);
+        if (localItems.length > 0) {
+          setCartLoading(false);
+        }
       }
       const snapshot = await fetchCart();
-      if (!isActive || !snapshot) return;
-      setItems(snapshot.items);
+      if (!isActive) return;
+      if (snapshot) {
+        setItems(snapshot.items);
+      }
+      setCartLoading(false);
     };
     loadCart();
 
@@ -160,6 +169,10 @@ export default function ShoppingBag() {
   const deliveryFee = subtotal > 0 ? 5 : 0;
   const total = subtotal + deliveryFee;
 
+  if (cartLoading) {
+    return <ShoppingBagPageSkeleton />;
+  }
+
   return (
     <div className="relative flex min-h-screen flex-col overflow-hidden bg-white text-slate-900">
       <SiteHeader showFullLogo isFixed={false} />
@@ -226,6 +239,18 @@ export default function ShoppingBag() {
                           </span>
                         </div>
                         <span>{formatPrice(item.price)}</span>
+                        {item.color ? (
+                          <span className="inline-flex items-center gap-2">
+                            {text.color}: {item.color}
+                            {item.colorHex ? (
+                              <span
+                                aria-hidden="true"
+                                className="h-3 w-3 rounded-full border border-black/15"
+                                style={{ backgroundColor: item.colorHex }}
+                              />
+                            ) : null}
+                          </span>
+                        ) : null}
                         <span>
                           {text.size}: {item.size}
                         </span>

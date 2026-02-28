@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { byLanguage, getLocalizedText } from "../lib/i18n";
-import { useBrand } from "./brand-provider";
+import { useBrandState } from "./brand-provider";
+import { SkeletonBlock } from "./page-skeletons";
 import { useLanguage } from "./language-provider";
 
 const instagramIcon = (
@@ -123,8 +124,8 @@ type FooterProps = {
 export default function Footer({ variant = "dark" }: FooterProps) {
   const isLight = variant === "light";
   const { language } = useLanguage();
-  const brand = useBrand();
-  const brandName = getLocalizedText(brand?.brand_name, language, "Lilien");
+  const { brand, isLoading: brandLoading } = useBrandState();
+  const brandName = getLocalizedText(brand?.brand_name, language, "Lilienstore");
   const addressText = getLocalizedText(
     brand?.address,
     language,
@@ -201,16 +202,23 @@ export default function Footer({ variant = "dark" }: FooterProps) {
         <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-3">
-              <div className="flex items-center gap-3">
-                <img
-                  src={logoSrc}
-                  alt={`${brandName} logo`}
-                  className="h-9 w-auto object-contain"
-                />
-                <span className="font-display text-sm font-bold uppercase tracking-[0.3em] text-[#A79974]">
-                  {brandName}
-                </span>
-              </div>
+              {brandLoading ? (
+                <div className="flex items-center gap-3">
+                  <SkeletonBlock className="h-9 w-16 rounded-2xl" />
+                  <SkeletonBlock className="h-4 w-28 rounded-full" />
+                </div>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <img
+                    src={logoSrc}
+                    alt={`${brandName} logo`}
+                    className="h-9 w-auto object-contain"
+                  />
+                  <span className="font-display text-sm font-bold uppercase tracking-[0.3em] text-[#A79974]">
+                    {brandName}
+                  </span>
+                </div>
+              )}
               <span
                 className={`h-px w-32 ${isLight ? "bg-slate-900/20" : "bg-white/35"}`}
               />
@@ -220,46 +228,69 @@ export default function Footer({ variant = "dark" }: FooterProps) {
                 isLight ? "text-black" : "text-white/80"
               }`}
             >
-              {socialLinks.map((item) => (
-                <a
-                  key={item.label}
-                  href={item.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={item.label}
-                  className={`transition ${isLight ? "hover:text-black" : "hover:text-white"}`}
-                >
-                  {item.icon}
-                </a>
-              ))}
+              {brandLoading
+                ? Array.from({ length: 3 }, (_, index) => (
+                    <SkeletonBlock
+                      key={index}
+                      className="h-6 w-6 rounded-full"
+                    />
+                  ))
+                : socialLinks.map((item) => (
+                    <a
+                      key={item.label}
+                      href={item.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={item.label}
+                      className={`transition ${isLight ? "hover:text-black" : "hover:text-white"}`}
+                    >
+                      {item.icon}
+                    </a>
+                  ))}
             </div>
-            <p
-              className={`text-[11px] tracking-[0.16em] ${
-                isLight ? "font-semibold text-black" : "text-white/60"
-              }`}
-            >
-              {text.store}: {addressText}
-            </p>
-            <p
-              className={`text-[11px] tracking-[0.16em] ${
-                isLight ? "font-semibold text-black" : "text-white/60"
-              }`}
-            >
-              {text.hours}: {workingHoursText}
-            </p>
-            <div className="flex flex-col gap-2">
-              {contactLinks.map((item) => (
-                <a
-                  key={item.label}
-                  href={item.href}
-                  className={`inline-flex items-center gap-2 text-[11px] tracking-[0.16em] transition ${
-                    isLight ? "font-semibold text-black hover:text-black/70" : "text-white/70 hover:text-white"
+            {brandLoading ? (
+              <>
+                <SkeletonBlock className="h-4 w-full max-w-md rounded-full" />
+                <SkeletonBlock className="h-4 w-52 rounded-full" />
+              </>
+            ) : (
+              <>
+                <p
+                  className={`text-[11px] tracking-[0.16em] ${
+                    isLight ? "font-semibold text-black" : "text-white/60"
                   }`}
                 >
-                  {item.icon}
-                  <span>{item.value}</span>
-                </a>
-              ))}
+                  {text.store}: {addressText}
+                </p>
+                <p
+                  className={`text-[11px] tracking-[0.16em] ${
+                    isLight ? "font-semibold text-black" : "text-white/60"
+                  }`}
+                >
+                  {text.hours}: {workingHoursText}
+                </p>
+              </>
+            )}
+            <div className="flex flex-col gap-2">
+              {brandLoading
+                ? (
+                    <>
+                      <SkeletonBlock className="h-4 w-52 rounded-full" />
+                      <SkeletonBlock className="h-4 w-40 rounded-full" />
+                    </>
+                  )
+                : contactLinks.map((item) => (
+                    <a
+                      key={item.label}
+                      href={item.href}
+                      className={`inline-flex items-center gap-2 text-[11px] tracking-[0.16em] transition ${
+                        isLight ? "font-semibold text-black hover:text-black/70" : "text-white/70 hover:text-white"
+                      }`}
+                    >
+                      {item.icon}
+                      <span>{item.value}</span>
+                    </a>
+                  ))}
             </div>
           </div>
 
