@@ -166,6 +166,13 @@ export default function Footer({ variant = "dark" }: FooterProps) {
       },
       language
     ),
+    creditPrefix: byLanguage(
+      {
+        EN: "This website was created by",
+        KA: "ვებსაიტის შემქმნელია",
+      },
+      language
+    ),
   };
   const socialLinks = [
     {
@@ -326,6 +333,24 @@ export default function Footer({ variant = "dark" }: FooterProps) {
           }`}
         >
           {text.copyright}
+        </p>
+        <p
+          className={`mt-2 text-center text-[11px] tracking-[0.16em] ${
+            isLight ? "font-semibold text-black" : "text-white/60"
+          }`}
+        >
+          {text.creditPrefix}{" "}
+          <a
+            href="https://weby.ge"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`transition underline underline-offset-4 ${
+              isLight ? "hover:text-black/70" : "hover:text-white"
+            }`}
+          >
+            weby
+          </a>
+          .
         </p>
       </div>
     </footer>
