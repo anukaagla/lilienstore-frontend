@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { byLanguage, getLocalizedText } from "../lib/i18n";
 import { useBrandState } from "./brand-provider";
@@ -216,9 +217,12 @@ export default function Footer({ variant = "dark" }: FooterProps) {
                 </div>
               ) : (
                 <div className="flex items-center gap-3">
-                  <img
+                  <Image
                     src={logoSrc}
                     alt={`${brandName} logo`}
+                    width={144}
+                    height={36}
+                    unoptimized
                     className="h-9 w-auto object-contain"
                   />
                   <span className="font-display text-sm font-bold uppercase tracking-[0.3em] text-[#A79974]">

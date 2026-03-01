@@ -1,10 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
-import { products, type Product as FallbackProduct } from "../data/products";
 import { readCart, subscribeToCart } from "../lib/cart";
 import { byLanguage, getLocalizedText } from "../lib/i18n";
 import type { ApiProductListItem, Category } from "../types/catalog";
@@ -26,18 +26,6 @@ type MarketProps = {
   products?: ApiProductListItem[];
   categories?: Category[];
 };
-
-const mapFallbackProduct = (
-  item: FallbackProduct,
-  language: "KA" | "EN"
-): MarketProductCard => ({
-  slug: item.id,
-  name: getLocalizedText(item.nameLocalized, language, item.name),
-  price: item.price,
-  primaryImage: item.primaryImage,
-  secondaryImage: item.secondaryImage || item.primaryImage,
-  createdAt: item.createdAt,
-});
 
 const mapApiProduct = (
   item: ApiProductListItem,
@@ -110,6 +98,13 @@ export default function Market({
       language
     ),
     newest: byLanguage({ EN: "Newest", KA: "უახლესი" }, language),
+    noProducts: byLanguage(
+      {
+        EN: "No products available right now.",
+        KA: "პროდუქტები ამ ეტაპზე არ არის ხელმისაწვდომი.",
+      },
+      language
+    ),
     shoppingBag: byLanguage({ EN: "Shopping bag", KA: "კალათა" }, language),
   };
 
@@ -152,10 +147,7 @@ export default function Market({
   };
 
   const resolvedProducts = useMemo<MarketProductCard[]>(
-    () =>
-      apiProducts
-        ? apiProducts.map((item) => mapApiProduct(item, language))
-        : products.map((item) => mapFallbackProduct(item, language)),
+    () => (apiProducts ?? []).map((item) => mapApiProduct(item, language)),
     [apiProducts, language]
   );
 
@@ -314,48 +306,58 @@ export default function Market({
           </div>
         </div>
         <section className="mt-10">
-          <div
-            className={`grid gap-6 sm:gap-7 ${
-              view === "6x2"
-                ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-6"
-                : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4"
-            }`}
-          >
-            {sortedProducts.map((product) => {
-              const productHref = product.productId
-                ? `/market/${product.slug}?pid=${product.productId}`
-                : `/market/${product.slug}`;
-              return (
-                <Link
-                  key={product.slug}
-                  href={productHref}
-                  className="group block"
-                >
-                  <article>
-                    <div className="relative aspect-[3/4] overflow-hidden bg-slate-100">
-                      <img
-                        src={product.primaryImage}
-                      alt={product.name}
-                      className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500 group-hover:opacity-0"
-                      loading="lazy"
-                    />
-                    <img
-                      src={product.secondaryImage}
-                      alt=""
-                      aria-hidden="true"
-                      className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100"
-                      loading="lazy"
-                    />
-                  </div>
-                  <div className="mt-3 space-y-1 text-[11px] uppercase tracking-[0.18em] text-slate-500">
-                    <p className="text-slate-900">{product.name}</p>
-                    <p>{product.price} GEL</p>
-                  </div>
-                  </article>
-                </Link>
-              );
-            })}
-          </div>
+          {sortedProducts.length > 0 ? (
+            <div
+              className={`grid gap-6 sm:gap-7 ${
+                view === "6x2"
+                  ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-6"
+                  : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4"
+              }`}
+            >
+              {sortedProducts.map((product) => {
+                const productHref = product.productId
+                  ? `/market/${product.slug}?pid=${product.productId}`
+                  : `/market/${product.slug}`;
+                return (
+                  <Link
+                    key={product.slug}
+                    href={productHref}
+                    className="group block"
+                  >
+                    <article>
+                      <div className="relative aspect-[3/4] overflow-hidden bg-slate-100">
+                        <Image
+                          src={product.primaryImage}
+                          alt={product.name}
+                          fill
+                          unoptimized
+                          sizes="(min-width: 1024px) 16vw, (min-width: 640px) 28vw, 44vw"
+                          className="object-cover transition-opacity duration-500 group-hover:opacity-0"
+                        />
+                        <Image
+                          src={product.secondaryImage}
+                          alt=""
+                          fill
+                          unoptimized
+                          sizes="(min-width: 1024px) 16vw, (min-width: 640px) 28vw, 44vw"
+                          aria-hidden="true"
+                          className="object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+                        />
+                      </div>
+                      <div className="mt-3 space-y-1 text-[11px] uppercase tracking-[0.18em] text-slate-500">
+                        <p className="text-slate-900">{product.name}</p>
+                        <p>{product.price} GEL</p>
+                      </div>
+                    </article>
+                  </Link>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="flex min-h-[260px] items-center justify-center border border-dashed border-slate-300 px-6 text-center text-xs uppercase tracking-[0.26em] text-slate-500">
+              {text.noProducts}
+            </div>
+          )}
         </section>
       </main>
       <Link

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import type { ChangeEvent, FormEvent } from "react";
@@ -56,18 +57,6 @@ type OrderDetails = {
     address: string;
   };
 };
-
-const fallbackOrders: OrderListItem[] = [
-  { id: "#1", apiId: null, date: "01/20/2026", total: "456.39", items: "3", canViewDetails: false },
-  {
-    id: "#2311",
-    apiId: null,
-    date: "01/20/2026",
-    total: "456.39",
-    items: "3",
-    canViewDetails: false,
-  },
-];
 
 type AddressFormState = {
   firstName: string;
@@ -700,6 +689,10 @@ export default function Profile() {
     orderNumber: byLanguage({ EN: "Order Number", KA: "შეკვეთის ნომერი" }, language),
     date: byLanguage({ EN: "Date", KA: "თარიღი" }, language),
     total: byLanguage({ EN: "Total", KA: "ჯამი" }, language),
+    noOrdersYet: byLanguage(
+      { EN: "No orders yet.", KA: "შეკვეთები ჯერ არ არის." },
+      language
+    ),
     changePasswordTitle: byLanguage({ EN: "Change password", KA: "პაროლის შეცვლა" }, language),
     enterNewPassword: byLanguage(
       { EN: "Enter New Password", KA: "შეიყვანე ახალი პაროლი" },
@@ -899,7 +892,7 @@ export default function Profile() {
     { id: "logout", label: text.logOut },
   ];
   const orders = profile ? mapOrderHistory(profile.order_history) : [];
-  const visibleOrders = isLoggedIn ? (orders.length > 0 ? orders : fallbackOrders) : [];
+  const visibleOrders = isLoggedIn ? orders : [];
   const showOrderDetails = activeItem === "orders" && selectedOrder !== null;
   const selectedOrderDisplayId = selectedOrderDetails?.id || selectedOrder?.id || "-";
   const selectedOrderPlacedOn = selectedOrderDetails?.placedOn || selectedOrder?.date || "-";
@@ -2022,9 +2015,12 @@ export default function Profile() {
                         key={item.id}
                         className="flex flex-col gap-3 border-b border-slate-200 pb-4 last:border-b-0 sm:flex-row sm:items-start sm:gap-4"
                       >
-                        <img
+                        <Image
                           src={item.image}
                           alt={item.name}
+                          width={64}
+                          height={64}
+                          unoptimized
                           className="h-14 w-14 shrink-0 object-cover sm:h-16 sm:w-16"
                         />
                         <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
@@ -2316,7 +2312,6 @@ export default function Profile() {
                         <input
                           required
                           type="text"
-                          placeholder="JANE"
                           value={addressForm.firstName}
                           onChange={handleAddressChange("firstName")}
                           className="mb-[10px] w-full border border-slate-300 bg-transparent px-4 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-600 shadow-[0_2px_0_rgba(0,0,0,0.12)] outline-none"
@@ -2329,7 +2324,6 @@ export default function Profile() {
                         <input
                           required
                           type="text"
-                          placeholder="DOE"
                           value={addressForm.lastName}
                           onChange={handleAddressChange("lastName")}
                           className="mb-[10px] w-full border border-slate-300 bg-transparent px-4 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-600 shadow-[0_2px_0_rgba(0,0,0,0.12)] outline-none"
@@ -2344,7 +2338,6 @@ export default function Profile() {
                     <input
                       required
                       type="tel"
-                      placeholder="NUMBER"
                       value={addressForm.phone}
                       onChange={handleAddressChange("phone")}
                       className="mb-[10px] w-full border border-slate-300 bg-transparent px-4 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-600 shadow-[0_2px_0_rgba(0,0,0,0.12)] outline-none"
@@ -2355,7 +2348,6 @@ export default function Profile() {
                       <span>{text.country}</span>
                   <input
                     type="text"
-                    placeholder="GEORIGA"
                     value={addressForm.country}
                     onChange={handleAddressChange("country")}
                     className="mb-[10px] w-full border border-slate-300 bg-transparent px-4 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-600 shadow-[0_2px_0_rgba(0,0,0,0.12)] outline-none"
@@ -2369,7 +2361,6 @@ export default function Profile() {
                   <input
                     required
                     type="text"
-                    placeholder="ZNAKVA"
                     value={addressForm.state}
                     onChange={handleAddressChange("state")}
                     className="mb-[10px] w-full border border-slate-300 bg-transparent px-4 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-600 shadow-[0_2px_0_rgba(0,0,0,0.12)] outline-none "
@@ -2383,7 +2374,6 @@ export default function Profile() {
                   <input
                     required
                     type="text"
-                    placeholder="TBILISI"
                     value={addressForm.city}
                     onChange={handleAddressChange("city")}
                     className="mb-[10px] w-full border border-slate-300 bg-transparent px-4 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-600 shadow-[0_2px_0_rgba(0,0,0,0.12)] outline-none"
@@ -2397,7 +2387,6 @@ export default function Profile() {
                   <input
                     required
                     type="text"
-                    placeholder="TBILISI"
                     value={addressForm.address1}
                     onChange={handleAddressChange("address1")}
                     className="mb-[10px] w-full border border-slate-300 bg-transparent px-4 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-600 shadow-[0_2px_0_rgba(0,0,0,0.12)] outline-none"
@@ -2411,7 +2400,6 @@ export default function Profile() {
                       </span>
                   <input
                     type="text"
-                    placeholder="TBILISI"
                     value={addressForm.address2}
                     onChange={handleAddressChange("address2")}
                     className="mb-[10px] w-full border border-slate-300 bg-transparent px-4 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-600 shadow-[0_2px_0_rgba(0,0,0,0.12)] outline-none"
@@ -2425,7 +2413,6 @@ export default function Profile() {
                   <input
                     required
                     type="text"
-                    placeholder="1234"
                     value={addressForm.postalCode}
                     onChange={handleAddressChange("postalCode")}
                     className="mb-[10px] w-full border border-slate-300 bg-transparent px-4 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-600 shadow-[0_2px_0_rgba(0,0,0,0.12)] outline-none"
@@ -2438,7 +2425,6 @@ export default function Profile() {
                       </span>
                   <input
                     type="text"
-                    placeholder="HOME"
                     value={addressForm.name}
                     onChange={handleAddressChange("name")}
                     className="mb-[10px] w-full border border-slate-300 bg-transparent px-4 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-600 shadow-[0_2px_0_rgba(0,0,0,0.12)] outline-none"
@@ -2617,7 +2603,6 @@ export default function Profile() {
                           <span>{text.firstName}</span>
                           <input
                             type="text"
-                            placeholder="JANE"
                             value={accountForm.first_name}
                             onChange={handleAccountFormChange("first_name")}
                             readOnly={!accountEditable || accountBusy}
@@ -2632,7 +2617,6 @@ export default function Profile() {
                           <span>{text.lastName}</span>
                           <input
                             type="text"
-                            placeholder="DOE"
                             value={accountForm.last_name}
                             onChange={handleAccountFormChange("last_name")}
                             readOnly={!accountEditable || accountBusy}
@@ -2649,7 +2633,6 @@ export default function Profile() {
                         <span>{text.email}</span>
                         <input
                           type="email"
-                          placeholder="testmail@gmail.com"
                           value={accountForm.email}
                           onChange={handleAccountFormChange("email")}
                           readOnly={!accountEditable || accountBusy}
@@ -2665,7 +2648,6 @@ export default function Profile() {
                         <span>{text.phone}</span>
                         <input
                           type="tel"
-                          placeholder="+995 123 123 123"
                           value={accountForm.phone_number}
                           onChange={handleAccountFormChange("phone_number")}
                           readOnly={!accountEditable || accountBusy}
@@ -2874,58 +2856,64 @@ export default function Profile() {
                       {text.ordersTitle}
                     </div>
 
-                    <div className="space-y-4 text-[10px] text-slate-700 sm:text-[11px]">
-                      {visibleOrders.map((order) => (
-                        <div
-                          key={order.id}
-                          className="flex flex-col gap-3 border border-slate-300 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4"
-                        >
-                          <div className="flex flex-wrap items-center gap-2 sm:gap-8">
-                            <span>
-                              {text.orderNumber}: {order.id}
-                            </span>
-                            <span>
-                              {text.date}: {order.date}
-                            </span>
-                            <span>
-                              {text.total}: {order.total}
-                            </span>
-                            <span>
-                              {text.items}: {order.items}
-                            </span>
-                          </div>
-                          {order.canViewDetails ? (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                void openOrderDetails(order);
-                              }}
-                              className="flex items-center gap-2 self-start text-[9px] uppercase tracking-[0.2em] text-slate-700 sm:self-auto sm:text-[10px]"
-                            >
-                              {text.details}
-                              <svg
-                                aria-hidden="true"
-                                className="h-3 w-3"
-                                viewBox="0 0 20 20"
-                                fill="none"
+                    {visibleOrders.length > 0 ? (
+                      <div className="space-y-4 text-[10px] text-slate-700 sm:text-[11px]">
+                        {visibleOrders.map((order) => (
+                          <div
+                            key={order.id}
+                            className="flex flex-col gap-3 border border-slate-300 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4"
+                          >
+                            <div className="flex flex-wrap items-center gap-2 sm:gap-8">
+                              <span>
+                                {text.orderNumber}: {order.id}
+                              </span>
+                              <span>
+                                {text.date}: {order.date}
+                              </span>
+                              <span>
+                                {text.total}: {order.total}
+                              </span>
+                              <span>
+                                {text.items}: {order.items}
+                              </span>
+                            </div>
+                            {order.canViewDetails ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  void openOrderDetails(order);
+                                }}
+                                className="flex items-center gap-2 self-start text-[9px] uppercase tracking-[0.2em] text-slate-700 sm:self-auto sm:text-[10px]"
                               >
-                                <path
-                                  d="M5 7l5 5 5-5"
-                                  stroke="currentColor"
-                                  strokeWidth="1.5"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                              </svg>
-                            </button>
-                          ) : (
-                            <span className="text-[9px] uppercase tracking-[0.2em] text-slate-400 sm:text-[10px]">
-                              {text.details}
-                            </span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
+                                {text.details}
+                                <svg
+                                  aria-hidden="true"
+                                  className="h-3 w-3"
+                                  viewBox="0 0 20 20"
+                                  fill="none"
+                                >
+                                  <path
+                                    d="M5 7l5 5 5-5"
+                                    stroke="currentColor"
+                                    strokeWidth="1.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                </svg>
+                              </button>
+                            ) : (
+                              <span className="text-[9px] uppercase tracking-[0.2em] text-slate-400 sm:text-[10px]">
+                                {text.details}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex min-h-[180px] items-center justify-center border border-dashed border-slate-300 text-center text-[10px] uppercase tracking-[0.25em] text-slate-500 sm:text-[11px]">
+                        {text.noOrdersYet}
+                      </div>
+                    )}
                   </div>
                 ) : activeItem === "password" ? (
                   <div className="mt-6 flex h-auto flex-1 flex-col pl-0 pr-0 text-[10px] uppercase tracking-[0.16em] text-slate-500 sm:pl-6 sm:pr-4 sm:text-[11px] sm:tracking-[0.2em] lg:mt-10 lg:h-[calc(100%-80px)]">
@@ -2944,7 +2932,6 @@ export default function Profile() {
                         <div className="flex w-full items-center gap-3 border-b border-black pb-2">
                           <input
                             type={showNewPassword ? "text" : "password"}
-                            placeholder="********"
                             autoComplete="new-password"
                             value={newPassword}
                             onChange={(event) => setNewPassword(event.target.value)}
@@ -2981,7 +2968,6 @@ export default function Profile() {
                         <div className="flex w-full items-center gap-3 border-b border-black pb-2">
                           <input
                             type={showConfirmPassword ? "text" : "password"}
-                            placeholder="********"
                             autoComplete="new-password"
                             value={confirmNewPassword}
                             onChange={(event) => setConfirmNewPassword(event.target.value)}

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -17,6 +18,7 @@ import {
   removeCartItem,
   updateCartItem,
 } from "../lib/cart-api";
+import { fetchAuthSession } from "../lib/auth";
 import { byLanguage } from "../lib/i18n";
 import Footer from "./footer";
 import { useLanguage } from "./language-provider";
@@ -30,6 +32,9 @@ export default function ShoppingBag() {
   const router = useRouter();
   const [items, setItems] = useState<CartItem[]>([]);
   const [cartLoading, setCartLoading] = useState(true);
+  const [loginRequired, setLoginRequired] = useState(false);
+  const [loginOpenRequest, setLoginOpenRequest] = useState(0);
+  const [cartReloadKey, setCartReloadKey] = useState(0);
   const text = {
     back: byLanguage({ EN: "Back", KA: "უკან" }, language),
     product: byLanguage({ EN: "Product", KA: "პროდუქტი" }, language),
@@ -57,18 +62,47 @@ export default function ShoppingBag() {
       { EN: "Proceed To Checkout", KA: "გადადი გადახდაზე" },
       language
     ),
+    loginRequired: byLanguage(
+      {
+        EN: "Please log in first to view your shopping bag.",
+        KA: "კალათის სანახავად ჯერ გაიარე ავტორიზაცია.",
+      },
+      language
+    ),
+    logIn: byLanguage({ EN: "Log In", KA: "შესვლა" }, language),
   };
   useEffect(() => {
     let isActive = true;
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === getCartStorageKey()) {
+        setItems(readCart());
+      }
+    };
+    let unsubscribe = () => {};
 
     const loadCart = async () => {
-      const localItems = readCart();
-      if (isActive) {
-        setItems(localItems);
-        if (localItems.length > 0) {
-          setCartLoading(false);
-        }
+      const session = await fetchAuthSession();
+      if (!isActive) return;
+
+      if (!session?.authenticated) {
+        setItems([]);
+        setLoginRequired(true);
+        setCartLoading(false);
+        return;
       }
+
+      setLoginRequired(false);
+      const localItems = readCart();
+      setItems(localItems);
+      if (localItems.length > 0) {
+        setCartLoading(false);
+      }
+
+      unsubscribe = subscribeToCart((nextItems) => {
+        setItems(nextItems);
+      });
+      window.addEventListener("storage", handleStorage);
+
       const snapshot = await fetchCart();
       if (!isActive) return;
       if (snapshot) {
@@ -76,23 +110,20 @@ export default function ShoppingBag() {
       }
       setCartLoading(false);
     };
-    loadCart();
+    void loadCart();
 
-    const unsubscribe = subscribeToCart((nextItems) => {
-      setItems(nextItems);
-    });
-    const handleStorage = (event: StorageEvent) => {
-      if (event.key === getCartStorageKey()) {
-        setItems(readCart());
-      }
-    };
-    window.addEventListener("storage", handleStorage);
     return () => {
       isActive = false;
       unsubscribe();
       window.removeEventListener("storage", handleStorage);
     };
-  }, []);
+  }, [cartReloadKey]);
+
+  const handleLoginSuccess = () => {
+    setCartLoading(true);
+    setLoginRequired(false);
+    setCartReloadKey((current) => current + 1);
+  };
 
   const updateItems = (updater: (prev: CartItem[]) => CartItem[]) => {
     setItems((prev) => {
@@ -173,9 +204,47 @@ export default function ShoppingBag() {
     return <ShoppingBagPageSkeleton />;
   }
 
+  if (loginRequired) {
+    return (
+      <div className="relative flex min-h-screen flex-col overflow-hidden bg-white text-slate-900">
+        <SiteHeader
+          showFullLogo
+          isFixed={false}
+          loginOpenRequest={loginOpenRequest}
+          onLoginSuccess={handleLoginSuccess}
+        />
+
+        <main className="mx-auto flex w-full max-w-6xl flex-1 px-4 pb-24 pt-6 sm:px-6">
+          <div className="w-full">
+            <div className="h-px w-full bg-black/60" />
+            <section className="flex min-h-[50vh] flex-col items-center justify-center gap-6">
+              <p className="max-w-md text-center text-[11px] uppercase tracking-[0.28em] text-slate-500 sm:text-xs">
+                {text.loginRequired}
+              </p>
+              <button
+                type="button"
+                onClick={() => setLoginOpenRequest((current) => current + 1)}
+                className="rounded-full bg-black px-6 py-3 text-[10px] font-semibold uppercase tracking-[0.3em] text-white transition hover:bg-slate-800"
+              >
+                {text.logIn}
+              </button>
+            </section>
+          </div>
+        </main>
+
+        <Footer />
+      </div>
+    );
+  }
+
   return (
     <div className="relative flex min-h-screen flex-col overflow-hidden bg-white text-slate-900">
-      <SiteHeader showFullLogo isFixed={false} />
+      <SiteHeader
+        showFullLogo
+        isFixed={false}
+        loginOpenRequest={loginOpenRequest}
+        onLoginSuccess={handleLoginSuccess}
+      />
 
       <main className="mx-auto flex-1 w-full max-w-6xl px-4 pb-24 pt-6 sm:px-6">
         <div className="h-px w-full bg-black/60" />
@@ -226,9 +295,12 @@ export default function ShoppingBag() {
                       X
                     </button>
                     <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-start sm:gap-5">
-                      <img
-                        src={item.image}
+                      <Image
+                        src={item.image || "/images/dress.png"}
                         alt={item.name}
+                        width={80}
+                        height={96}
+                        unoptimized
                         className="h-24 w-20 object-cover"
                       />
                       <div className="flex flex-1 flex-col gap-2 text-[11px] uppercase tracking-[0.18em] text-slate-500">

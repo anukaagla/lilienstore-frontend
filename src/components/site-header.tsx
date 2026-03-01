@@ -1,25 +1,17 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { fetchCart } from "../lib/cart-api";
 import { clearLegacyAuthStorage, fetchAuthSession } from "../lib/auth";
-import {
-  DEFAULT_LANGUAGE,
-  LANGUAGE_STORAGE_KEY,
-  byLanguage,
-  getLocalizedText,
-  normalizeLanguage,
-  type Language,
-} from "../lib/i18n";
+import { byLanguage, getLocalizedText } from "../lib/i18n";
 import type { Category } from "../types/catalog";
 import { useBrandState } from "./brand-provider";
 import { SkeletonBlock } from "./page-skeletons";
 import { useLanguage } from "./language-provider";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
-const PAYMENT_NOTICE_SESSION_KEY = "lilien-payment-notice-shown";
 
 type SiteHeaderProps = {
   showFullLogo?: boolean;
@@ -27,6 +19,8 @@ type SiteHeaderProps = {
   searchHref?: string;
   isFixed?: boolean;
   categories?: Category[];
+  loginOpenRequest?: number;
+  onLoginSuccess?: () => void;
 };
 
 type CategoryApiRecord = {
@@ -146,6 +140,8 @@ export default function SiteHeader({
   searchHref = "/market?search=1",
   isFixed = true,
   categories,
+  loginOpenRequest,
+  onLoginSuccess,
 }: SiteHeaderProps) {
   const { language, toggleLanguage } = useLanguage();
   const { brand, isLoading: brandLoading } = useBrandState();
@@ -154,9 +150,6 @@ export default function SiteHeader({
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeCategorySlug, setActiveCategorySlug] = useState("");
   const [loginOpen, setLoginOpen] = useState(false);
-  const [paymentNoticeOpen, setPaymentNoticeOpen] = useState(false);
-  const [paymentNoticeLanguage, setPaymentNoticeLanguage] =
-    useState<Language>(DEFAULT_LANGUAGE);
   const [loggedIn, setLoggedIn] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -206,54 +199,11 @@ export default function SiteHeader({
       language
     ),
   };
-  const paymentNoticeTitle = byLanguage(
-    {
-      EN: "Secure Payments In Progress",
-      KA: "უსაფრთხო გადახდები პროცესშია",
-    },
-    paymentNoticeLanguage
-  );
-  const paymentNoticeText = byLanguage(
-    {
-      EN: "We\u2019re finalizing payment verification to ensure secure transactions. Payments will be available soon. Thank you for your support.",
-      KA: "ჩვენ ვასრულებთ გადახდის სისტემის ვერიფიკაციას, უსაფრთხო ტრანზაქციების მისაღებად. ონლაინ გადახდები მალე ხელმისაწვდომი იქნება. მადლობა მხარდაჭერისთვის.",
-    },
-    paymentNoticeLanguage
-  );
-  const paymentNoticeLanguageLabel = byLanguage(
-    {
-      EN: "ქართული",
-      KA: "English",
-    },
-    paymentNoticeLanguage
-  );
-
-  const fallbackCategories = useMemo<Category[]>(
-    () => [
-      {
-        slug: "women",
-        name: { KA: "ქალები", EN: "Women" },
-        children: [
-          { slug: "skirt", name: { KA: "ქვედაბოლო", EN: "Skirt" } },
-          { slug: "coat", name: { KA: "პალტო", EN: "Coat" } },
-          { slug: "dress", name: { KA: "კაბა", EN: "Dress" } },
-        ],
-      },
-      {
-        slug: "men",
-        name: { KA: "კაცები", EN: "Men" },
-        children: [],
-      },
-    ],
-    []
-  );
-
   const shouldFetchCategories = !categories?.length;
-  const resolvedCategories = categories?.length
-    ? categories
-    : fetchedCategories.length
-      ? fetchedCategories
-      : fallbackCategories;
+  const resolvedCategories = useMemo(
+    () => (categories?.length ? categories : fetchedCategories),
+    [categories, fetchedCategories]
+  );
   const activeCategory =
     resolvedCategories.find((item) => item.slug === activeCategorySlug) ??
     resolvedCategories[0];
@@ -322,24 +272,16 @@ export default function SiteHeader({
   }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-    const alreadyShown = window.sessionStorage.getItem(PAYMENT_NOTICE_SESSION_KEY);
-    if (alreadyShown === "true") {
-      return;
-    }
-    const storedLanguage = normalizeLanguage(
-      window.localStorage.getItem(LANGUAGE_STORAGE_KEY)
-    );
-    setPaymentNoticeLanguage(storedLanguage);
-    setPaymentNoticeOpen(true);
-    window.sessionStorage.setItem(PAYMENT_NOTICE_SESSION_KEY, "true");
+    setPortalReady(true);
   }, []);
 
   useEffect(() => {
-    setPortalReady(true);
-  }, []);
+    if (!loginOpenRequest) {
+      return;
+    }
+    setMenuOpen(false);
+    setLoginOpen(true);
+  }, [loginOpenRequest]);
 
   const signInDisabled = !email.trim() || !password.trim();
   const canSubmit = !signInDisabled && !loginSubmitting;
@@ -380,15 +322,12 @@ export default function SiteHeader({
       setLoginOpen(false);
       setEmail("");
       setPassword("");
+      onLoginSuccess?.();
     } catch {
       setLoginError(text.loginFailedRetry);
     } finally {
       setLoginSubmitting(false);
     }
-  };
-
-  const handleShoppingBagClick = () => {
-    void fetchCart();
   };
 
   return (
@@ -429,9 +368,12 @@ export default function SiteHeader({
                   language
                 )}
               >
-                <img
+                <Image
                   src={brandLogoSrc}
                   alt={`${brandName} full logo`}
+                  width={240}
+                  height={96}
+                  unoptimized
                   className="h-12 w-auto sm:h-14 md:h-16"
                 />
               </Link>
@@ -522,7 +464,6 @@ export default function SiteHeader({
             )}
             <Link
               href="/shopping-bag"
-              onClick={handleShoppingBagClick}
               className="flex items-center gap-2 transition hover:text-slate-900"
               aria-label={text.shoppingBag}
             >
@@ -628,9 +569,12 @@ export default function SiteHeader({
         </div>
 
         <div className="mt-4 flex items-center justify-between px-6 text-slate-500">
-          <img
+          <Image
             src={brandLogoSrc}
             alt={`${brandName} logo`}
+            width={160}
+            height={64}
+            unoptimized
             className="h-8 w-auto"
           />
           {loggedIn ? (
@@ -683,101 +627,46 @@ export default function SiteHeader({
 
       {portalReady
         ? createPortal(
-            <>
-              <div
-                className={`fixed inset-0 z-[150] flex items-center justify-center px-4 transition ${
-                  paymentNoticeOpen ? "opacity-100" : "pointer-events-none opacity-0"
-                }`}
-                aria-hidden={!paymentNoticeOpen}
-              >
-                <button
-                  type="button"
-                  aria-label="Close payment notice"
-                  onClick={() => setPaymentNoticeOpen(false)}
-                  className="absolute inset-0 bg-black/20 backdrop-blur-sm"
-                />
-                <div className="relative w-full max-w-md min-h-[420px] rounded-3xl border border-black/10 bg-white/95 p-8 text-slate-900 shadow-2xl backdrop-blur">
-                  <button
-                    type="button"
-                    aria-label="Close payment notice"
-                    onClick={() => setPaymentNoticeOpen(false)}
-                    className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-black/10 text-slate-600 transition hover:text-slate-900"
-                  >
-                    X
-                  </button>
-                  <div className="flex flex-col items-center gap-4 text-center">
-                    <img
-                      src={brandLogoSrc}
-                      alt={`${brandName} logo`}
-                      className="h-20 w-auto"
-                    />
-                    <div className="w-full border-t border-black" aria-hidden="true" />
-                    <h2 className="max-w-[28ch] text-center text-[15px] font-medium uppercase tracking-[0.08em] text-slate-900">
-                      {paymentNoticeTitle}
-                    </h2>
-                    <p className="max-w-[34ch] text-center text-[13px] font-semibold leading-6 text-slate-700">
-                      {paymentNoticeText}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setPaymentNoticeLanguage((current) =>
-                          current === "EN" ? "KA" : "EN"
-                        )
-                      }
-                      aria-label={byLanguage(
-                        {
-                          EN: "Switch language to Georgian",
-                          KA: "Switch language to English",
-                        },
-                        paymentNoticeLanguage
-                      )}
-                      className="rounded-full border border-[#A79974] bg-[#A79974] px-4 py-1.5 text-[10px] uppercase tracking-[0.2em] text-white transition-colors duration-300 hover:border-[#8F815F] hover:bg-[#8F815F] hover:text-white"
-                    >
-                      {paymentNoticeLanguageLabel}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div
-                className={`fixed inset-0 z-[140] flex items-center justify-center px-4 transition ${
-                  loginOpen ? "opacity-100" : "pointer-events-none opacity-0"
-                }`}
-                aria-hidden={!loginOpen}
-              >
+            <div
+              className={`fixed inset-0 z-[140] flex items-center justify-center px-4 transition ${
+                loginOpen ? "opacity-100" : "pointer-events-none opacity-0"
+              }`}
+              aria-hidden={!loginOpen}
+            >
+              <button
+                type="button"
+                aria-label={text.closeLogin}
+                onClick={() => setLoginOpen(false)}
+                className="absolute inset-0 bg-black/20 backdrop-blur-sm"
+              />
+              <div className="relative w-full max-w-sm rounded-3xl border border-black/10 bg-white/95 p-6 text-slate-900 shadow-2xl backdrop-blur">
                 <button
                   type="button"
                   aria-label={text.closeLogin}
                   onClick={() => setLoginOpen(false)}
-                  className="absolute inset-0 bg-black/20 backdrop-blur-sm"
-                />
-                <div className="relative w-full max-w-sm rounded-3xl border border-black/10 bg-white/95 p-6 text-slate-900 shadow-2xl backdrop-blur">
-                  <button
-                    type="button"
-                    aria-label={text.closeLogin}
-                    onClick={() => setLoginOpen(false)}
-                    className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-black/10 text-slate-600 transition hover:text-slate-900"
-                  >
-                    X
-                  </button>
-                  <div className="flex flex-col items-center gap-3 text-center">
-                    <img
-                      src={brandLogoSrc}
-                      alt={`${brandName} logo`}
-                      className="h-20 w-auto"
-                    />
-                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
-                      {text.welcomeBack}
-                    </p>
-                  </div>
-                  <form className="mt-6 space-y-4" onSubmit={handleLogin}>
+                  className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-black/10 text-slate-600 transition hover:text-slate-900"
+                >
+                  X
+                </button>
+                <div className="flex flex-col items-center gap-3 text-center">
+                  <Image
+                    src={brandLogoSrc}
+                    alt={`${brandName} logo`}
+                    width={320}
+                    height={128}
+                    unoptimized
+                    className="h-20 w-auto"
+                  />
+                  <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
+                    {text.welcomeBack}
+                  </p>
+                </div>
+                <form className="mt-6 space-y-4" onSubmit={handleLogin}>
                     <label className="block text-[11px] uppercase tracking-[0.25em] text-slate-500">
                       {text.email}
                       <input
                         type="email"
                         required
-                        placeholder="you@email.com"
                         value={email}
                         onChange={(event) => setEmail(event.target.value)}
                         className="mt-2 w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-black/40"
@@ -788,7 +677,6 @@ export default function SiteHeader({
                       <input
                         type="password"
                         required
-                        placeholder="********"
                         value={password}
                         onChange={(event) => setPassword(event.target.value)}
                         className="mt-2 w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-black/40"
@@ -820,8 +708,7 @@ export default function SiteHeader({
                     </Link>
                   </div>
                 </div>
-              </div>
-            </>,
+              </div>,
             document.body
           )
         : null}

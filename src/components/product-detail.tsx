@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState, useSyncExternalStore } from "react";
 import { useSearchParams } from "next/navigation";
@@ -275,11 +276,13 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                   onClick={() => setMainImage(image)}
                   className="h-20 w-16 overflow-hidden border border-black/15 transition hover:border-black/50 lg:h-24 lg:w-20"
                 >
-                  <img
+                  <Image
                     src={image}
                     alt={`${displayName} thumbnail ${index + 1}`}
+                    width={80}
+                    height={96}
+                    unoptimized
                     className={`${thumbClass} h-full w-full object-cover`}
-                    loading="lazy"
                   />
                 </button>
               );
@@ -288,10 +291,13 @@ export default function ProductDetail({ product }: ProductDetailProps) {
 
           <div className="order-1 lg:order-2">
             <div className="relative aspect-[4/5] overflow-hidden bg-slate-100 lg:aspect-auto lg:h-[68vh] lg:max-h-[68vh]">
-              <img
+              <Image
                 src={resolvedMainImage}
                 alt={`${displayName} ${text.mainView}`}
-                className="marketpic h-full w-full object-cover"
+                fill
+                unoptimized
+                sizes="(min-width: 1280px) 40vw, (min-width: 1024px) 48vw, 100vw"
+                className="marketpic object-cover"
               />
             </div>
           </div>

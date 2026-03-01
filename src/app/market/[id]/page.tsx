@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 
 import { ProductPageSkeleton } from "../../../components/page-skeletons";
 import ProductDetail from "../../../components/product-detail";
-import { products, type Product } from "../../../data/products";
+import type { Product } from "../../../data/products";
 import { toLocalizedText } from "../../../lib/i18n";
 import type { ApiProductDetail } from "../../../types/catalog";
 
@@ -126,36 +126,19 @@ export default async function MarketProductPage({
   params,
 }: MarketProductPageProps) {
   const { id: slug } = await params;
-  const fallbackProduct = products.find((item) => item.id === slug);
-
-  if (API_BASE_URL) {
-    const apiProduct = await fetchApiProduct(slug);
-    if (apiProduct) {
-      return (
-        <Suspense fallback={<ProductPageSkeleton />}>
-          <ProductDetail product={apiProduct} />
-        </Suspense>
-      );
-    }
-
-    if (fallbackProduct) {
-      return (
-        <Suspense fallback={<ProductPageSkeleton />}>
-          <ProductDetail product={fallbackProduct} />
-        </Suspense>
-      );
-    }
-
+  if (!API_BASE_URL) {
     notFound();
   }
 
-  if (!fallbackProduct) {
+  const apiProduct = await fetchApiProduct(slug);
+
+  if (!apiProduct) {
     notFound();
   }
 
   return (
     <Suspense fallback={<ProductPageSkeleton />}>
-      <ProductDetail product={fallbackProduct} />
+      <ProductDetail product={apiProduct} />
     </Suspense>
   );
 }

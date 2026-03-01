@@ -1,7 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { byLanguage, getLocalizedText } from "../lib/i18n";
 import { useBrandState } from "./brand-provider";
 import { useLanguage } from "./language-provider";
@@ -13,42 +14,6 @@ import SiteHeader from "./site-header";
 type ShowRoomProps = {
   posts?: BlogPost[];
 };
-
-const fallbackPosts: BlogPost[] = [
-  {
-    id: 1,
-    title: { KA: "სათაური", EN: "Header" },
-    content: {
-      KA: "Tailored for fluid days, the collection balances structure with softness. Each stitch keeps the silhouette confident and easy.",
-      EN: "Tailored for fluid days, the collection balances structure with softness. Each stitch keeps the silhouette confident and easy.",
-    },
-    cover_image: "/images/BB.png",
-    published_at: "2026-01-01T00:00:00.000Z",
-    created_at: "2026-01-01T00:00:00.000Z",
-  },
-  {
-    id: 2,
-    title: { KA: "ყოველდღიური სიმსუბუქე", EN: "Everyday Ease" },
-    content: {
-      KA: "Designed for comfort without losing shape. The pieces feel light, but never ordinary. They hold form through movement, travel, and long days.",
-      EN: "Designed for comfort without losing shape. The pieces feel light, but never ordinary. They hold form through movement, travel, and long days.",
-    },
-    cover_image: "/images/main-pic.png",
-    published_at: "2026-01-02T00:00:00.000Z",
-    created_at: "2026-01-02T00:00:00.000Z",
-  },
-  {
-    id: 3,
-    title: { KA: "სათაური", EN: "Header" },
-    content: {
-      KA: "Tailored for fluid days, the collection balances structure with softness. Each stitch keeps the silhouette confident and easy.",
-      EN: "Tailored for fluid days, the collection balances structure with softness. Each stitch keeps the silhouette confident and easy.",
-    },
-    cover_image: "/images/BBB.png",
-    published_at: "2026-01-03T00:00:00.000Z",
-    created_at: "2026-01-03T00:00:00.000Z",
-  },
-];
 
 const Divider = () => (
   <div className="relative left-1/2 w-screen -translate-x-1/2">
@@ -73,13 +38,8 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
       language
     ),
   };
-  const resolvedPosts = useMemo(
-    () => (posts ? posts : fallbackPosts),
-    [posts]
-  );
-  const [visibleCount, setVisibleCount] = useState(
-    Math.min(3, resolvedPosts.length)
-  );
+  const resolvedPosts = posts ?? [];
+  const [visibleCount, setVisibleCount] = useState(3);
 
   const visiblePosts = resolvedPosts.slice(0, visibleCount);
   const canShowMore = visibleCount < resolvedPosts.length;
@@ -103,10 +63,13 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
           style={{ animationDelay }}
         >
           <div className="w-full max-w-xl">
-            <img
+            <Image
               className="h-[300px] w-full rounded-3xl object-cover shadow-[0_30px_60px_-40px_rgba(0,0,0,0.45)] sm:h-[360px] md:h-[440px]"
               src={coverImage}
               alt={title || text.blogPostCover}
+              width={1200}
+              height={1600}
+              unoptimized
             />
           </div>
           <div className="max-w-2xl">
@@ -130,10 +93,13 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
           style={{ animationDelay }}
         >
           <div className="w-full">
-            <img
+            <Image
               className="h-[360px] w-full rounded-3xl object-cover shadow-[0_28px_60px_-42px_rgba(0,0,0,0.45)] sm:h-[460px] md:h-[540px]"
               src={coverImage}
               alt={title || text.blogPostCover}
+              width={1200}
+              height={1600}
+              unoptimized
             />
           </div>
           <div className="flex flex-col items-center justify-center md:h-[360px]">
@@ -155,10 +121,13 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
         style={{ animationDelay }}
       >
         <div className="w-full md:order-2">
-          <img
+          <Image
             className="h-[320px] w-full rounded-3xl object-cover shadow-[0_28px_60px_-42px_rgba(0,0,0,0.45)] sm:h-[420px] md:h-[460px]"
             src={coverImage}
             alt={title || text.blogPostCover}
+            width={1200}
+            height={1600}
+            unoptimized
           />
         </div>
         <div className="flex flex-col items-center justify-center md:order-1 md:h-[360px]">
@@ -184,17 +153,23 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
           style={{ animationDelay: "120ms" }}
         >
           <div className="w-full max-w-5xl">
-            <div className="relative mx-auto w-full max-w-[320px] overflow-hidden rounded-3xl shadow-[0_30px_60px_-40px_rgba(0,0,0,0.45)] sm:hidden">
-                <img
-                  className="h-[520px] w-full object-cover"
-                  src={mobileHeroSrc}
-                  alt={`${brandName} hero`}
-                />
+            <div className="relative mx-auto h-[520px] w-full max-w-[320px] overflow-hidden rounded-3xl shadow-[0_30px_60px_-40px_rgba(0,0,0,0.45)] sm:hidden">
+              <Image
+                className="object-cover"
+                src={mobileHeroSrc}
+                alt={`${brandName} hero`}
+                fill
+                unoptimized
+                sizes="320px"
+              />
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 px-6 pb-12 text-center">
-                <img
+                <Image
                   className="h-40 w-full max-w-[240px] object-contain"
                   src={logoSrc}
                   alt={`${brandName} logo`}
+                  width={480}
+                  height={240}
+                  unoptimized
                 />
                 <Link
                   href="/market"
@@ -206,16 +181,22 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
             </div>
 
             <div className="hidden grid-cols-1 gap-6 sm:grid sm:grid-cols-2">
-              <img
+              <Image
                 className="h-[300px] w-full rounded-3xl object-cover shadow-[0_30px_60px_-40px_rgba(0,0,0,0.45)] sm:h-[300px] md:h-[440px]"
                 src={heroSrc}
                 alt={text.mainShowroom}
+                width={1440}
+                height={1080}
+                unoptimized
               />
               <div className="flex h-full flex-col items-center justify-center gap-5 sm:gap-6 pb-10">
-                <img
+                <Image
                   className="h-[180px] w-full max-w-[280px] object-contain sm:h-[220px] sm:max-w-[320px] md:h-[260px]"
                   src={logoSrc}
                   alt={`${brandName} logo`}
+                  width={640}
+                  height={320}
+                  unoptimized
                 />
                 <Link
                   href="/market"

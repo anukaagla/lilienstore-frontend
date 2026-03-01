@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Footer from "./footer";
 import { byLanguage, getLocalizedText } from "../lib/i18n";
 import SiteHeader from "./site-header";
@@ -83,20 +84,22 @@ export default function AboutUs() {
                 </>
               )}
             </div>
-            <img
+            <Image
               src="/images/aboutus1.png"
               alt={`${brandName} evening look`}
+              width={640}
+              height={960}
               className="mx-auto hidden w-full max-w-[320px] xl:mx-0 xl:block xl:justify-self-start"
-              loading="lazy"
             />
           </div>
 
           <div className="grid items-center gap-10 xl:grid-cols-[380px_minmax(0,1fr)] xl:gap-14">
-            <img
+            <Image
               src="/images/aboutus2.png"
               alt={`${brandName} studio portrait`}
+              width={760}
+              height={980}
               className="mx-auto w-full max-w-[380px] xl:mx-0 xl:justify-self-start"
-              loading="lazy"
             />
             <div className="mx-auto flex max-w-[480px] flex-col justify-center space-y-6 text-center text-[20px] leading-[1.95] text-slate-600 xl:justify-self-end xl:text-left">
               {hasDescription ? (

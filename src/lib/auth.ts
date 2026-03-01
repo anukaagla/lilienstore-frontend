@@ -18,6 +18,7 @@ const normalizeApiOrigin = () => {
 const API_ORIGIN = normalizeApiOrigin();
 
 let refreshRequest: Promise<boolean> | null = null;
+let sessionRequest: Promise<{ authenticated: boolean } | null> | null = null;
 
 const mapApiPathToProxyPath = (pathname: string, search = "") => {
   if (!pathname.startsWith("/api/")) {
@@ -94,27 +95,37 @@ export const clearLegacyAuthStorage = () => {
 };
 
 export const fetchAuthSession = async (): Promise<{ authenticated: boolean } | null> => {
-  try {
-    const response = await fetch("/api/auth/session/", {
-      method: "GET",
-      cache: "no-store",
-      credentials: "include",
-    });
-    if (!response.ok) {
-      return null;
-    }
-
-    const payload = await response.json().catch(() => null);
-    if (!payload || typeof payload !== "object") {
-      return null;
-    }
-
-    return {
-      authenticated: Boolean((payload as { authenticated?: unknown }).authenticated),
-    };
-  } catch {
-    return null;
+  if (sessionRequest) {
+    return sessionRequest;
   }
+
+  sessionRequest = (async () => {
+    try {
+      const response = await fetch("/api/auth/session/", {
+        method: "GET",
+        cache: "no-store",
+        credentials: "include",
+      });
+      if (!response.ok) {
+        return null;
+      }
+
+      const payload = await response.json().catch(() => null);
+      if (!payload || typeof payload !== "object") {
+        return null;
+      }
+
+      return {
+        authenticated: Boolean((payload as { authenticated?: unknown }).authenticated),
+      };
+    } catch {
+      return null;
+    }
+  })().finally(() => {
+    sessionRequest = null;
+  });
+
+  return sessionRequest;
 };
 
 export const fetchWithAuthRetry = async (

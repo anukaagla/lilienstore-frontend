@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -88,6 +89,7 @@ export default function RegisterPage() {
   const brandName = getLocalizedText(brand?.brand_name, language, "Lilienstore");
   const [form, setForm] = useState<RegisterForm>(initialForm);
   const [agreedToPolicies, setAgreedToPolicies] = useState(false);
+  const [confirmedAdult, setConfirmedAdult] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -144,6 +146,13 @@ export default function RegisterPage() {
     confirmPassword: byLanguage({ EN: "Confirm password", KA: "გაიმეორე პაროლი" }, language),
     phoneOptional: byLanguage(
       { EN: "Phone number (optional)", KA: "ტელეფონის ნომერი (არასავალდებულო)" },
+      language
+    ),
+    confirmAdult: byLanguage(
+      {
+        EN: "I confirm that I am 18 years old or older.",
+        KA: "ვადასტურებ, რომ ვარ 18 წლის ან მეტი.",
+      },
       language
     ),
     acceptPolicies: byLanguage({ EN: "I accept", KA: "ვეთანხმები" }, language),
@@ -233,6 +242,13 @@ export default function RegisterPage() {
       {
         EN: "Please accept the Privacy Policy and Terms of Use to register.",
         KA: "რეგისტრაციისთვის დაეთანხმე კონფიდენციალურობის პოლიტიკას და მოხმარების წესებს.",
+      },
+      language
+    ),
+    adultConfirmationRequired: byLanguage(
+      {
+        EN: "Please confirm that you are 18 years old or older.",
+        KA: "გთხოვ დაადასტურე, რომ ხარ 18 წლის ან მეტი.",
       },
       language
     ),
@@ -414,6 +430,11 @@ export default function RegisterPage() {
       return;
     }
 
+    if (!confirmedAdult) {
+      setError(text.adultConfirmationRequired);
+      return;
+    }
+
     const registerUrl = buildApiUrl("/api/auth/register/");
     if (!registerUrl) {
       setError(text.missingApiBaseUrl);
@@ -446,6 +467,7 @@ export default function RegisterPage() {
       setVerificationPassword(registeredPassword);
       setForm(initialForm);
       setAgreedToPolicies(false);
+      setConfirmedAdult(false);
       void requestVerificationCode(registeredEmail);
     } catch {
       setError(text.registrationFailedRetry);
@@ -479,9 +501,12 @@ export default function RegisterPage() {
         <div className="flex flex-col justify-center px-6 py-16 sm:px-12 lg:px-16">
           <div className="w-full max-w-md">
             <Link href="/" className="inline-flex items-center">
-              <img
+              <Image
                 src="/images/full.png"
                 alt={`${brandName} logo`}
+                width={111}
+                height={109}
+                priority
                 className="h-16 w-auto sm:h-20"
               />
             </Link>
@@ -517,7 +542,6 @@ export default function RegisterPage() {
                 {text.email}
                 <input
                   type="email"
-                  placeholder="you@email.com"
                   name="email"
                   value={form.email}
                   onChange={handleChange}
@@ -529,7 +553,6 @@ export default function RegisterPage() {
                 {text.password}
                 <input
                   type="password"
-                  placeholder="********"
                   name="password"
                   value={form.password}
                   onChange={handleChange}
@@ -541,7 +564,6 @@ export default function RegisterPage() {
                 {text.confirmPassword}
                 <input
                   type="password"
-                  placeholder="********"
                   name="password2"
                   value={form.password2}
                   onChange={handleChange}
@@ -553,12 +575,21 @@ export default function RegisterPage() {
                 {text.phoneOptional}
                 <input
                   type="tel"
-                  placeholder="+995 555 123 456"
                   name="phone_number"
                   value={form.phone_number}
                   onChange={handleChange}
                   className="mt-2 w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-black/40"
                 />
+              </label>
+              <label className="flex items-start gap-3 rounded-2xl border border-black/10 bg-slate-50 px-4 py-3 text-[11px] uppercase tracking-[0.18em] text-slate-500">
+                <input
+                  type="checkbox"
+                  checked={confirmedAdult}
+                  onChange={(event) => setConfirmedAdult(event.target.checked)}
+                  disabled={submitting}
+                  className="mt-0.5 h-4 w-4 rounded border border-black/20 accent-black"
+                />
+                <span className="leading-relaxed">{text.confirmAdult}</span>
               </label>
               <label className="flex items-start gap-3 rounded-2xl border border-black/10 bg-slate-50 px-4 py-3 text-[11px] uppercase tracking-[0.18em] text-slate-500">
                 <input
@@ -614,10 +645,12 @@ export default function RegisterPage() {
         </div>
 
         <div className="relative hidden min-h-screen lg:block">
-          <img
+          <Image
             src="/images/BBB.png"
             alt={`${brandName} registration look`}
-            className="absolute inset-0 h-full w-full object-cover"
+            fill
+            sizes="(min-width: 1024px) 50vw, 0px"
+            className="object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-l from-white/0 via-white/0 to-white/10" />
         </div>
