@@ -262,28 +262,26 @@ export default function ProductDetail({ product }: ProductDetailProps) {
         <div className="h-px w-full bg-black" />
         <section className="mt-10 grid gap-10 lg:grid-cols-[96px_minmax(0,1fr)_320px] xl:grid-cols-[110px_minmax(0,1fr)_360px]">
           <div className="order-2 flex flex-wrap items-start justify-center gap-4 self-start lg:order-1 lg:flex-col lg:items-start">
-            {thumbnails.map((image, index) => {
-              const thumbClass = `marketpic${index + 1}`;
-
-              return (
-                <button
-                  key={`${image}-${index}`}
-                  type="button"
-                  aria-label={`${text.viewImage} ${index + 1}`}
-                  onClick={() => setMainImage(image)}
-                  className="h-20 w-16 overflow-hidden border border-black/15 transition hover:border-black/50 lg:h-24 lg:w-20"
-                >
+            {thumbnails.map((image, index) => (
+              <button
+                key={`${image}-${index}`}
+                type="button"
+                aria-label={`${text.viewImage} ${index + 1}`}
+                onClick={() => setMainImage(image)}
+                className="group shrink-0"
+              >
+                <span className="block overflow-hidden border border-black/15 transition group-hover:border-black/50">
                   <Image
                     src={image}
                     alt={`${displayName} thumbnail ${index + 1}`}
                     width={80}
                     height={96}
-                    sizes="80px"
-                    className={`${thumbClass} h-full w-full`}
+                    sizes="(min-width: 1024px) 80px, 64px"
+                    className="block h-auto max-h-20 w-auto max-w-16 object-contain object-center lg:max-h-24 lg:max-w-20"
                   />
-                </button>
-              );
-            })}
+                </span>
+              </button>
+            ))}
           </div>
 
           <div className="order-1 lg:order-2">

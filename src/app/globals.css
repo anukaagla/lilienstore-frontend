@@ -116,14 +116,3 @@ h4,
   object-fit: contain;
   object-position: center;
 }
-
-.marketpic1,
-.marketpic2,
-.marketpic3,
-.marketpic4 {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  object-position: center;
-}
