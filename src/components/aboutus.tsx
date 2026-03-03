@@ -89,6 +89,7 @@ export default function AboutUs() {
               alt={`${brandName} evening look`}
               width={640}
               height={960}
+              sizes="(min-width: 1280px) 320px, 0px"
               className="mx-auto hidden w-full max-w-[320px] xl:mx-0 xl:block xl:justify-self-start"
             />
           </div>
@@ -99,6 +100,7 @@ export default function AboutUs() {
               alt={`${brandName} studio portrait`}
               width={760}
               height={980}
+              sizes="(min-width: 1280px) 380px, 100vw"
               className="mx-auto w-full max-w-[380px] xl:mx-0 xl:justify-self-start"
             />
             <div className="mx-auto flex max-w-[480px] flex-col justify-center space-y-6 text-center text-[20px] leading-[1.95] text-slate-600 xl:justify-self-end xl:text-left">

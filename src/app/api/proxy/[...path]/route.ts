@@ -60,7 +60,7 @@ const parseForwardBody = async (request: NextRequest) => {
 
   const text = await request.text();
   if (!text) {
-    return "";
+    return null;
   }
 
   if (text.length > MAX_JSON_BODY_SIZE) {

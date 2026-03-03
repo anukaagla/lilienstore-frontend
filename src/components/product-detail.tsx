@@ -39,7 +39,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
     }
     return [product.primaryImage, product.secondaryImage].filter(Boolean);
   }, [product.detailImages, product.primaryImage, product.secondaryImage]);
-  const defaultMainImage = product.primaryImage || gallery[0] || "";
+  const defaultMainImage = gallery[0] || product.primaryImage || "";
   const variants = useMemo(() => product.variants ?? [], [product.variants]);
   const colorOptions = useMemo(() => {
     const deduped = new Map<string, { name: string; hexColor: string }>();
@@ -170,13 +170,10 @@ export default function ProductDetail({ product }: ProductDetailProps) {
     );
   }, [filteredVariants, hasVariantData, resolvedSelectedSize]);
   const displayPrice = selectedVariant?.price ?? product.price;
-  const thumbnails = useMemo(() => {
-    const base = [
-      product.primaryImage,
-      ...gallery.filter((image) => image !== product.primaryImage),
-    ].filter(Boolean) as string[];
-    return base.slice(0, 5);
-  }, [gallery, product.primaryImage]);
+  const thumbnails = useMemo(
+    () => Array.from(new Set(gallery.filter(Boolean))).slice(0, 5),
+    [gallery]
+  );
   const productIdParam = searchParams?.get("pid");
   const apiProductId = productIdParam
     ? Number(productIdParam)
@@ -281,8 +278,8 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                     alt={`${displayName} thumbnail ${index + 1}`}
                     width={80}
                     height={96}
-                    unoptimized
-                    className={`${thumbClass} h-full w-full object-cover`}
+                    sizes="80px"
+                    className={`${thumbClass} h-full w-full`}
                   />
                 </button>
               );
@@ -290,14 +287,14 @@ export default function ProductDetail({ product }: ProductDetailProps) {
           </div>
 
           <div className="order-1 lg:order-2">
-            <div className="relative aspect-[4/5] overflow-hidden bg-slate-100 lg:aspect-auto lg:h-[68vh] lg:max-h-[68vh]">
+            <div className="relative aspect-[4/5] overflow-hidden lg:aspect-auto lg:h-[68vh] lg:max-h-[68vh]">
               <Image
                 src={resolvedMainImage}
                 alt={`${displayName} ${text.mainView}`}
                 fill
-                unoptimized
+                preload
                 sizes="(min-width: 1280px) 40vw, (min-width: 1024px) 48vw, 100vw"
-                className="marketpic object-cover"
+                className="marketpic"
               />
             </div>
           </div>
@@ -440,7 +437,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                             selectedVariant?.hexColor ||
                             undefined,
                           colorHex: selectedVariant?.hexColor || undefined,
-                          image: product.primaryImage,
+                          image: resolvedMainImage || defaultMainImage,
                           quantity: 1,
                         });
                         setAddedNotice(true);

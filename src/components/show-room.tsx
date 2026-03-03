@@ -26,7 +26,8 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
   const { brand, isLoading: brandLoading } = useBrandState();
   const brandName = getLocalizedText(brand?.brand_name, language, "Lilienstore");
   const logoSrc = brand?.logo_url?.trim() || brand?.logo?.trim() || "/images/Logo.png";
-  const heroSrc = brand?.hero_image_url?.trim() || brand?.hero_image?.trim() || "/images/HERO IMAGE.png";
+  const heroSrc =
+    brand?.hero_image_url?.trim() || brand?.hero_image?.trim() || "/images/HERO IMAGE.png";
   const mobileHeroSrc =
     brand?.hero_image_url?.trim() || brand?.hero_image?.trim() || "/images/aboutus1.png";
   const text = {
@@ -69,7 +70,7 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
               alt={title || text.blogPostCover}
               width={1200}
               height={1600}
-              unoptimized
+              sizes="(min-width: 1024px) 42rem, 100vw"
             />
           </div>
           <div className="max-w-2xl">
@@ -99,7 +100,7 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
               alt={title || text.blogPostCover}
               width={1200}
               height={1600}
-              unoptimized
+              sizes="(min-width: 768px) 50vw, 100vw"
             />
           </div>
           <div className="flex flex-col items-center justify-center md:h-[360px]">
@@ -127,7 +128,7 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
             alt={title || text.blogPostCover}
             width={1200}
             height={1600}
-            unoptimized
+            sizes="(min-width: 768px) 50vw, 100vw"
           />
         </div>
         <div className="flex flex-col items-center justify-center md:order-1 md:h-[360px]">
@@ -153,42 +154,40 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
           style={{ animationDelay: "120ms" }}
         >
           <div className="w-full max-w-5xl">
-            <div className="relative mx-auto h-[520px] w-full max-w-[320px] overflow-hidden rounded-3xl shadow-[0_30px_60px_-40px_rgba(0,0,0,0.45)] sm:hidden">
-              <Image
-                className="object-cover"
-                src={mobileHeroSrc}
-                alt={`${brandName} hero`}
-                fill
-                unoptimized
-                sizes="320px"
-              />
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 px-6 pb-12 text-center">
-                <Image
-                  className="h-40 w-full max-w-[240px] object-contain"
-                  src={logoSrc}
-                  alt={`${brandName} logo`}
-                  width={480}
-                  height={240}
-                  unoptimized
+            <div className="sm:hidden">
+              <div className="relative mx-auto inline-flex max-w-[calc(100vw-2rem)] overflow-hidden rounded-3xl shadow-[0_30px_60px_-40px_rgba(0,0,0,0.45)]">
+                <img
+                  className="block h-auto max-h-[70vh] w-auto max-w-full"
+                  src={mobileHeroSrc}
+                  alt={`${brandName} hero`}
                 />
-                <Link
-                  href="/market"
-                  className="inline-flex items-center justify-center rounded-full border border-black/10 bg-white px-10 py-3 text-base font-semibold uppercase tracking-[0.18em] text-slate-900 shadow-[0_10px_20px_-12px_rgba(0,0,0,0.5)]"
-                >
-                  {text.shopNow}
-                </Link>
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 px-6 pb-12 text-center">
+                  <Image
+                    className="h-40 w-full max-w-[240px] object-contain"
+                    src={logoSrc}
+                    alt={`${brandName} logo`}
+                    width={480}
+                    height={240}
+                    sizes="240px"
+                  />
+                  <Link
+                    href="/market"
+                    className="inline-flex items-center justify-center rounded-full border border-black/10 bg-white px-10 py-3 text-base font-semibold uppercase tracking-[0.18em] text-slate-900 shadow-[0_10px_20px_-12px_rgba(0,0,0,0.5)]"
+                  >
+                    {text.shopNow}
+                  </Link>
+                </div>
               </div>
             </div>
 
-            <div className="hidden grid-cols-1 gap-6 sm:grid sm:grid-cols-2">
-              <Image
-                className="h-[300px] w-full rounded-3xl object-cover shadow-[0_30px_60px_-40px_rgba(0,0,0,0.45)] sm:h-[300px] md:h-[440px]"
-                src={heroSrc}
-                alt={text.mainShowroom}
-                width={1440}
-                height={1080}
-                unoptimized
-              />
+            <div className="hidden items-center gap-6 sm:grid sm:grid-cols-2">
+              <div className="justify-self-center sm:justify-self-start">
+                <img
+                  className="block h-auto max-h-[72vh] w-auto max-w-full rounded-3xl shadow-[0_30px_60px_-40px_rgba(0,0,0,0.45)]"
+                  src={heroSrc}
+                  alt={text.mainShowroom}
+                />
+              </div>
               <div className="flex h-full flex-col items-center justify-center gap-5 sm:gap-6 pb-10">
                 <Image
                   className="h-[180px] w-full max-w-[280px] object-contain sm:h-[220px] sm:max-w-[320px] md:h-[260px]"
@@ -196,7 +195,7 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
                   alt={`${brandName} logo`}
                   width={640}
                   height={320}
-                  unoptimized
+                  sizes="320px"
                 />
                 <Link
                   href="/market"

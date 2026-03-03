@@ -138,14 +138,30 @@ export default function RegisterPage() {
     goToShowroom: byLanguage({ EN: "Go to showroom", KA: "შოურუმზე გადასვლა" }, language),
     createAccount: byLanguage({ EN: "Create account", KA: "ანგარიშის შექმნა" }, language),
     name: byLanguage({ EN: "Name", KA: "სახელი" }, language),
-    yourName: byLanguage({ EN: "Your name", KA: "თქვენი სახელი" }, language),
+    yourName: byLanguage({ EN: "e.g. Nino", KA: "მაგ. ნინო" }, language),
     lastName: byLanguage({ EN: "Lastname", KA: "გვარი" }, language),
-    yourLastname: byLanguage({ EN: "Your lastname", KA: "თქვენი გვარი" }, language),
+    yourLastname: byLanguage({ EN: "e.g. Beridze", KA: "მაგ. ბერიძე" }, language),
     email: byLanguage({ EN: "Email", KA: "ელ.ფოსტა" }, language),
+    emailPlaceholder: byLanguage(
+      { EN: "e.g. nino@example.com", KA: "მაგ. nino@example.com" },
+      language
+    ),
     password: byLanguage({ EN: "Password", KA: "პაროლი" }, language),
+    passwordPlaceholder: byLanguage(
+      { EN: "Use 8+ characters", KA: "გამოიყენე 8+ სიმბოლო" },
+      language
+    ),
     confirmPassword: byLanguage({ EN: "Confirm password", KA: "გაიმეორე პაროლი" }, language),
+    confirmPasswordPlaceholder: byLanguage(
+      { EN: "Repeat your password", KA: "გაიმეორე შენი პაროლი" },
+      language
+    ),
     phoneOptional: byLanguage(
       { EN: "Phone number (optional)", KA: "ტელეფონის ნომერი (არასავალდებულო)" },
+      language
+    ),
+    phonePlaceholder: byLanguage(
+      { EN: "e.g. +995 555 12 34 56", KA: "მაგ. +995 555 12 34 56" },
       language
     ),
     confirmAdult: byLanguage(
@@ -507,6 +523,7 @@ export default function RegisterPage() {
                 width={111}
                 height={109}
                 priority
+                sizes="111px"
                 className="h-16 w-auto sm:h-20"
               />
             </Link>
@@ -543,6 +560,7 @@ export default function RegisterPage() {
                 <input
                   type="email"
                   name="email"
+                  placeholder={text.emailPlaceholder}
                   value={form.email}
                   onChange={handleChange}
                   required
@@ -554,6 +572,7 @@ export default function RegisterPage() {
                 <input
                   type="password"
                   name="password"
+                  placeholder={text.passwordPlaceholder}
                   value={form.password}
                   onChange={handleChange}
                   required
@@ -565,6 +584,7 @@ export default function RegisterPage() {
                 <input
                   type="password"
                   name="password2"
+                  placeholder={text.confirmPasswordPlaceholder}
                   value={form.password2}
                   onChange={handleChange}
                   required
@@ -576,6 +596,7 @@ export default function RegisterPage() {
                 <input
                   type="tel"
                   name="phone_number"
+                  placeholder={text.phonePlaceholder}
                   value={form.phone_number}
                   onChange={handleChange}
                   className="mt-2 w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-black/40"

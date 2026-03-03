@@ -5,6 +5,7 @@ import { ProductPageSkeleton } from "../../../components/page-skeletons";
 import ProductDetail from "../../../components/product-detail";
 import type { Product } from "../../../data/products";
 import { toLocalizedText } from "../../../lib/i18n";
+import { toAbsoluteMediaUrl } from "../../../lib/media";
 import type { ApiProductDetail } from "../../../types/catalog";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
@@ -23,13 +24,7 @@ const toNumber = (value: unknown): number | null => {
 };
 
 const getImageUrl = (value: { image?: unknown; image_url?: unknown }) => {
-  if (typeof value.image_url === "string" && value.image_url.trim()) {
-    return value.image_url;
-  }
-  if (typeof value.image === "string" && value.image.trim()) {
-    return value.image;
-  }
-  return undefined;
+  return toAbsoluteMediaUrl(value.image_url ?? value.image) || undefined;
 };
 
 const mapApiProduct = (item: ApiProductDetail): Product => {

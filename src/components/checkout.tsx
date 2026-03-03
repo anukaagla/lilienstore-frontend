@@ -62,6 +62,13 @@ type CheckoutApiAddress = {
   country?: unknown;
 };
 
+type ShippingSettings = {
+  isActive: boolean;
+  tbilisiPrice: number;
+  georgiaOtherPrice: number;
+  internationalPrice: number;
+};
+
 const emptyForm: CheckoutFormState = {
   firstName: "",
   lastName: "",
@@ -76,11 +83,16 @@ const emptyForm: CheckoutFormState = {
 };
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
+const LEGACY_DELIVERY_FEE = 5;
+const GEORGIA_COUNTRY_NAMES = new Set(["georgia", "ge", "sakartvelo", "საქართველო"]);
+const TBILISI_LOCATION_NAMES = ["tbilisi", "თბილისი"];
 
 const formatPrice = (value: number) => `${value.toFixed(2)} GEL`;
 const normalizeString = (value: unknown) =>
   typeof value === "string" ? value : "";
 const normalizeTrimmedString = (value: string) => value.trim();
+const normalizeLocationValue = (value: string) =>
+  value.trim().toLocaleLowerCase();
 
 const buildApiUrl = (path: string) => {
   if (!API_BASE_URL) {
@@ -156,6 +168,21 @@ const pickPayloadNumber = (payload: unknown, keys: string[]) => {
   return null;
 };
 
+const parsePriceValue = (value: unknown) => {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value.replace(/[^0-9.-]/g, ""));
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return null;
+};
+
 const formatDeliveryAddress = (address: Address) =>
   [
     address.address1,
@@ -209,6 +236,56 @@ const getApiMessage = (payload: unknown, fallback: string) => {
   return fallback;
 };
 
+const normalizeShippingSettingsResponse = (payload: unknown): ShippingSettings | null => {
+  if (!isRecord(payload)) {
+    return null;
+  }
+
+  return {
+    isActive: Boolean(payload.is_active),
+    tbilisiPrice: parsePriceValue(payload.tbilisi_price) ?? 0,
+    georgiaOtherPrice: parsePriceValue(payload.georgia_other_price) ?? 0,
+    internationalPrice: parsePriceValue(payload.international_price) ?? 0,
+  };
+};
+
+const isGeorgiaAddress = (address: Address) => {
+  const country = normalizeLocationValue(address.country);
+  return GEORGIA_COUNTRY_NAMES.has(country);
+};
+
+const isTbilisiAddress = (address: Address) => {
+  const city = normalizeLocationValue(address.city);
+  const state = normalizeLocationValue(address.state);
+
+  return TBILISI_LOCATION_NAMES.some(
+    (name) =>
+      city === name ||
+      state === name ||
+      city.includes(name) ||
+      state.includes(name),
+  );
+};
+
+const getShippingFeeForAddress = (
+  address: Address,
+  settings: ShippingSettings,
+) => {
+  if (!settings.isActive) {
+    return 0;
+  }
+
+  if (!isGeorgiaAddress(address)) {
+    return settings.internationalPrice;
+  }
+
+  if (isTbilisiAddress(address)) {
+    return settings.tbilisiPrice;
+  }
+
+  return settings.georgiaOtherPrice;
+};
+
 const normalizeCheckoutAddressResponse = (
   payload: unknown,
 ): CheckoutApiAddress | null => {
@@ -217,6 +294,47 @@ const normalizeCheckoutAddressResponse = (
   }
 
   return payload as CheckoutApiAddress;
+};
+
+const normalizeCheckoutAddressesResponse = (payload: unknown): CheckoutApiAddress[] => {
+  if (Array.isArray(payload)) {
+    return payload.filter(
+      (entry): entry is CheckoutApiAddress =>
+        Boolean(entry) && typeof entry === "object" && !Array.isArray(entry),
+    );
+  }
+
+  if (!isRecord(payload)) {
+    return [];
+  }
+
+  const directCollections = ["results", "addresses", "items", "data"];
+  for (const key of directCollections) {
+    const candidate = payload[key];
+    if (Array.isArray(candidate)) {
+      return candidate.filter(
+        (entry): entry is CheckoutApiAddress =>
+          Boolean(entry) && typeof entry === "object" && !Array.isArray(entry),
+      );
+    }
+  }
+
+  const dataRecord = isRecord(payload.data) ? payload.data : null;
+  if (!dataRecord) {
+    return [];
+  }
+
+  for (const key of ["results", "addresses", "items"]) {
+    const candidate = dataRecord[key];
+    if (Array.isArray(candidate)) {
+      return candidate.filter(
+        (entry): entry is CheckoutApiAddress =>
+          Boolean(entry) && typeof entry === "object" && !Array.isArray(entry),
+      );
+    }
+  }
+
+  return [];
 };
 
 const mapCheckoutAddressToSavedAddress = (
@@ -263,6 +381,10 @@ export default function Checkout() {
   const [cartReady, setCartReady] = useState(false);
   const [savedAddresses, setSavedAddresses] = useState<Address[]>([]);
   const [addressesReady, setAddressesReady] = useState(false);
+  const [shippingSettings, setShippingSettings] = useState<ShippingSettings | null>(
+    null,
+  );
+  const [shippingSettingsReady, setShippingSettingsReady] = useState(false);
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(
     null,
   );
@@ -281,15 +403,34 @@ export default function Checkout() {
       language
     ),
     firstName: byLanguage({ EN: "First Name", KA: "სახელი" }, language),
+    firstNamePlaceholder: byLanguage({ EN: "e.g. Nino", KA: "მაგ. ნინო" }, language),
     lastName: byLanguage({ EN: "Last Name", KA: "გვარი" }, language),
+    lastNamePlaceholder: byLanguage({ EN: "e.g. Beridze", KA: "მაგ. ბერიძე" }, language),
     phoneNumber: byLanguage({ EN: "Phone Number", KA: "ტელეფონის ნომერი" }, language),
+    phonePlaceholder: byLanguage(
+      { EN: "e.g. +995 555 12 34 56", KA: "მაგ. +995 555 12 34 56" },
+      language
+    ),
     country: byLanguage({ EN: "Country", KA: "ქვეყანა" }, language),
+    countryPlaceholder: byLanguage({ EN: "e.g. Georgia", KA: "მაგ. საქართველო" }, language),
     state: byLanguage({ EN: "State", KA: "რეგიონი" }, language),
+    statePlaceholder: byLanguage({ EN: "e.g. Tbilisi", KA: "მაგ. თბილისი" }, language),
     city: byLanguage({ EN: "City", KA: "ქალაქი" }, language),
+    cityPlaceholder: byLanguage({ EN: "e.g. Tbilisi", KA: "მაგ. თბილისი" }, language),
     addressNo1: byLanguage({ EN: "Address No 1", KA: "მისამართი 1" }, language),
+    addressNo1Placeholder: byLanguage(
+      { EN: "e.g. 12 Rustaveli Ave", KA: "მაგ. რუსთაველის გამზირი 12" },
+      language
+    ),
     addressNo2: byLanguage({ EN: "Address No 2", KA: "მისამართი 2" }, language),
+    addressNo2Placeholder: byLanguage(
+      { EN: "e.g. Apt 8, Floor 3", KA: "მაგ. ბინა 8, სართული 3" },
+      language
+    ),
     postalCode: byLanguage({ EN: "Postal Code", KA: "საფოსტო ინდექსი" }, language),
+    postalCodePlaceholder: byLanguage({ EN: "e.g. 0108", KA: "მაგ. 0108" }, language),
     name: byLanguage({ EN: "Name", KA: "სახელი" }, language),
+    namePlaceholder: byLanguage({ EN: "e.g. Home", KA: "მაგ. სახლი" }, language),
     optional: byLanguage({ EN: "optional", KA: "არასავალდებულო" }, language),
     addAddress: byLanguage({ EN: "Add Address", KA: "მისამართის დამატება" }, language),
     addingAddress: byLanguage(
@@ -401,36 +542,158 @@ export default function Checkout() {
   }, [language]);
 
   useEffect(() => {
-    const load = () => {
-      const next = readAddresses();
+    let isActive = true;
+
+    const applyAddresses = (
+      next: Address[],
+      options?: { forceShowForm?: boolean; forceHideForm?: boolean },
+    ) => {
+      if (!isActive) {
+        return;
+      }
+
       setSavedAddresses(next);
       setSelectedAddressId((prev) =>
         prev && next.some((address) => address.id === prev)
           ? prev
           : next[0]?.id ?? null,
       );
+
+      if (options?.forceShowForm) {
+        setShowAddressForm(true);
+        return;
+      }
+
+      if (options?.forceHideForm) {
+        setShowAddressForm(false);
+        return;
+      }
+
       setShowAddressForm((prev) => (next.length === 0 ? true : prev));
     };
-    load();
-    setAddressesReady(true);
+
+    const loadStoredAddresses = (
+      options?: { forceShowForm?: boolean; forceHideForm?: boolean },
+    ) => {
+      const next = readAddresses();
+      applyAddresses(next, options);
+      return next;
+    };
+
+    const restoreStoredAddresses = () => {
+      const storedAddresses = readAddresses();
+      applyAddresses(storedAddresses, {
+        forceShowForm: storedAddresses.length === 0,
+        forceHideForm: storedAddresses.length > 0,
+      });
+    };
+
+    const loadAddresses = async () => {
+      const listUrl = buildApiUrl("/api/auth/addresses/");
+
+      if (!listUrl) {
+        restoreStoredAddresses();
+        if (isActive) {
+          setAddressesReady(true);
+        }
+        return;
+      }
+
+      try {
+        const response = await fetchWithAuthRetry(listUrl, {
+          method: "GET",
+          cache: "no-store",
+        });
+
+        if (!response) {
+          restoreStoredAddresses();
+          return;
+        }
+
+        const payload = await response.json().catch(() => null);
+        if (!response.ok) {
+          restoreStoredAddresses();
+          return;
+        }
+
+        const nextAddresses = normalizeCheckoutAddressesResponse(payload).map(
+          mapCheckoutAddressToSavedAddress,
+        );
+        writeAddresses(nextAddresses);
+        applyAddresses(nextAddresses, {
+          forceShowForm: nextAddresses.length === 0,
+          forceHideForm: nextAddresses.length > 0,
+        });
+      } catch {
+        restoreStoredAddresses();
+      } finally {
+        if (isActive) {
+          setAddressesReady(true);
+        }
+      }
+    };
+
+    void loadAddresses();
+
     const unsubscribe = subscribeToAddresses((nextItems) => {
-      setSavedAddresses(nextItems);
-      setSelectedAddressId((prev) =>
-        prev && nextItems.some((address) => address.id === prev)
-          ? prev
-          : nextItems[0]?.id ?? null,
-      );
-      setShowAddressForm((prev) => (nextItems.length === 0 ? true : prev));
+      applyAddresses(nextItems);
     });
     const handleStorage = (event: StorageEvent) => {
       if (event.key === getAddressesStorageKey()) {
-        load();
+        loadStoredAddresses();
       }
     };
     window.addEventListener("storage", handleStorage);
     return () => {
+      isActive = false;
       unsubscribe();
       window.removeEventListener("storage", handleStorage);
+    };
+  }, []);
+
+  useEffect(() => {
+    let isActive = true;
+
+    const loadShippingSettings = async () => {
+      const settingsUrl = buildApiUrl("/api/shipping/settings/");
+
+      if (!settingsUrl) {
+        if (isActive) {
+          setShippingSettingsReady(true);
+        }
+        return;
+      }
+
+      try {
+        const response = await fetchWithAuthRetry(settingsUrl, {
+          method: "GET",
+          cache: "no-store",
+        });
+
+        if (!response) {
+          return;
+        }
+
+        const payload = await response.json().catch(() => null);
+        if (!response.ok) {
+          return;
+        }
+
+        const nextSettings = normalizeShippingSettingsResponse(payload);
+        if (nextSettings && isActive) {
+          setShippingSettings(nextSettings);
+        }
+      } finally {
+        if (isActive) {
+          setShippingSettingsReady(true);
+        }
+      }
+    };
+
+    void loadShippingSettings();
+
+    return () => {
+      isActive = false;
     };
   }, []);
 
@@ -442,7 +705,19 @@ export default function Checkout() {
       ),
     [items],
   );
-  const deliveryFee = subtotal > 0 ? 5 : 0;
+  const selectedAddress =
+    savedAddresses.find((address) => address.id === selectedAddressId) ?? null;
+  const deliveryFee = useMemo(() => {
+    if (subtotal <= 0 || !selectedAddress) {
+      return 0;
+    }
+
+    if (!shippingSettings) {
+      return LEGACY_DELIVERY_FEE;
+    }
+
+    return getShippingFeeForAddress(selectedAddress, shippingSettings);
+  }, [selectedAddress, shippingSettings, subtotal]);
   const total = subtotal + deliveryFee;
   const checkoutAddressId = useMemo(() => {
     const candidate = selectedAddressId ?? "";
@@ -452,10 +727,7 @@ export default function Checkout() {
     }
     return parsed;
   }, [selectedAddressId]);
-  const selectedAddress =
-    savedAddresses.find((address) => address.id === selectedAddressId) ?? null;
-
-  if (!cartReady || !addressesReady) {
+  if (!cartReady || !addressesReady || !shippingSettingsReady) {
     return <CheckoutPageSkeleton />;
   }
 
@@ -743,6 +1015,7 @@ export default function Checkout() {
                         <input
                           required
                           type="text"
+                          placeholder={text.firstNamePlaceholder}
                           value={form.firstName}
                           onChange={handleInputChange("firstName")}
                           className="mb-[10px] w-full border border-slate-300 bg-transparent px-4 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-600 shadow-[0_2px_0_rgba(0,0,0,0.12)] outline-none"
@@ -755,6 +1028,7 @@ export default function Checkout() {
                         <input
                           required
                           type="text"
+                          placeholder={text.lastNamePlaceholder}
                           value={form.lastName}
                           onChange={handleInputChange("lastName")}
                           className="mb-[10px] w-full border border-slate-300 bg-transparent px-4 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-600 shadow-[0_2px_0_rgba(0,0,0,0.12)] outline-none"
@@ -769,6 +1043,7 @@ export default function Checkout() {
                       <input
                         required
                         type="tel"
+                        placeholder={text.phonePlaceholder}
                         value={form.phone}
                         onChange={handleInputChange("phone")}
                         className="mb-[10px] w-full border border-slate-300 bg-transparent px-4 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-600 shadow-[0_2px_0_rgba(0,0,0,0.12)] outline-none"
@@ -782,6 +1057,7 @@ export default function Checkout() {
                       <input
                         required
                         type="text"
+                        placeholder={text.countryPlaceholder}
                         value={form.country}
                         onChange={handleInputChange("country")}
                         className="mb-[10px] w-full border border-slate-300 bg-transparent px-4 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-600 shadow-[0_2px_0_rgba(0,0,0,0.12)] outline-none"
@@ -795,6 +1071,7 @@ export default function Checkout() {
                       <input
                         required
                         type="text"
+                        placeholder={text.statePlaceholder}
                         value={form.state}
                         onChange={handleInputChange("state")}
                         className="mb-[10px] w-full border border-slate-300 bg-transparent px-4 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-600 shadow-[0_2px_0_rgba(0,0,0,0.12)] outline-none"
@@ -808,6 +1085,7 @@ export default function Checkout() {
                       <input
                         required
                         type="text"
+                        placeholder={text.cityPlaceholder}
                         value={form.city}
                         onChange={handleInputChange("city")}
                         className="mb-[10px] w-full border border-slate-300 bg-transparent px-4 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-600 shadow-[0_2px_0_rgba(0,0,0,0.12)] outline-none"
@@ -821,6 +1099,7 @@ export default function Checkout() {
                       <input
                         required
                         type="text"
+                        placeholder={text.addressNo1Placeholder}
                         value={form.address1}
                         onChange={handleInputChange("address1")}
                         className="mb-[10px] w-full border border-slate-300 bg-transparent px-4 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-600 shadow-[0_2px_0_rgba(0,0,0,0.12)] outline-none"
@@ -834,6 +1113,7 @@ export default function Checkout() {
                       </span>
                       <input
                         type="text"
+                        placeholder={text.addressNo2Placeholder}
                         value={form.address2}
                         onChange={handleInputChange("address2")}
                         className="mb-[10px] w-full border border-slate-300 bg-transparent px-4 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-600 shadow-[0_2px_0_rgba(0,0,0,0.12)] outline-none"
@@ -847,6 +1127,7 @@ export default function Checkout() {
                       <input
                         required
                         type="text"
+                        placeholder={text.postalCodePlaceholder}
                         value={form.postalCode}
                         onChange={handleInputChange("postalCode")}
                         className="mb-[10px] w-full border border-slate-300 bg-transparent px-4 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-600 shadow-[0_2px_0_rgba(0,0,0,0.12)] outline-none"
@@ -859,6 +1140,7 @@ export default function Checkout() {
                       </span>
                       <input
                         type="text"
+                        placeholder={text.namePlaceholder}
                         value={form.name}
                         onChange={handleInputChange("name")}
                         className="mb-[10px] w-full border border-slate-300 bg-transparent px-4 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-600 shadow-[0_2px_0_rgba(0,0,0,0.12)] outline-none"

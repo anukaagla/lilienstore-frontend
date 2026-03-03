@@ -18,8 +18,9 @@ import {
   removeCartItem,
   updateCartItem,
 } from "../lib/cart-api";
-import { fetchAuthSession } from "../lib/auth";
+import { fetchAuthSession, fetchWithAuthRetry } from "../lib/auth";
 import { byLanguage } from "../lib/i18n";
+import { toAbsoluteMediaUrl } from "../lib/media";
 import Footer from "./footer";
 import { useLanguage } from "./language-provider";
 import { ShoppingBagPageSkeleton } from "./page-skeletons";
@@ -27,12 +28,50 @@ import SiteHeader from "./site-header";
 
 const formatPrice = (value: number) => `${value.toFixed(2)} GEL`;
 
+const fetchAccountActiveStatus = async (): Promise<boolean | null> => {
+  const endpoints = ["/api/me/", "/api/auth/me/"];
+
+  for (let index = 0; index < endpoints.length; index += 1) {
+    const endpoint = endpoints[index];
+    const isLastEndpoint = index === endpoints.length - 1;
+    const response = await fetchWithAuthRetry(endpoint, {
+      method: "GET",
+      cache: "no-store",
+    });
+
+    if (!response) {
+      if (isLastEndpoint) {
+        return null;
+      }
+      continue;
+    }
+
+    const payload = await response.json().catch(() => null);
+
+    if (response.ok) {
+      if (!payload || typeof payload !== "object") {
+        return null;
+      }
+
+      const activeStatus = (payload as { active_status?: unknown }).active_status;
+      return typeof activeStatus === "boolean" ? activeStatus : null;
+    }
+
+    if (response.status !== 404 || isLastEndpoint) {
+      return null;
+    }
+  }
+
+  return null;
+};
+
 export default function ShoppingBag() {
   const { language } = useLanguage();
   const router = useRouter();
   const [items, setItems] = useState<CartItem[]>([]);
   const [cartLoading, setCartLoading] = useState(true);
   const [loginRequired, setLoginRequired] = useState(false);
+  const [verificationRequired, setVerificationRequired] = useState(false);
   const [loginOpenRequest, setLoginOpenRequest] = useState(0);
   const [cartReloadKey, setCartReloadKey] = useState(0);
   const text = {
@@ -69,7 +108,18 @@ export default function ShoppingBag() {
       },
       language
     ),
+    verifyEmailRequired: byLanguage(
+      {
+        EN: "Please verify your email first to access your shopping bag.",
+        KA: "კალათაზე წვდომისთვის ჯერ დაადასტურე ელ.ფოსტა.",
+      },
+      language
+    ),
     logIn: byLanguage({ EN: "Log In", KA: "შესვლა" }, language),
+    verifyEmail: byLanguage(
+      { EN: "Verify Email", KA: "ელ.ფოსტის დადასტურება" },
+      language
+    ),
   };
   useEffect(() => {
     let isActive = true;
@@ -87,11 +137,23 @@ export default function ShoppingBag() {
       if (!session?.authenticated) {
         setItems([]);
         setLoginRequired(true);
+        setVerificationRequired(false);
         setCartLoading(false);
         return;
       }
 
       setLoginRequired(false);
+      const activeStatus = await fetchAccountActiveStatus();
+      if (!isActive) return;
+
+      if (activeStatus === false) {
+        setItems([]);
+        setVerificationRequired(true);
+        setCartLoading(false);
+        return;
+      }
+
+      setVerificationRequired(false);
       const localItems = readCart();
       setItems(localItems);
       if (localItems.length > 0) {
@@ -237,6 +299,38 @@ export default function ShoppingBag() {
     );
   }
 
+  if (verificationRequired) {
+    return (
+      <div className="relative flex min-h-screen flex-col overflow-hidden bg-white text-slate-900">
+        <SiteHeader
+          showFullLogo
+          isFixed={false}
+          loginOpenRequest={loginOpenRequest}
+          onLoginSuccess={handleLoginSuccess}
+        />
+
+        <main className="mx-auto flex w-full max-w-6xl flex-1 px-4 pb-24 pt-6 sm:px-6">
+          <div className="w-full">
+            <div className="h-px w-full bg-black/60" />
+            <section className="flex min-h-[50vh] flex-col items-center justify-center gap-6">
+              <p className="max-w-md text-center text-[11px] uppercase tracking-[0.28em] text-slate-500 sm:text-xs">
+                {text.verifyEmailRequired}
+              </p>
+              <Link
+                href="/profile?tab=confirmEmail"
+                className="rounded-full bg-black px-6 py-3 text-[10px] font-semibold uppercase tracking-[0.3em] text-white transition hover:bg-slate-800"
+              >
+                {text.verifyEmail}
+              </Link>
+            </section>
+          </div>
+        </main>
+
+        <Footer />
+      </div>
+    );
+  }
+
   return (
     <div className="relative flex min-h-screen flex-col overflow-hidden bg-white text-slate-900">
       <SiteHeader
@@ -296,12 +390,12 @@ export default function ShoppingBag() {
                     </button>
                     <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-start sm:gap-5">
                       <Image
-                        src={item.image || "/images/dress.png"}
+                        src={toAbsoluteMediaUrl(item.image) || "/images/dress.png"}
                         alt={item.name}
                         width={80}
                         height={96}
-                        unoptimized
-                        className="h-24 w-20 object-cover"
+                        sizes="80px"
+                        className="h-24 w-20 rounded-lg object-contain"
                       />
                       <div className="flex flex-1 flex-col gap-2 text-[11px] uppercase tracking-[0.18em] text-slate-500">
                         <div className="flex items-center justify-between gap-4 text-slate-700">

@@ -7,6 +7,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { readCart, subscribeToCart } from "../lib/cart";
 import { byLanguage, getLocalizedText } from "../lib/i18n";
+import { toAbsoluteMediaUrl } from "../lib/media";
 import type { ApiProductListItem, Category } from "../types/catalog";
 import Footer from "./footer";
 import { useLanguage } from "./language-provider";
@@ -34,13 +35,16 @@ const mapApiProduct = (
   const sortedImages = [...(item.images ?? [])].sort(
     (a, b) => a.sort_order - b.sort_order
   );
+  const imageUrls = sortedImages
+    .map((image) => toAbsoluteMediaUrl(image.image_url ?? image.image))
+    .filter((image) => Boolean(image));
+  const primaryImageRecord = sortedImages.find((image) => image.is_primary);
   const primaryImage =
-    sortedImages.find((image) => image.is_primary)?.image ??
-    sortedImages[0]?.image ??
+    toAbsoluteMediaUrl(primaryImageRecord?.image_url ?? primaryImageRecord?.image) ||
+    imageUrls[0] ||
     "/images/dress.png";
   const secondaryImage =
-    sortedImages.find((image) => image.image !== primaryImage)?.image ??
-    primaryImage;
+    imageUrls.find((image) => image !== primaryImage) ?? primaryImage;
 
   return {
     slug: item.slug,
@@ -72,8 +76,8 @@ export default function Market({
   const text = {
     searchPlaceholder: byLanguage(
       {
-        EN: "What are you searching for?",
-        KA: "რას ეძებ?",
+        EN: "e.g. satin dress",
+        KA: "მაგ. ატლასის კაბა",
       },
       language
     ),
@@ -117,6 +121,10 @@ export default function Market({
 
   const currentSort = normalizeSort(searchParams?.get("sort"));
   const currentQuery = searchParams?.get("q") ?? "";
+  const cardImageSizes =
+    view === "6x2"
+      ? "(min-width: 1024px) 16vw, (min-width: 640px) 28vw, 44vw"
+      : "(min-width: 1024px) 24vw, (min-width: 640px) 28vw, 44vw";
 
   useEffect(() => {
     setSort(currentSort);
@@ -325,23 +333,21 @@ export default function Market({
                     className="group block"
                   >
                     <article>
-                      <div className="relative aspect-[3/4] overflow-hidden bg-slate-100">
+                      <div className="relative aspect-[3/4] overflow-hidden">
                         <Image
                           src={product.primaryImage}
                           alt={product.name}
                           fill
-                          unoptimized
-                          sizes="(min-width: 1024px) 16vw, (min-width: 640px) 28vw, 44vw"
-                          className="object-cover transition-opacity duration-500 group-hover:opacity-0"
+                          sizes={cardImageSizes}
+                          className="object-contain transition-opacity duration-500 group-hover:opacity-0"
                         />
                         <Image
                           src={product.secondaryImage}
                           alt=""
                           fill
-                          unoptimized
-                          sizes="(min-width: 1024px) 16vw, (min-width: 640px) 28vw, 44vw"
+                          sizes={cardImageSizes}
                           aria-hidden="true"
-                          className="object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+                          className="object-contain opacity-0 transition-opacity duration-500 group-hover:opacity-100"
                         />
                       </div>
                       <div className="mt-3 space-y-1 text-[11px] uppercase tracking-[0.18em] text-slate-500">

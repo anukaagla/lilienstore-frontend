@@ -1,4 +1,5 @@
 import type { BlogPost } from "../types/blog";
+import { toAbsoluteMediaUrl } from "./media";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 const BLOG_ENDPOINT = "/api/posts/";
@@ -35,30 +36,18 @@ const getNumber = (value: unknown, fallback: number) => {
   return fallback;
 };
 
-const toAbsoluteUrl = (value: unknown) => {
-  const image = getString(value);
-  if (!image) return "";
-  if (/^https?:\/\//i.test(image)) return image;
-  if (!API_BASE_URL) return image;
-  try {
-    return new URL(image, API_BASE_URL).toString();
-  } catch {
-    return image;
-  }
-};
-
 const readCoverImage = (entry: Record<string, unknown>) => {
-  const explicitUrl = toAbsoluteUrl(entry.cover_image_url);
+  const explicitUrl = toAbsoluteMediaUrl(entry.cover_image_url);
   if (explicitUrl) return explicitUrl;
 
-  const direct = toAbsoluteUrl(entry.cover_image);
+  const direct = toAbsoluteMediaUrl(entry.cover_image);
   if (direct) return direct;
 
   const imageField = entry.image;
-  if (typeof imageField === "string") return toAbsoluteUrl(imageField);
+  if (typeof imageField === "string") return toAbsoluteMediaUrl(imageField);
   if (imageField && typeof imageField === "object") {
     const imageObject = imageField as Record<string, unknown>;
-    const imageUrl = toAbsoluteUrl(imageObject.url ?? imageObject.image);
+    const imageUrl = toAbsoluteMediaUrl(imageObject.url ?? imageObject.image);
     if (imageUrl) return imageUrl;
   }
 

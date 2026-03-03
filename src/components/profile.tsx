@@ -11,6 +11,7 @@ import SiteHeader from "./site-header";
 import { writeAddresses } from "../lib/addresses";
 import { clearLegacyAuthStorage, fetchWithAuthRetry } from "../lib/auth";
 import { byLanguage, getLocalizedText, type Language } from "../lib/i18n";
+import { toAbsoluteMediaUrl } from "../lib/media";
 import { useLanguage } from "./language-provider";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
@@ -521,7 +522,7 @@ const normalizeOrderDetailsResponse = (
         quantity: normalizeDisplayValue(itemRecord.quantity),
         unitPrice: normalizeDisplayValue(itemRecord.unit_price),
         lineTotal: normalizeDisplayValue(itemRecord.line_total),
-        image: image || "/images/marketpic1.png",
+        image: toAbsoluteMediaUrl(image) || "/images/marketpic1.png",
       };
     })
     .filter((item): item is OrderDetailsItem => item !== null);
@@ -654,9 +655,19 @@ export default function Profile() {
     ),
     contactUs: byLanguage({ EN: "Contact Us", KA: "დაგვიკავშირდი" }, language),
     firstName: byLanguage({ EN: "First Name", KA: "სახელი" }, language),
+    firstNamePlaceholder: byLanguage({ EN: "e.g. Nino", KA: "მაგ. ნინო" }, language),
     lastName: byLanguage({ EN: "Last Name", KA: "გვარი" }, language),
+    lastNamePlaceholder: byLanguage({ EN: "e.g. Beridze", KA: "მაგ. ბერიძე" }, language),
     email: byLanguage({ EN: "Email", KA: "ელფოსტა" }, language),
+    emailPlaceholder: byLanguage(
+      { EN: "e.g. nino@example.com", KA: "მაგ. nino@example.com" },
+      language
+    ),
     phone: byLanguage({ EN: "Phone", KA: "ტელეფონი" }, language),
+    phonePlaceholder: byLanguage(
+      { EN: "e.g. +995 555 12 34 56", KA: "მაგ. +995 555 12 34 56" },
+      language
+    ),
     update: byLanguage({ EN: "UPDATE", KA: "განახლება" }, language),
     addNewAddress: byLanguage(
       { EN: "Add New Address", KA: "მისამართის დამატება" },
@@ -672,12 +683,25 @@ export default function Profile() {
     ),
     phoneNumber: byLanguage({ EN: "Phone Number", KA: "ტელეფონის ნომერი" }, language),
     country: byLanguage({ EN: "Country", KA: "ქვეყანა" }, language),
+    countryPlaceholder: byLanguage({ EN: "e.g. Georgia", KA: "მაგ. საქართველო" }, language),
     state: byLanguage({ EN: "State", KA: "რეგიონი" }, language),
+    statePlaceholder: byLanguage({ EN: "e.g. Tbilisi", KA: "მაგ. თბილისი" }, language),
     city: byLanguage({ EN: "City", KA: "ქალაქი" }, language),
+    cityPlaceholder: byLanguage({ EN: "e.g. Tbilisi", KA: "მაგ. თბილისი" }, language),
     addressNo1: byLanguage({ EN: "Address No 1", KA: "მისამართი 1" }, language),
+    addressNo1Placeholder: byLanguage(
+      { EN: "e.g. 12 Rustaveli Ave", KA: "მაგ. რუსთაველის გამზირი 12" },
+      language
+    ),
     addressNo2: byLanguage({ EN: "Address No 2", KA: "მისამართი 2" }, language),
+    addressNo2Placeholder: byLanguage(
+      { EN: "e.g. Apt 8, Floor 3", KA: "მაგ. ბინა 8, სართული 3" },
+      language
+    ),
     postalCode: byLanguage({ EN: "Postal Code", KA: "საფოსტო კოდი" }, language),
+    postalCodePlaceholder: byLanguage({ EN: "e.g. 0108", KA: "მაგ. 0108" }, language),
     name: byLanguage({ EN: "Name", KA: "სახელი" }, language),
+    namePlaceholder: byLanguage({ EN: "e.g. Home", KA: "მაგ. სახლი" }, language),
     optional: byLanguage({ EN: "(optional)", KA: "(არასავალდებულო)" }, language),
     add: byLanguage({ EN: "ADD", KA: "დამატება" }, language),
     closeAddressForm: byLanguage(
@@ -698,7 +722,15 @@ export default function Profile() {
       { EN: "Enter New Password", KA: "შეიყვანე ახალი პაროლი" },
       language
     ),
+    newPasswordPlaceholder: byLanguage(
+      { EN: "Use 8+ characters", KA: "გამოიყენე 8+ სიმბოლო" },
+      language
+    ),
     confirmPassword: byLanguage({ EN: "Confirm Password", KA: "დაადასტურე პაროლი" }, language),
+    confirmPasswordPlaceholder: byLanguage(
+      { EN: "Repeat your new password", KA: "გაიმეორე ახალი პაროლი" },
+      language
+    ),
     showPassword: byLanguage({ EN: "Show password", KA: "პაროლის ჩვენება" }, language),
     hidePassword: byLanguage({ EN: "Hide password", KA: "პაროლის დამალვა" }, language),
     submit: byLanguage({ EN: "Submit", KA: "გაგზავნა" }, language),
@@ -913,6 +945,13 @@ export default function Profile() {
       setActiveItem("account");
     }
   }, [activeItem, showConfirmEmailTab]);
+
+  useEffect(() => {
+    if (!searchParams) return;
+    if (searchParams.get("tab") !== "confirmEmail") return;
+    if (!showConfirmEmailTab) return;
+    setActiveItem("confirmEmail");
+  }, [searchParams, showConfirmEmailTab]);
 
   const applyProfileData = (nextProfile: ProfileMeResponse) => {
     setProfile(nextProfile);
@@ -1958,9 +1997,17 @@ export default function Profile() {
         >
           {showOrderDetails ? (
             <div
-              className="relative mx-auto w-full max-w-[360px] rounded-2xl border border-slate-200 bg-white px-6 py-5 text-[10px] text-slate-600 shadow-sm lg:max-w-[620px] lg:rounded-none lg:border-0 lg:bg-transparent lg:bg-[url('/images/prof-div2.png')] lg:bg-contain lg:bg-center lg:bg-no-repeat lg:px-14 lg:py-6 lg:text-[11px] lg:shadow-none lg:aspect-[833/927]"
+              className="relative mx-auto w-full max-w-[360px] rounded-2xl border border-slate-200 bg-white px-6 py-5 text-[10px] text-slate-600 shadow-sm lg:max-w-[620px] lg:rounded-none lg:border-0 lg:bg-transparent lg:px-14 lg:py-6 lg:text-[11px] lg:shadow-none lg:aspect-[833/927]"
             >
-              <div className="flex flex-col gap-4 text-[9px] uppercase tracking-[0.16em] text-slate-600 sm:flex-row sm:items-start sm:justify-between sm:text-[10px] sm:tracking-[0.2em]">
+              <Image
+                src="/images/prof-div2.png"
+                alt=""
+                fill
+                aria-hidden="true"
+                sizes="(min-width: 1024px) 620px, 0px"
+                className="pointer-events-none hidden object-contain object-center lg:block"
+              />
+              <div className="relative z-10 flex flex-col gap-4 text-[9px] uppercase tracking-[0.16em] text-slate-600 sm:flex-row sm:items-start sm:justify-between sm:text-[10px] sm:tracking-[0.2em]">
                 <button
                   type="button"
                   onClick={() => {
@@ -2020,8 +2067,8 @@ export default function Profile() {
                           alt={item.name}
                           width={64}
                           height={64}
-                          unoptimized
-                          className="h-14 w-14 shrink-0 object-cover sm:h-16 sm:w-16"
+                          sizes="64px"
+                          className="h-14 w-14 shrink-0 rounded-lg object-contain sm:h-16 sm:w-16"
                         />
                         <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                           <div className="space-y-1 text-[10px] text-slate-600 sm:text-[11px]">
@@ -2159,8 +2206,16 @@ export default function Profile() {
               </div>
             </div>
           ) : showAddressDetails ? (
-            <div className="relative w-full max-w-5xl rounded-2xl border border-slate-200 bg-white shadow-sm lg:rounded-none lg:border-0 lg:bg-transparent lg:shadow-none lg:bg-[url('/images/prof-div3.png')] lg:bg-contain lg:bg-center lg:bg-no-repeat lg:aspect-[883/871]">
-              <div className="flex h-full w-full flex-col items-stretch px-5 py-6 sm:px-8 lg:grid lg:grid-cols-[275px_1px_minmax(0,1fr)] lg:items-start lg:px-12 lg:py-6">
+            <div className="relative w-full max-w-5xl rounded-2xl border border-slate-200 bg-white shadow-sm lg:rounded-none lg:border-0 lg:bg-transparent lg:shadow-none lg:aspect-[883/871]">
+              <Image
+                src="/images/prof-div3.png"
+                alt=""
+                fill
+                aria-hidden="true"
+                sizes="(min-width: 1280px) 64rem, (min-width: 1024px) 90vw, 0px"
+                className="pointer-events-none hidden object-contain object-center lg:block"
+              />
+              <div className="relative z-10 flex h-full w-full flex-col items-stretch px-5 py-6 sm:px-8 lg:grid lg:grid-cols-[275px_1px_minmax(0,1fr)] lg:items-start lg:px-12 lg:py-6">
                 <div className="mt-4 flex w-full justify-center lg:mt-10 lg:h-full lg:w-[260px] lg:ml-[15px]">
                   <div className="flex w-full max-w-[240px] flex-col items-center gap-4">
                     <div className="w-full lg:hidden">
@@ -2312,6 +2367,7 @@ export default function Profile() {
                         <input
                           required
                           type="text"
+                          placeholder={text.firstNamePlaceholder}
                           value={addressForm.firstName}
                           onChange={handleAddressChange("firstName")}
                           className="mb-[10px] w-full border border-slate-300 bg-transparent px-4 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-600 shadow-[0_2px_0_rgba(0,0,0,0.12)] outline-none"
@@ -2324,6 +2380,7 @@ export default function Profile() {
                         <input
                           required
                           type="text"
+                          placeholder={text.lastNamePlaceholder}
                           value={addressForm.lastName}
                           onChange={handleAddressChange("lastName")}
                           className="mb-[10px] w-full border border-slate-300 bg-transparent px-4 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-600 shadow-[0_2px_0_rgba(0,0,0,0.12)] outline-none"
@@ -2338,6 +2395,7 @@ export default function Profile() {
                     <input
                       required
                       type="tel"
+                      placeholder={text.phonePlaceholder}
                       value={addressForm.phone}
                       onChange={handleAddressChange("phone")}
                       className="mb-[10px] w-full border border-slate-300 bg-transparent px-4 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-600 shadow-[0_2px_0_rgba(0,0,0,0.12)] outline-none"
@@ -2348,6 +2406,7 @@ export default function Profile() {
                       <span>{text.country}</span>
                   <input
                     type="text"
+                    placeholder={text.countryPlaceholder}
                     value={addressForm.country}
                     onChange={handleAddressChange("country")}
                     className="mb-[10px] w-full border border-slate-300 bg-transparent px-4 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-600 shadow-[0_2px_0_rgba(0,0,0,0.12)] outline-none"
@@ -2361,6 +2420,7 @@ export default function Profile() {
                   <input
                     required
                     type="text"
+                    placeholder={text.statePlaceholder}
                     value={addressForm.state}
                     onChange={handleAddressChange("state")}
                     className="mb-[10px] w-full border border-slate-300 bg-transparent px-4 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-600 shadow-[0_2px_0_rgba(0,0,0,0.12)] outline-none "
@@ -2374,6 +2434,7 @@ export default function Profile() {
                   <input
                     required
                     type="text"
+                    placeholder={text.cityPlaceholder}
                     value={addressForm.city}
                     onChange={handleAddressChange("city")}
                     className="mb-[10px] w-full border border-slate-300 bg-transparent px-4 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-600 shadow-[0_2px_0_rgba(0,0,0,0.12)] outline-none"
@@ -2387,6 +2448,7 @@ export default function Profile() {
                   <input
                     required
                     type="text"
+                    placeholder={text.addressNo1Placeholder}
                     value={addressForm.address1}
                     onChange={handleAddressChange("address1")}
                     className="mb-[10px] w-full border border-slate-300 bg-transparent px-4 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-600 shadow-[0_2px_0_rgba(0,0,0,0.12)] outline-none"
@@ -2400,6 +2462,7 @@ export default function Profile() {
                       </span>
                   <input
                     type="text"
+                    placeholder={text.addressNo2Placeholder}
                     value={addressForm.address2}
                     onChange={handleAddressChange("address2")}
                     className="mb-[10px] w-full border border-slate-300 bg-transparent px-4 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-600 shadow-[0_2px_0_rgba(0,0,0,0.12)] outline-none"
@@ -2413,6 +2476,7 @@ export default function Profile() {
                   <input
                     required
                     type="text"
+                    placeholder={text.postalCodePlaceholder}
                     value={addressForm.postalCode}
                     onChange={handleAddressChange("postalCode")}
                     className="mb-[10px] w-full border border-slate-300 bg-transparent px-4 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-600 shadow-[0_2px_0_rgba(0,0,0,0.12)] outline-none"
@@ -2425,6 +2489,7 @@ export default function Profile() {
                       </span>
                   <input
                     type="text"
+                    placeholder={text.namePlaceholder}
                     value={addressForm.name}
                     onChange={handleAddressChange("name")}
                     className="mb-[10px] w-full border border-slate-300 bg-transparent px-4 py-1.5 text-xs uppercase tracking-[0.18em] text-slate-600 shadow-[0_2px_0_rgba(0,0,0,0.12)] outline-none"
@@ -2477,9 +2542,17 @@ export default function Profile() {
             </div>
           ) : (
             <div
-              className="relative w-full max-w-5xl rounded-2xl border border-slate-200 bg-white shadow-sm lg:rounded-none lg:border-0 lg:bg-transparent lg:shadow-none lg:bg-[url('/images/prof-div.png')] lg:bg-contain lg:bg-center lg:bg-no-repeat lg:aspect-[883/483]"
+              className="relative w-full max-w-5xl rounded-2xl border border-slate-200 bg-white shadow-sm lg:rounded-none lg:border-0 lg:bg-transparent lg:shadow-none lg:aspect-[883/483]"
             >
-              <div className="flex h-full w-full flex-col items-stretch px-5 py-8 sm:px-8 lg:grid lg:grid-cols-[275px_1px_minmax(0,1fr)] lg:items-start lg:px-12 lg:py-10">
+              <Image
+                src="/images/prof-div.png"
+                alt=""
+                fill
+                aria-hidden="true"
+                sizes="(min-width: 1280px) 64rem, (min-width: 1024px) 90vw, 0px"
+                className="pointer-events-none hidden object-contain object-center lg:block"
+              />
+              <div className="relative z-10 flex h-full w-full flex-col items-stretch px-5 py-8 sm:px-8 lg:grid lg:grid-cols-[275px_1px_minmax(0,1fr)] lg:items-start lg:px-12 lg:py-10">
                 <div className="mt-4 flex w-full justify-center lg:mt-10 lg:h-full lg:w-[260px] lg:ml-[15px]">
                   <div className="flex w-full max-w-[240px] flex-col items-center gap-4">
                     <div className="w-full lg:hidden">
@@ -2603,6 +2676,7 @@ export default function Profile() {
                           <span>{text.firstName}</span>
                           <input
                             type="text"
+                            placeholder={text.firstNamePlaceholder}
                             value={accountForm.first_name}
                             onChange={handleAccountFormChange("first_name")}
                             readOnly={!accountEditable || accountBusy}
@@ -2617,6 +2691,7 @@ export default function Profile() {
                           <span>{text.lastName}</span>
                           <input
                             type="text"
+                            placeholder={text.lastNamePlaceholder}
                             value={accountForm.last_name}
                             onChange={handleAccountFormChange("last_name")}
                             readOnly={!accountEditable || accountBusy}
@@ -2633,6 +2708,7 @@ export default function Profile() {
                         <span>{text.email}</span>
                         <input
                           type="email"
+                          placeholder={text.emailPlaceholder}
                           value={accountForm.email}
                           onChange={handleAccountFormChange("email")}
                           readOnly={!accountEditable || accountBusy}
@@ -2648,6 +2724,7 @@ export default function Profile() {
                         <span>{text.phone}</span>
                         <input
                           type="tel"
+                          placeholder={text.phonePlaceholder}
                           value={accountForm.phone_number}
                           onChange={handleAccountFormChange("phone_number")}
                           readOnly={!accountEditable || accountBusy}
@@ -2933,6 +3010,7 @@ export default function Profile() {
                           <input
                             type={showNewPassword ? "text" : "password"}
                             autoComplete="new-password"
+                            placeholder={text.newPasswordPlaceholder}
                             value={newPassword}
                             onChange={(event) => setNewPassword(event.target.value)}
                             className="w-full bg-transparent text-[10px] normal-case tracking-[0.28em] text-slate-700 outline-none placeholder:text-[#6B6B6B]"
@@ -2969,6 +3047,7 @@ export default function Profile() {
                           <input
                             type={showConfirmPassword ? "text" : "password"}
                             autoComplete="new-password"
+                            placeholder={text.confirmPasswordPlaceholder}
                             value={confirmNewPassword}
                             onChange={(event) => setConfirmNewPassword(event.target.value)}
                             className="w-full bg-transparent text-[10px] normal-case tracking-[0.28em] text-slate-700 outline-none placeholder:text-[#6B6B6B]"

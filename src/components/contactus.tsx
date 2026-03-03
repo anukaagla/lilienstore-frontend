@@ -79,9 +79,21 @@ export default function ContactUs() {
       language
     ),
     yourName: byLanguage({ EN: "Your name", KA: "თქვენი სახელი" }, language),
+    namePlaceholder: byLanguage({ EN: "e.g. Nino", KA: "მაგ. ნინო" }, language),
     yourMail: byLanguage({ EN: "Your mail", KA: "თქვენი ელ.ფოსტა" }, language),
+    emailPlaceholder: byLanguage(
+      { EN: "e.g. nino@example.com", KA: "მაგ. nino@example.com" },
+      language
+    ),
     howCanHelp: byLanguage(
       { EN: "How can we help?", KA: "როგორ შეგვიძლია დაგეხმაროთ?" },
+      language
+    ),
+    messagePlaceholder: byLanguage(
+      {
+        EN: "e.g. I need help with order #1024",
+        KA: "მაგ. დახმარება მჭირდება შეკვეთაზე #1024",
+      },
       language
     ),
     hours: byLanguage({ EN: "Working hours", KA: "სამუშაო საათები" }, language),
@@ -343,7 +355,7 @@ export default function ContactUs() {
                 <input
                   type="text"
                   required
-                  placeholder={text.yourName.toUpperCase()}
+                  placeholder={text.namePlaceholder}
                   value={name}
                   onChange={(event) => setName(event.target.value)}
                   className="mt-3 w-full border-b border-[#A79974] bg-transparent pb-1 text-sm text-slate-700 placeholder:text-[11px] placeholder:uppercase placeholder:tracking-[0.28em] placeholder:text-slate-400 focus:border-[#A79974] focus:outline-none"
@@ -354,7 +366,7 @@ export default function ContactUs() {
                 <input
                   type="email"
                   required
-                  placeholder={text.yourMail.toUpperCase()}
+                  placeholder={text.emailPlaceholder}
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   className="mt-3 w-full border-b border-[#A79974] bg-transparent pb-1 text-sm text-slate-700 placeholder:text-[11px] placeholder:uppercase placeholder:tracking-[0.28em] placeholder:text-slate-400 focus:border-[#A79974] focus:outline-none"
@@ -365,7 +377,7 @@ export default function ContactUs() {
                 <textarea
                   required
                   rows={1}
-                  placeholder={text.howCanHelp.toUpperCase()}
+                  placeholder={text.messagePlaceholder}
                   value={message}
                   onChange={(event) => setMessage(event.target.value)}
                   className="mt-3 w-full resize-none border-b border-[#A79974] bg-transparent pb-1 text-sm text-slate-700 placeholder:text-[11px] placeholder:uppercase placeholder:tracking-[0.28em] placeholder:text-slate-400 focus:border-[#A79974] focus:outline-none"

@@ -1,9 +1,11 @@
 import type { CartItem } from "./cart";
 import { fetchWithAuthRetry } from "./auth";
-import { writeCart } from "./cart";
+import { readCart, writeCart } from "./cart";
 import { LANGUAGE_STORAGE_KEY, getLocalizedText, normalizeLanguage } from "./i18n";
+import { toAbsoluteMediaUrl } from "./media";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
+const BODYLESS_RESPONSE_STATUSES = new Set([204, 205, 304]);
 
 const isPositiveInteger = (value: number) =>
   Number.isInteger(value) && Number.isFinite(value) && value > 0;
@@ -44,7 +46,7 @@ type ApiCart = {
 };
 
 export type CartSnapshot = {
-  cart: ApiCart;
+  cart: ApiCart | null;
   items: CartItem[];
 };
 
@@ -66,12 +68,38 @@ const mapCartItems = (cart: ApiCart): CartItem[] =>
       item.variant?.color?.trim() || item.variant?.hex_color?.trim() || undefined,
     colorHex: item.variant?.hex_color?.trim() || undefined,
     quantity: item.quantity,
-    image: item.product.primary_image || "/images/dress.png",
+    image: toAbsoluteMediaUrl(item.product.primary_image) || "/images/dress.png",
   }));
+
+const resolveCartSnapshot = async (
+  response: Response,
+  bodylessItems?: CartItem[],
+): Promise<CartSnapshot | null> => {
+  if (!response.ok) {
+    return null;
+  }
+
+  if (BODYLESS_RESPONSE_STATUSES.has(response.status)) {
+    if (!bodylessItems) {
+      return null;
+    }
+    writeCart(bodylessItems);
+    return {
+      cart: null,
+      items: bodylessItems,
+    };
+  }
+
+  const data = (await response.json()) as ApiCart;
+  const items = mapCartItems(data);
+  writeCart(items);
+  return { cart: data, items };
+};
 
 const requestCart = async (
   path: string,
   init?: RequestInit,
+  bodylessItems?: CartItem[],
 ): Promise<CartSnapshot | null> => {
   if (!API_BASE_URL) return null;
 
@@ -88,14 +116,10 @@ const requestCart = async (
       cache: "no-store",
     });
 
-    if (!response || !response.ok) {
+    if (!response) {
       return null;
     }
-
-    const data = (await response.json()) as ApiCart;
-    const items = mapCartItems(data);
-    writeCart(items);
-    return { cart: data, items };
+    return resolveCartSnapshot(response, bodylessItems);
   } catch {
     return null;
   }
@@ -138,9 +162,15 @@ export const removeCartItem = (itemId: number) => {
     return Promise.resolve(null);
   }
 
-  return requestCart(`/api/cart/items/${itemId}/`, {
-    method: "DELETE",
-  });
+  const nextItems = readCart().filter((item) => item.id !== String(itemId));
+
+  return requestCart(
+    `/api/cart/items/${itemId}/`,
+    {
+      method: "DELETE",
+    },
+    nextItems,
+  );
 };
 
 export const clearCart = () =>

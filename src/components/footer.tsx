@@ -222,7 +222,7 @@ export default function Footer({ variant = "dark" }: FooterProps) {
                     alt={`${brandName} logo`}
                     width={144}
                     height={36}
-                    unoptimized
+                    sizes="144px"
                     className="h-9 w-auto object-contain"
                   />
                   <span className="font-display text-sm font-bold uppercase tracking-[0.3em] text-[#A79974]">

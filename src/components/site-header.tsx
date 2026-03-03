@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import { createPortal } from "react-dom";
 import { clearLegacyAuthStorage, fetchAuthSession } from "../lib/auth";
 import { byLanguage, getLocalizedText } from "../lib/i18n";
@@ -145,6 +146,8 @@ export default function SiteHeader({
 }: SiteHeaderProps) {
   const { language, toggleLanguage } = useLanguage();
   const { brand, isLoading: brandLoading } = useBrandState();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const brandName = getLocalizedText(brand?.brand_name, language, "Lilienstore");
   const brandLogoSrc = brand?.logo_url?.trim() || brand?.logo?.trim() || "/images/full.png";
   const [menuOpen, setMenuOpen] = useState(false);
@@ -174,7 +177,15 @@ export default function SiteHeader({
     closeLogin: byLanguage({ EN: "Close login", KA: "შესვლის დახურვა" }, language),
     welcomeBack: byLanguage({ EN: "Welcome back", KA: "კეთილი დაბრუნება" }, language),
     email: byLanguage({ EN: "Email", KA: "ელ.ფოსტა" }, language),
+    emailPlaceholder: byLanguage(
+      { EN: "e.g. nino@example.com", KA: "მაგ. nino@example.com" },
+      language
+    ),
     password: byLanguage({ EN: "Password", KA: "პაროლი" }, language),
+    passwordPlaceholder: byLanguage(
+      { EN: "Enter your password", KA: "შეიყვანე შენი პაროლი" },
+      language
+    ),
     forgotPassword: byLanguage(
       { EN: "Forgot your password?", KA: "დაგავიწყდა პაროლი?" },
       language
@@ -207,6 +218,19 @@ export default function SiteHeader({
   const activeCategory =
     resolvedCategories.find((item) => item.slug === activeCategorySlug) ??
     resolvedCategories[0];
+
+  const getCategoryHref = (slug: string) => {
+    const params =
+      pathname === "/market"
+        ? new URLSearchParams(searchParams?.toString())
+        : new URLSearchParams();
+
+    params.set("category", slug);
+    params.delete("search");
+
+    const query = params.toString();
+    return query ? `/market?${query}` : "/market";
+  };
 
   useEffect(() => {
     if (!shouldFetchCategories || !API_BASE_URL) {
@@ -373,7 +397,7 @@ export default function SiteHeader({
                   alt={`${brandName} full logo`}
                   width={240}
                   height={96}
-                  unoptimized
+                  sizes="240px"
                   className="h-12 w-auto sm:h-14 md:h-16"
                 />
               </Link>
@@ -533,7 +557,9 @@ export default function SiteHeader({
               activeCategory?.children?.map((child) => (
                 <Link
                   key={child.slug}
-                  href={`/market?category=${child.slug}`}
+                  href={getCategoryHref(child.slug)}
+                  scroll={pathname !== "/market"}
+                  onClick={() => setMenuOpen(false)}
                   className="block transition hover:text-slate-900"
                 >
                   {getLocalizedText(child.name, language, child.slug)}
@@ -574,7 +600,7 @@ export default function SiteHeader({
             alt={`${brandName} logo`}
             width={160}
             height={64}
-            unoptimized
+            sizes="160px"
             className="h-8 w-auto"
           />
           {loggedIn ? (
@@ -654,7 +680,7 @@ export default function SiteHeader({
                     alt={`${brandName} logo`}
                     width={320}
                     height={128}
-                    unoptimized
+                    sizes="320px"
                     className="h-20 w-auto"
                   />
                   <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
@@ -667,6 +693,7 @@ export default function SiteHeader({
                       <input
                         type="email"
                         required
+                        placeholder={text.emailPlaceholder}
                         value={email}
                         onChange={(event) => setEmail(event.target.value)}
                         className="mt-2 w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-black/40"
@@ -677,6 +704,7 @@ export default function SiteHeader({
                       <input
                         type="password"
                         required
+                        placeholder={text.passwordPlaceholder}
                         value={password}
                         onChange={(event) => setPassword(event.target.value)}
                         className="mt-2 w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-black/40"

@@ -6,6 +6,7 @@ import { useEffect, useSyncExternalStore } from "react";
 
 import { writeCart } from "../lib/cart";
 import { byLanguage } from "../lib/i18n";
+import { toAbsoluteMediaUrl } from "../lib/media";
 import {
   parseOrderConfirmation,
   readOrderConfirmationValue,
@@ -273,12 +274,12 @@ export default function PaymentSuccess() {
                       className="flex flex-col gap-4 border-b border-black/10 pb-4 last:border-b-0 last:pb-0 sm:flex-row sm:items-start"
                     >
                       <Image
-                        src={item.image || "/images/dress.png"}
+                        src={toAbsoluteMediaUrl(item.image) || "/images/dress.png"}
                         alt={item.name}
                         width={96}
                         height={96}
-                        unoptimized
-                        className="h-24 w-full rounded-[1.2rem] bg-[#f7f4ee] object-cover sm:h-24 sm:w-24"
+                        sizes="96px"
+                        className="h-24 w-full rounded-[1.2rem] object-contain sm:h-24 sm:w-24"
                       />
 
                       <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
