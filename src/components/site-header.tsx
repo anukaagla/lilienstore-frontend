@@ -156,8 +156,12 @@ export default function SiteHeader({
   const [loggedIn, setLoggedIn] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [authView, setAuthView] = useState<"signIn" | "forgotPassword">("signIn");
   const [loginError, setLoginError] = useState<string | null>(null);
   const [loginSubmitting, setLoginSubmitting] = useState(false);
+  const [passwordResetRequestSubmitting, setPasswordResetRequestSubmitting] = useState(false);
+  const [passwordResetRequestError, setPasswordResetRequestError] = useState<string | null>(null);
+  const [passwordResetRequestSuccess, setPasswordResetRequestSuccess] = useState<string | null>(null);
   const [fetchedCategories, setFetchedCategories] = useState<Category[]>([]);
   const [portalReady, setPortalReady] = useState(false);
   const languageSwitchLabel = language === "EN" ? "GE" : "ENG";
@@ -190,6 +194,25 @@ export default function SiteHeader({
       { EN: "Forgot your password?", KA: "დაგავიწყდა პაროლი?" },
       language
     ),
+    resetPassword: byLanguage(
+      { EN: "Reset your password", KA: "პაროლის აღდგენა" },
+      language
+    ),
+    sendResetLink: byLanguage(
+      { EN: "Send password reset link", KA: "პაროლის აღდგენის ბმულის გაგზავნა" },
+      language
+    ),
+    sendingResetLink: byLanguage(
+      { EN: "Sending...", KA: "იგზავნება..." },
+      language
+    ),
+    passwordResetEmailSent: byLanguage(
+      {
+        EN: "Email was sent successfully.",
+        KA: "ელ.ფოსტა წარმატებით გაიგზავნა.",
+      },
+      language
+    ),
     signingIn: byLanguage({ EN: "Signing in...", KA: "მიმდინარეობს შესვლა..." }, language),
     signIn: byLanguage({ EN: "Sign In", KA: "შესვლა" }, language),
     noAccount: byLanguage(
@@ -207,6 +230,20 @@ export default function SiteHeader({
     ),
     loginFailedRetry: byLanguage(
       { EN: "Login failed. Please try again.", KA: "შესვლა ვერ შესრულდა. სცადე თავიდან." },
+      language
+    ),
+    passwordResetRequestFailed: byLanguage(
+      {
+        EN: "Failed to send password reset email.",
+        KA: "პაროლის აღდგენის ელ.ფოსტის გაგზავნა ვერ მოხერხდა.",
+      },
+      language
+    ),
+    passwordResetRequestFailedRetry: byLanguage(
+      {
+        EN: "Failed to send password reset email. Please try again.",
+        KA: "პაროლის აღდგენის ელ.ფოსტის გაგზავნა ვერ მოხერხდა. სცადე თავიდან.",
+      },
       language
     ),
   };
@@ -304,15 +341,38 @@ export default function SiteHeader({
       return;
     }
     setMenuOpen(false);
+    setAuthView("signIn");
+    setLoginError(null);
+    setPasswordResetRequestError(null);
+    setPasswordResetRequestSuccess(null);
     setLoginOpen(true);
   }, [loginOpenRequest]);
 
+  const forgotPasswordViewOpen = authView === "forgotPassword";
   const signInDisabled = !email.trim() || !password.trim();
   const canSubmit = !signInDisabled && !loginSubmitting;
+  const passwordResetDisabled = !email.trim() || passwordResetRequestSubmitting;
 
   const headerPositionClass = isFixed
     ? "fixed inset-x-0 top-6"
     : "relative w-full mt-6";
+
+  const closeLoginModal = () => {
+    setLoginOpen(false);
+    setAuthView("signIn");
+    setPassword("");
+    setLoginError(null);
+    setPasswordResetRequestError(null);
+    setPasswordResetRequestSuccess(null);
+  };
+
+  const openForgotPasswordView = () => {
+    setAuthView("forgotPassword");
+    setPassword("");
+    setLoginError(null);
+    setPasswordResetRequestError(null);
+    setPasswordResetRequestSuccess(null);
+  };
 
   const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -343,7 +403,7 @@ export default function SiteHeader({
         return;
       }
       setLoggedIn(true);
-      setLoginOpen(false);
+      closeLoginModal();
       setEmail("");
       setPassword("");
       onLoginSuccess?.();
@@ -351,6 +411,46 @@ export default function SiteHeader({
       setLoginError(text.loginFailedRetry);
     } finally {
       setLoginSubmitting(false);
+    }
+  };
+
+  const handlePasswordResetRequest = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (passwordResetDisabled) {
+      return;
+    }
+    const form = event.currentTarget;
+    if (!form.checkValidity()) {
+      form.reportValidity();
+      return;
+    }
+
+    const normalizedEmail = email.trim();
+    setPasswordResetRequestError(null);
+    setPasswordResetRequestSuccess(null);
+
+    try {
+      setPasswordResetRequestSubmitting(true);
+      const response = await fetch("/api/auth/password/reset/request/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: normalizedEmail }),
+        cache: "no-store",
+      });
+
+      const payload = await response.json().catch(() => null);
+      if (response.status !== 200) {
+        setPasswordResetRequestError(
+          getApiMessage(payload, text.passwordResetRequestFailed)
+        );
+        return;
+      }
+
+      setPasswordResetRequestSuccess(text.passwordResetEmailSent);
+    } catch {
+      setPasswordResetRequestError(text.passwordResetRequestFailedRetry);
+    } finally {
+      setPasswordResetRequestSubmitting(false);
     }
   };
 
@@ -466,6 +566,10 @@ export default function SiteHeader({
                 type="button"
                 className="flex items-center gap-2 transition hover:text-slate-900"
                 onClick={() => {
+                  setAuthView("signIn");
+                  setLoginError(null);
+                  setPasswordResetRequestError(null);
+                  setPasswordResetRequestSuccess(null);
                   setLoginOpen(true);
                 }}
                 aria-label={text.logIn}
@@ -629,6 +733,10 @@ export default function SiteHeader({
               aria-label={text.logIn}
               onClick={() => {
                 setMenuOpen(false);
+                setAuthView("signIn");
+                setLoginError(null);
+                setPasswordResetRequestError(null);
+                setPasswordResetRequestSuccess(null);
                 setLoginOpen(true);
               }}
               className="transition hover:text-slate-700"
@@ -662,14 +770,14 @@ export default function SiteHeader({
               <button
                 type="button"
                 aria-label={text.closeLogin}
-                onClick={() => setLoginOpen(false)}
+                onClick={closeLoginModal}
                 className="absolute inset-0 bg-black/20 backdrop-blur-sm"
               />
               <div className="relative w-full max-w-sm rounded-3xl border border-black/10 bg-white/95 p-6 text-slate-900 shadow-2xl backdrop-blur">
                 <button
                   type="button"
                   aria-label={text.closeLogin}
-                  onClick={() => setLoginOpen(false)}
+                  onClick={closeLoginModal}
                   className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-black/10 text-slate-600 transition hover:text-slate-900"
                 >
                   X
@@ -684,10 +792,11 @@ export default function SiteHeader({
                     className="h-20 w-auto"
                   />
                   <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
-                    {text.welcomeBack}
+                    {forgotPasswordViewOpen ? text.resetPassword : text.welcomeBack}
                   </p>
                 </div>
-                <form className="mt-6 space-y-4" onSubmit={handleLogin}>
+                {forgotPasswordViewOpen ? (
+                  <form className="mt-6 space-y-4" onSubmit={handlePasswordResetRequest}>
                     <label className="block text-[11px] uppercase tracking-[0.25em] text-slate-500">
                       {text.email}
                       <input
@@ -699,44 +808,81 @@ export default function SiteHeader({
                         className="mt-2 w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-black/40"
                       />
                     </label>
-                    <label className="block text-[11px] uppercase tracking-[0.25em] text-slate-500">
-                      {text.password}
-                      <input
-                        type="password"
-                        required
-                        placeholder={text.passwordPlaceholder}
-                        value={password}
-                        onChange={(event) => setPassword(event.target.value)}
-                        className="mt-2 w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-black/40"
-                      />
-                    </label>
-                    <button
-                      type="button"
-                      className="text-left text-[10px] uppercase tracking-[0.28em] text-slate-500 transition hover:text-slate-700"
-                    >
-                      {text.forgotPassword}
-                    </button>
                     <button
                       type="submit"
-                      disabled={!canSubmit}
+                      disabled={passwordResetDisabled}
                       className="w-full rounded-2xl bg-black px-4 py-3 text-xs uppercase tracking-[0.3em] text-white transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      {loginSubmitting ? text.signingIn : text.signIn}
+                      {passwordResetRequestSubmitting
+                        ? text.sendingResetLink
+                        : text.sendResetLink}
                     </button>
-                    {loginError ? (
+                    {passwordResetRequestError ? (
                       <div className="text-[11px] uppercase tracking-[0.22em] text-red-500">
-                        {loginError}
+                        {passwordResetRequestError}
+                      </div>
+                    ) : null}
+                    {passwordResetRequestSuccess ? (
+                      <div className="text-[11px] uppercase tracking-[0.22em] text-emerald-600">
+                        {passwordResetRequestSuccess}
                       </div>
                     ) : null}
                   </form>
-                  <div className="mt-4 text-center text-[11px] uppercase tracking-[0.22em] text-slate-500">
-                    {text.noAccount}{" "}
-                    <Link href="/register" className="text-slate-900 underline">
-                      {text.register}
-                    </Link>
-                  </div>
-                </div>
-              </div>,
+                ) : (
+                  <>
+                    <form className="mt-6 space-y-4" onSubmit={handleLogin}>
+                      <label className="block text-[11px] uppercase tracking-[0.25em] text-slate-500">
+                        {text.email}
+                        <input
+                          type="email"
+                          required
+                          placeholder={text.emailPlaceholder}
+                          value={email}
+                          onChange={(event) => setEmail(event.target.value)}
+                          className="mt-2 w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-black/40"
+                        />
+                      </label>
+                      <label className="block text-[11px] uppercase tracking-[0.25em] text-slate-500">
+                        {text.password}
+                        <input
+                          type="password"
+                          required
+                          placeholder={text.passwordPlaceholder}
+                          value={password}
+                          onChange={(event) => setPassword(event.target.value)}
+                          className="mt-2 w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-black/40"
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        onClick={openForgotPasswordView}
+                        className="text-left text-[10px] uppercase tracking-[0.28em] text-slate-500 transition hover:text-slate-700"
+                      >
+                        {text.forgotPassword}
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={!canSubmit}
+                        className="w-full rounded-2xl bg-black px-4 py-3 text-xs uppercase tracking-[0.3em] text-white transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {loginSubmitting ? text.signingIn : text.signIn}
+                      </button>
+                      {loginError ? (
+                        <div className="text-[11px] uppercase tracking-[0.22em] text-red-500">
+                          {loginError}
+                        </div>
+                      ) : null}
+                    </form>
+                    <div className="mt-4 text-center text-[11px] uppercase tracking-[0.22em] text-slate-500">
+                      {text.noAccount}{" "}
+                      <Link href="/register" className="text-slate-900 underline">
+                        {text.register}
+                      </Link>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>,
             document.body
           )
         : null}

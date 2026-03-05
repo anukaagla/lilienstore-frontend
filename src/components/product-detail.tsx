@@ -71,9 +71,12 @@ export default function ProductDetail({ product }: ProductDetailProps) {
   );
   const [addedNotice, setAddedNotice] = useState(false);
   const [availabilityOpen, setAvailabilityOpen] = useState(false);
+  const [availabilityColor, setAvailabilityColor] = useState(
+    () => colorOptions[0]?.hexColor ?? ""
+  );
   const [availabilitySize, setAvailabilitySize] = useState<string | null>(null);
   const [availabilityResults, setAvailabilityResults] = useState<
-    Array<{ size: string; inStock: boolean }>
+    Array<{ color: string; size: string; inStock: boolean }>
   >([]);
   const hasVariantData = variants.length > 0;
   const resolvedSelectedColor = colorOptions.some(
@@ -81,6 +84,14 @@ export default function ProductDetail({ product }: ProductDetailProps) {
   )
     ? selectedColor
     : colorOptions[0]?.hexColor ?? "";
+  const resolvedAvailabilityColor = colorOptions.some(
+    (option) => option.hexColor === availabilityColor
+  )
+    ? availabilityColor
+    : colorOptions[0]?.hexColor ?? "";
+  const resolvedAvailabilityColorName =
+    colorOptions.find((option) => option.hexColor === resolvedAvailabilityColor)
+      ?.name ?? resolvedAvailabilityColor;
   const filteredVariants = useMemo(() => {
     if (!hasVariantData) {
       return [];
@@ -94,6 +105,19 @@ export default function ProductDetail({ product }: ProductDetailProps) {
         resolvedSelectedColor.toLowerCase()
     );
   }, [colorOptions.length, hasVariantData, resolvedSelectedColor, variants]);
+  const availabilityVariants = useMemo(() => {
+    if (!hasVariantData) {
+      return [];
+    }
+    if (!colorOptions.length || !resolvedAvailabilityColor) {
+      return variants;
+    }
+    return variants.filter(
+      (variant) =>
+        normalizeHexColor(variant.hexColor).toLowerCase() ===
+        resolvedAvailabilityColor.toLowerCase()
+    );
+  }, [colorOptions.length, hasVariantData, resolvedAvailabilityColor, variants]);
   const sizeOrder = useMemo(() => {
     if (!hasVariantData) {
       return defaultSizeOrder;
@@ -118,9 +142,9 @@ export default function ProductDetail({ product }: ProductDetailProps) {
     });
     return stock;
   }, [filteredVariants]);
-  const inStoreStockBySize = useMemo(() => {
+  const availabilityInStoreStockBySize = useMemo(() => {
     const stock = new Map<string, number>();
-    filteredVariants.forEach((variant) => {
+    availabilityVariants.forEach((variant) => {
       const size = variant.size.trim();
       if (!size) {
         return;
@@ -128,7 +152,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
       stock.set(size, (stock.get(size) ?? 0) + Math.max(0, variant.stockQty));
     });
     return stock;
-  }, [filteredVariants]);
+  }, [availabilityVariants]);
   const sizeOptions = useMemo(() => {
     if (!hasVariantData) {
       return sizeOrder.map((size) => ({
@@ -145,8 +169,15 @@ export default function ProductDetail({ product }: ProductDetailProps) {
     if (!hasVariantData) {
       return sizeOrder;
     }
-    return sizeOrder.filter((size) => (inStoreStockBySize.get(size) ?? 0) > 0);
-  }, [hasVariantData, inStoreStockBySize, sizeOrder]);
+    const variantSizes = new Set<string>();
+    availabilityVariants.forEach((variant) => {
+      const size = variant.size.trim();
+      if (size) {
+        variantSizes.add(size);
+      }
+    });
+    return sizeOrder.filter((size) => variantSizes.has(size));
+  }, [availabilityVariants, hasVariantData, sizeOrder]);
   const resolvedSelectedSize = sizeOptions.some(
     (option) => option.size === selectedSize && option.available
   )
@@ -225,9 +256,13 @@ export default function ProductDetail({ product }: ProductDetailProps) {
     closeSidebar: byLanguage({ EN: "Close sidebar", KA: "გვერდითი პანელის დახურვა" }, language),
     chooseSizes: byLanguage(
       {
-        EN: "Choose one or more sizes to check their availability in stores",
-        KA: "აირჩიე ერთი ან რამდენიმე ზომა და შეამოწმე ხელმისაწვდომობა მაღაზიებში",
+        EN: "Choose a color and size to check availability in stores",
+        KA: "აირჩიე ფერი და ზომა, შემდეგ შეამოწმე ხელმისაწვდომობა მაღაზიებში",
       },
+      language
+    ),
+    whatColor: byLanguage(
+      { EN: "Which color are you looking for?", KA: "რომელ ფერს ეძებ?" },
       language
     ),
     whatSize: byLanguage(
@@ -317,6 +352,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                           setSelectedColor(colorOption.hexColor);
                           setSelectedSize("");
                           setSizeWarning(false);
+                          setAvailabilityColor(colorOption.hexColor);
                           setAvailabilitySize(null);
                           setAvailabilityResults([]);
                         }}
@@ -491,7 +527,14 @@ export default function ProductDetail({ product }: ProductDetailProps) {
               <div className="space-y-2 text-[10px] uppercase tracking-[0.22em] text-slate-400">
                 <button
                   type="button"
-                  onClick={() => setAvailabilityOpen(true)}
+                  onClick={() => {
+                    setAvailabilityColor(
+                      resolvedSelectedColor || colorOptions[0]?.hexColor || ""
+                    );
+                    setAvailabilitySize(null);
+                    setAvailabilityResults([]);
+                    setAvailabilityOpen(true);
+                  }}
                   className="block text-left transition hover:text-slate-700"
                 >
                   {text.checkInStore}
@@ -543,15 +586,43 @@ export default function ProductDetail({ product }: ProductDetailProps) {
           X
         </button>
         <div className="flex-1 px-5 py-6 text-sm text-slate-600">
-          <p className="pointer-events-none absolute left-1/2 top-[20%] -translate-x-1/2 -translate-y-1/2 text-center text-[11px] uppercase tracking-[0.32em] text-black">
+          <p className="text-center text-[11px] uppercase tracking-[0.32em] text-black">
             {text.checkInStore}
           </p>
-          <div className="absolute left-1/2 top-[27%] w-[80%] -translate-x-1/2 text-left text-[10px] text-[#6B6B6B]">
+          <div className="mx-auto mt-14 w-[88%] text-left text-[10px] text-[#6B6B6B]">
             <p>{text.chooseSizes}</p>
-            <p className="mt-4">{text.whatSize}</p>
-          </div>
-          <div className="absolute left-1/2 top-[36%] w-[88%] -translate-x-1/2">
-            <div className="flex flex-nowrap justify-center gap-3">
+            {colorOptions.length ? (
+              <>
+                <p className="mt-5">{text.whatColor}</p>
+                <div className="mt-3 flex flex-wrap items-center justify-center gap-3">
+                  {colorOptions.map((colorOption) => {
+                    const isActive = resolvedAvailabilityColor === colorOption.hexColor;
+                    return (
+                      <button
+                        key={`availability-color-${colorOption.hexColor}`}
+                        type="button"
+                        aria-label={`${text.selectColor} ${colorOption.name}`}
+                        onClick={() => {
+                          setAvailabilityColor(colorOption.hexColor);
+                          setAvailabilitySize(null);
+                          setAvailabilityResults([]);
+                        }}
+                        className={`h-8 w-8 border transition ${
+                          isActive
+                            ? "border-black ring-1 ring-black/40"
+                            : "border-black/20 hover:border-black/50"
+                        }`}
+                        style={{ backgroundColor: colorOption.hexColor }}
+                      >
+                        <span className="sr-only">{colorOption.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            ) : null}
+            <p className="mt-6">{text.whatSize}</p>
+            <div className="mt-3 flex flex-wrap justify-center gap-3">
               {availabilitySizeOptions.map((size) => {
                 const isActive = resolvedAvailabilitySize === size;
                 return (
@@ -580,25 +651,28 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                 {text.outOfStock}
               </p>
             ) : null}
-          </div>
-          <div className="absolute left-1/2 top-[48%] w-[88%] -translate-x-1/2">
             <button
               type="button"
               onClick={() => {
-                if (!resolvedAvailabilitySize) {
+                if (
+                  !resolvedAvailabilitySize ||
+                  (hasVariantData && !resolvedAvailabilityColor)
+                ) {
                   setAvailabilityResults([]);
                   return;
                 }
                 setAvailabilityResults([
                   {
+                    color: resolvedAvailabilityColorName,
                     size: resolvedAvailabilitySize,
                     inStock: hasVariantData
-                      ? (inStoreStockBySize.get(resolvedAvailabilitySize) ?? 0) > 0
+                      ? (availabilityInStoreStockBySize.get(resolvedAvailabilitySize) ?? 0) >
+                        0
                       : true,
                   },
                 ]);
               }}
-              className="w-full border border-black/20 bg-white py-3 text-[10px] uppercase tracking-[0.3em] text-slate-600 transition hover:border-black/40 hover:text-slate-900"
+              className="mt-8 w-full border border-black/20 bg-white py-3 text-[10px] uppercase tracking-[0.3em] text-slate-600 transition hover:border-black/40 hover:text-slate-900"
             >
               {text.checkAvailability}
             </button>
@@ -606,7 +680,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
               <div className="mt-4 space-y-2 text-[10px] uppercase tracking-[0.28em]">
                 {availabilityResults.map((result) => (
                   <div
-                    key={`availability-${result.size}`}
+                    key={`availability-${result.color}-${result.size}`}
                     className={`flex items-center justify-center gap-2 ${
                       result.inStock ? "text-emerald-600" : "text-red-500"
                     }`}
@@ -640,15 +714,15 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                       </svg>
                     )}
                     <span>
-                      {result.inStock ? text.inStock : text.outOfStock} - {text.size}{" "}
-                      {result.size}
+                      {result.inStock ? text.inStock : text.outOfStock} -{" "}
+                      {hasVariantData ? `${result.color} / ` : ""}
+                      {text.size} {result.size}
                     </span>
                   </div>
                 ))}
               </div>
             ) : null}
           </div>
-          {/* Sidebar content goes here */}
         </div>
       </aside>
       <Link
