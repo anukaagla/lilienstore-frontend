@@ -126,7 +126,7 @@ export default function Footer({ variant = "dark" }: FooterProps) {
   const isLight = variant === "light";
   const { language } = useLanguage();
   const { brand, isLoading: brandLoading } = useBrandState();
-  const brandName = getLocalizedText(brand?.brand_name, language, "Lilienstore");
+  const brandName = getLocalizedText(brand?.brand_name, language, "Lilien");
   const addressText = getLocalizedText(
     brand?.address,
     language,
@@ -146,7 +146,7 @@ export default function Footer({ variant = "dark" }: FooterProps) {
   const emailValue = brand?.email?.trim() || "lilienspprt@gmail.com";
   const phoneValue = brand?.phone_number?.trim() || "";
   const instagramValue = toSocialUrl(
-    brand?.instagram_url?.trim() || "lilienstore_",
+    brand?.instagram_url?.trim() || "https://www.instagram.com/lilienstore_/",
     "instagram"
   );
   const facebookValue = toSocialUrl(brand?.facebook_url?.trim() || "", "facebook");

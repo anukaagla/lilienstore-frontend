@@ -148,7 +148,7 @@ export default function SiteHeader({
   const { brand, isLoading: brandLoading } = useBrandState();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const brandName = getLocalizedText(brand?.brand_name, language, "Lilienstore");
+  const brandName = getLocalizedText(brand?.brand_name, language, "Lilien");
   const brandLogoSrc = brand?.logo_url?.trim() || brand?.logo?.trim() || "/images/full.png";
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeCategorySlug, setActiveCategorySlug] = useState("");

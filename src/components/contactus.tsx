@@ -24,7 +24,7 @@ export default function ContactUs() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
 
-  const brandName = getLocalizedText(brand?.brand_name, language, "Lilienstore");
+  const brandName = getLocalizedText(brand?.brand_name, language, "Lilien");
 
   const toSocialUrl = (value: string, platform: "instagram" | "facebook" | "tiktok") => {
     const trimmed = value.trim();
@@ -57,7 +57,7 @@ export default function ContactUs() {
   const phoneValue = brand?.phone_number?.trim() || "";
   const emailValue = brand?.email?.trim() || "lilienspprt@gmail.com";
   const instagramValue = toSocialUrl(
-    brand?.instagram_url?.trim() || "lilienstore_",
+    brand?.instagram_url?.trim() || "https://www.instagram.com/lilienstore_/",
     "instagram"
   );
   const facebookValue = toSocialUrl(brand?.facebook_url?.trim() || "", "facebook");

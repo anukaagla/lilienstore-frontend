@@ -24,7 +24,7 @@ const Divider = () => (
 export default function ShowRoom({ posts }: ShowRoomProps) {
   const { language } = useLanguage();
   const { brand, isLoading: brandLoading } = useBrandState();
-  const brandName = getLocalizedText(brand?.brand_name, language, "Lilienstore");
+  const brandName = getLocalizedText(brand?.brand_name, language, "Lilien");
   const logoSrc = brand?.logo_url?.trim() || brand?.logo?.trim() || "/images/Logo.png";
   const heroSrc =
     brand?.hero_image_url?.trim() || brand?.hero_image?.trim() || "/images/HERO IMAGE.png";
@@ -154,8 +154,8 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
           style={{ animationDelay: "120ms" }}
         >
           <div className="w-full max-w-5xl">
-            <div className="sm:hidden">
-              <div className="relative mx-auto inline-flex max-w-[calc(100vw-2rem)] overflow-hidden rounded-3xl shadow-[0_30px_60px_-40px_rgba(0,0,0,0.45)]">
+            <div className="flex justify-center sm:hidden">
+              <div className="relative inline-flex max-w-[calc(100vw-2rem)] overflow-hidden rounded-3xl shadow-[0_30px_60px_-40px_rgba(0,0,0,0.45)]">
                 <img
                   className="block h-auto max-h-[70vh] w-auto max-w-full"
                   src={mobileHeroSrc}

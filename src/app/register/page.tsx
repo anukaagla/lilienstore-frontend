@@ -86,7 +86,7 @@ export default function RegisterPage() {
   const router = useRouter();
   const { language } = useLanguage();
   const { brand, isLoading: brandLoading } = useBrandState();
-  const brandName = getLocalizedText(brand?.brand_name, language, "Lilienstore");
+  const brandName = getLocalizedText(brand?.brand_name, language, "Lilien");
   const [form, setForm] = useState<RegisterForm>(initialForm);
   const [agreedToPolicies, setAgreedToPolicies] = useState(false);
   const [confirmedAdult, setConfirmedAdult] = useState(false);

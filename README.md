@@ -1,6 +1,6 @@
 # Lilien Store Frontend
 
-Next.js 16 storefront for Lilien Atelier.
+Next.js 16 storefront for Lilien.
 
 ## Requirements
 

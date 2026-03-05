@@ -6,7 +6,7 @@ import {
 } from "../../../../lib/server/auth-session";
 
 const ALLOWED_METHODS = new Set(["GET", "POST", "PUT", "PATCH", "DELETE"]);
-const ALLOWED_ROOT_SEGMENTS = new Set(["auth", "cart", "me", "orders"]);
+const ALLOWED_ROOT_SEGMENTS = new Set(["auth", "cart", "me", "orders", "shipping"]);
 const BODYLESS_RESPONSE_STATUSES = new Set([204, 205, 304]);
 const VALID_PATH_SEGMENT = /^[A-Za-z0-9._~:@-]+$/;
 const MAX_JSON_BODY_SIZE = 64_000;
@@ -41,9 +41,14 @@ const normalizePath = (segments: string[]) => {
   return segments.join("/");
 };
 
-const buildUpstreamHeaders = (request: NextRequest, accessToken: string) => {
+const isPublicProxyPath = (segments: string[]) =>
+  segments.length >= 2 && segments[0] === "shipping" && segments[1] === "settings";
+
+const buildUpstreamHeaders = (request: NextRequest, accessToken = "") => {
   const headers = new Headers();
-  headers.set("Authorization", `Bearer ${accessToken}`);
+  if (accessToken) {
+    headers.set("Authorization", `Bearer ${accessToken}`);
+  }
 
   const contentType = request.headers.get("content-type");
   if (contentType) {
@@ -98,7 +103,8 @@ const proxyRequest = async (request: NextRequest, context: RouteContext) => {
   upstreamUrl.search = request.nextUrl.search;
 
   const { access } = await readSessionTokens();
-  if (!access) {
+  const requiresAuth = !isPublicProxyPath(pathSegments);
+  if (requiresAuth && !access) {
     return NextResponse.json({ detail: "Authentication required." }, { status: 401 });
   }
 
@@ -110,7 +116,7 @@ const proxyRequest = async (request: NextRequest, context: RouteContext) => {
   try {
     const upstreamResponse = await fetch(upstreamUrl, {
       method: request.method,
-      headers: buildUpstreamHeaders(request, access),
+      headers: buildUpstreamHeaders(request, requiresAuth ? access : ""),
       body: body ?? undefined,
       cache: "no-store",
     });

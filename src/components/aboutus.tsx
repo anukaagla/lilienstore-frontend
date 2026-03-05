@@ -11,21 +11,20 @@ import { StaticContentPageSkeleton } from "./page-skeletons";
 export default function AboutUs() {
   const { language } = useLanguage();
   const { brand, isLoading: brandLoading } = useBrandState();
-  const brandName = getLocalizedText(brand?.brand_name, language, "Lilienstore");
-  const brandNameUpper = brandName.toUpperCase();
+  const brandName = getLocalizedText(brand?.brand_name, language, "Lilien");
   const description = getLocalizedText(brand?.description, language, "");
   const text = {
     fallbackIntroFirst: byLanguage(
       {
-        EN: `${brandNameUpper} is a fashion brand born in Tbilisi, created for those who value elegance, quality, and individuality.`,
-        KA: `${brandNameUpper} არის თბილისში დაბადებული მოდის ბრენდი, მათთვის ვინც აფასებს ელეგანტურობას, ხარისხსა და ინდივიდუალობას.`,
+        EN: `${brandName} is a fashion brand born in Tbilisi, created for those who value elegance, quality, and individuality.`,
+        KA: `${brandName} არის თბილისში დაბადებული მოდის ბრენდი, მათთვის ვინც აფასებს ელეგანტურობას, ხარისხსა და ინდივიდუალობას.`,
       },
       language
     ),
     fallbackIntroSecond: byLanguage(
       {
-        EN: `Every ${brandNameUpper} piece is thoughtfully designed and crafted in-house — from the first sketch to the final stitch. We work with premium fabrics, focusing on refined silhouettes, timeless designs, and limited-edition collections that feel personal and truly unique.`,
-        KA: `ყოველი ${brandNameUpper}-ის ნივთი იქმნება განსაკუთრებული ყურადღებით — პირველი ესკიზიდან საბოლოო ნაკერამდე. ვმუშაობთ პრემიუმ ქსოვილებით და ვქმნით დახვეწილ სილუეტებს, დროისმიღმა დიზაინებსა და ლიმიტირებულ კოლექციებს.`,
+        EN: `Every ${brandName} piece is thoughtfully designed and crafted in-house — from the first sketch to the final stitch. We work with premium fabrics, focusing on refined silhouettes, timeless designs, and limited-edition collections that feel personal and truly unique.`,
+        KA: `ყოველი ${brandName}-ის ნივთი იქმნება განსაკუთრებული ყურადღებით — პირველი ესკიზიდან საბოლოო ნაკერამდე. ვმუშაობთ პრემიუმ ქსოვილებით და ვქმნით დახვეწილ სილუეტებს, დროისმიღმა დიზაინებსა და ლიმიტირებულ კოლექციებს.`,
       },
       language
     ),
@@ -35,15 +34,15 @@ export default function AboutUs() {
     ),
     fallbackBody: byLanguage(
       {
-        EN: `fashion should empower, inspire confidence, and feel effortless. ${brandNameUpper} is not about trends — it's about creating pieces that become part of your story.`,
-        KA: `მოდა უნდა გაძლიერებდეს, თავდაჯერებას მატებდეს და ბუნებრივად გეხამოს. ${brandNameUpper} ტრენდებზე არაა — ეს არის შენი ისტორიის ნაწილი გახდეს.`,
+        EN: `fashion should empower, inspire confidence, and feel effortless. ${brandName} is not about trends — it's about creating pieces that become part of your story.`,
+        KA: `მოდა უნდა გაძლიერებდეს, თავდაჯერებას მატებდეს და ბუნებრივად გეხამოს. ${brandName} ტრენდებზე არაა — ეს არის შენი ისტორიის ნაწილი გახდეს.`,
       },
       language
     ),
     fallbackWelcome: byLanguage(
       {
-        EN: `Welcome to ${brandNameUpper} — where elegance meets intention.`,
-        KA: `კეთილი იყოს შენი მობრძანება ${brandNameUpper}-ში — სადაც ელეგანტურობა აზრს ხვდება.`,
+        EN: `Welcome to ${brandName} — where elegance meets intention.`,
+        KA: `კეთილი იყოს შენი მობრძანება ${brandName}-ში — სადაც ელეგანტურობა აზრს ხვდება.`,
       },
       language
     ),
