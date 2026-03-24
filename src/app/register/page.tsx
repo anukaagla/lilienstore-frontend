@@ -667,7 +667,7 @@ export default function RegisterPage() {
 
         <div className="relative hidden min-h-screen lg:block">
           <Image
-            src="/images/BBB.png"
+            src="/images/registerPageImg.jpg"
             alt={`${brandName} registration look`}
             fill
             sizes="(min-width: 1024px) 50vw, 0px"
