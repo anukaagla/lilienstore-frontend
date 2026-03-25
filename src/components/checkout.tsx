@@ -115,13 +115,36 @@ const getCheckoutPayloadCandidates = (payload: unknown) => {
   }
 
   const dataRecord = isRecord(payload.data) ? payload.data : null;
+  const resultRecord = isRecord(payload.result) ? payload.result : null;
+  const orderRecord = isRecord(payload.order) ? payload.order : null;
+  const paymentRecord = isRecord(payload.payment) ? payload.payment : null;
+  const checkoutRecord = isRecord(payload.checkout) ? payload.checkout : null;
+  const dataOrderRecord =
+    dataRecord && isRecord(dataRecord.order) ? dataRecord.order : null;
+  const dataPaymentRecord =
+    dataRecord && isRecord(dataRecord.payment) ? dataRecord.payment : null;
+  const dataCheckoutRecord =
+    dataRecord && isRecord(dataRecord.checkout) ? dataRecord.checkout : null;
+  const resultOrderRecord =
+    resultRecord && isRecord(resultRecord.order) ? resultRecord.order : null;
+  const resultPaymentRecord =
+    resultRecord && isRecord(resultRecord.payment) ? resultRecord.payment : null;
+  const resultCheckoutRecord =
+    resultRecord && isRecord(resultRecord.checkout) ? resultRecord.checkout : null;
 
   return [
     payload,
-    isRecord(payload.order) ? payload.order : null,
     dataRecord,
-    dataRecord && isRecord(dataRecord.order) ? dataRecord.order : null,
-    isRecord(payload.result) ? payload.result : null,
+    resultRecord,
+    orderRecord,
+    dataOrderRecord,
+    resultOrderRecord,
+    paymentRecord,
+    dataPaymentRecord,
+    resultPaymentRecord,
+    checkoutRecord,
+    dataCheckoutRecord,
+    resultCheckoutRecord,
   ].filter((candidate): candidate is Record<string, unknown> => candidate !== null);
 };
 
@@ -473,6 +496,27 @@ export default function Checkout() {
       {
         EN: "We could not place your order. Please try again.",
         KA: "შეკვეთის გაფორმება ვერ მოხერხდა. სცადეთ ხელახლა.",
+      },
+      language,
+    ),
+    checkoutIdMissing: byLanguage(
+      {
+        EN: "Order ID is missing in checkout response. Please try again.",
+        KA: "Checkout პასუხში შეკვეთის ID არ მოიძებნა. სცადეთ ხელახლა.",
+      },
+      language,
+    ),
+    paymentStartFailed: byLanguage(
+      {
+        EN: "Order created, but payment session could not be started.",
+        KA: "შეკვეთა შეიქმნა, თუმცა გადახდის სესიის დაწყება ვერ მოხერხდა.",
+      },
+      language,
+    ),
+    paymentRedirectMissing: byLanguage(
+      {
+        EN: "Payment link is missing. Please try again.",
+        KA: "გადახდის ბმული არ არის დაბრუნებული. სცადეთ ხელახლა.",
       },
       language,
     ),
@@ -849,6 +893,18 @@ export default function Checkout() {
         return;
       }
 
+      const checkoutId = pickPayloadText(payload, [
+        "id",
+        "order_id",
+        "orderId",
+        "checkout_id",
+        "checkoutId",
+      ]);
+      if (!checkoutId) {
+        setOrderError(text.checkoutIdMissing);
+        return;
+      }
+
       const rawOrderNumber =
         pickPayloadText(payload, [
           "order_number",
@@ -861,14 +917,8 @@ export default function Checkout() {
       const orderNumber = rawOrderNumber.startsWith("#")
         ? rawOrderNumber
         : `#${rawOrderNumber}`;
-      const paymentRedirectUrl = pickPayloadText(payload, [
-        "payment_url",
-        "paymentUrl",
-        "redirect_url",
-        "redirectUrl",
-      ]);
 
-      writeOrderConfirmation({
+      const snapshot = {
         orderNumber,
         status:
           pickPayloadText(payload, ["status", "payment_status", "paymentStatus"]) ||
@@ -915,6 +965,65 @@ export default function Checkout() {
           ]) || text.estimatedDeliveryFallback,
         email: pickPayloadText(payload, ["email", "customer_email", "customerEmail"]),
         placedAt: new Date().toISOString(),
+        checkoutId,
+        checkoutResponse: payload,
+      };
+      writeOrderConfirmation(snapshot);
+
+      const payUrl = buildApiUrl(
+        `/api/orders/${encodeURIComponent(checkoutId)}/pay/unipay/`,
+      );
+      if (!payUrl) {
+        setOrderError(text.missingApiBaseUrl);
+        return;
+      }
+
+      const payResponse = await fetchWithAuthRetry(payUrl, {
+        method: "POST",
+        cache: "no-store",
+      });
+      if (!payResponse) {
+        setOrderError(text.paymentStartFailed);
+        return;
+      }
+
+      const payPayload = await payResponse.json().catch(() => null);
+      if (!payResponse.ok) {
+        if (payResponse.status === 401 || payResponse.status === 403) {
+          setOrderError(text.missingAccessToken);
+          return;
+        }
+        setOrderError(getApiMessage(payPayload, text.paymentStartFailed));
+        return;
+      }
+
+      const paymentRedirectUrl = pickPayloadText(payPayload, [
+        "checkout_url",
+        "checkoutUrl",
+        "payment_url",
+        "paymentUrl",
+        "redirect_url",
+        "redirectUrl",
+        "url",
+      ]);
+      if (!paymentRedirectUrl) {
+        setOrderError(text.paymentRedirectMissing);
+        return;
+      }
+
+      writeOrderConfirmation({
+        ...snapshot,
+        status:
+          pickPayloadText(payPayload, ["status", "payment_status", "paymentStatus"]) ||
+          snapshot.status,
+        paymentMethod:
+          pickPayloadText(payPayload, [
+            "payment_method",
+            "paymentMethod",
+            "provider",
+            "gateway",
+          ]) || snapshot.paymentMethod,
+        paymentResponse: payPayload,
       });
 
       if (paymentRedirectUrl && typeof window !== "undefined") {

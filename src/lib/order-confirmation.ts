@@ -16,6 +16,9 @@ export type OrderConfirmationSnapshot = {
   estimatedDelivery: string
   email: string
   placedAt: string
+  checkoutId?: string
+  checkoutResponse?: unknown
+  paymentResponse?: unknown
 }
 
 const STORAGE_KEY = "lilien-order-confirmation"
