@@ -2007,201 +2007,203 @@ export default function Profile() {
                 sizes="(min-width: 1024px) 620px, 0px"
                 className="pointer-events-none hidden object-contain object-center lg:block"
               />
-              <div className="relative z-10 flex flex-col gap-4 text-[9px] uppercase tracking-[0.16em] text-slate-600 sm:flex-row sm:items-start sm:justify-between sm:text-[10px] sm:tracking-[0.2em]">
-                <button
-                  type="button"
-                  onClick={() => {
-                    closeOrderDetails();
-                    setActiveItem("orders");
-                  }}
-                  className="text-slate-600 transition-colors hover:text-slate-900"
-                >
-                  {text.backToOrders}
-                </button>
+              <div className="relative z-10">
+                <div className="flex flex-col gap-4 text-[9px] uppercase tracking-[0.16em] text-slate-600 sm:flex-row sm:items-start sm:justify-between sm:text-[10px] sm:tracking-[0.2em]">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      closeOrderDetails();
+                      setActiveItem("orders");
+                    }}
+                    className="text-slate-600 transition-colors hover:text-slate-900"
+                  >
+                    {text.backToOrders}
+                  </button>
 
-                <div className="flex flex-col items-center gap-2 text-center sm:flex-1">
-                  <div className="flex items-center gap-2 text-xs font-medium tracking-[0.28em] text-slate-700 sm:text-sm sm:tracking-[0.35em]">
-                    {/* <span className="h-2 w-2 rounded-full border border-slate-500" /> */}
-                    <span>
-                      {text.order}: {selectedOrderDisplayId}
-                    </span>
-                  </div>
-                  <div className="flex flex-col items-center gap-1">
-                    <span className="text-[9px] tracking-[0.16em] text-slate-500 sm:text-[10px] sm:tracking-[0.2em]">
-                      {text.placedOn}: {selectedOrderPlacedOn}
-                    </span>
-                    <span className="text-[9px] tracking-[0.16em] text-slate-500 sm:text-[10px] sm:tracking-[0.2em]">
-                      {text.status}: {selectedOrderDetails?.status || "-"}
-                    </span>
-                  </div>
-                </div>
-
-                <span className="hidden w-[110px] sm:block" />
-              </div>
-
-              {orderDetailsLoading ? (
-                <div className="mt-8 space-y-3 rounded-xl border border-black/10 bg-black/[0.03] px-4 py-4">
-                  <SkeletonBlock className="h-3 w-36 rounded-full" />
-                  <SkeletonBlock className="h-3 w-full rounded-full" />
-                </div>
-              ) : orderDetailsError ? (
-                <div className="mt-8 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-center text-[10px] uppercase tracking-[0.2em] text-red-600">
-                  {orderDetailsError}
-                </div>
-              ) : selectedOrderDetails ? (
-                <>
-                  <div className="mt-4 h-px w-full bg-slate-200 sm:mt-6" />
-
-                  <div className="mt-6 uppercase tracking-[0.2em] text-slate-500">
-                    {text.items}:
+                  <div className="flex flex-col items-center gap-2 text-center sm:flex-1">
+                    <div className="flex items-center gap-2 text-xs font-medium tracking-[0.28em] text-slate-700 sm:text-sm sm:tracking-[0.35em]">
+                      {/* <span className="h-2 w-2 rounded-full border border-slate-500" /> */}
+                      <span>
+                        {text.order}: {selectedOrderDisplayId}
+                      </span>
+                    </div>
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="text-[9px] tracking-[0.16em] text-slate-500 sm:text-[10px] sm:tracking-[0.2em]">
+                        {text.placedOn}: {selectedOrderPlacedOn}
+                      </span>
+                      <span className="text-[9px] tracking-[0.16em] text-slate-500 sm:text-[10px] sm:tracking-[0.2em]">
+                        {text.status}: {selectedOrderDetails?.status || "-"}
+                      </span>
+                    </div>
                   </div>
 
-                  <div className="mt-4 space-y-4">
-                    {selectedOrderDetails.items.map((item) => (
-                      <div
-                        key={item.id}
-                        className="flex flex-col gap-3 border-b border-slate-200 pb-4 last:border-b-0 sm:flex-row sm:items-start sm:gap-4"
-                      >
-                        <Image
-                          src={item.image}
-                          alt={item.name}
-                          width={64}
-                          height={64}
-                          sizes="64px"
-                          className="h-14 w-14 shrink-0 rounded-lg object-contain sm:h-16 sm:w-16"
-                        />
-                        <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                          <div className="space-y-1 text-[10px] text-slate-600 sm:text-[11px]">
-                            <div className="text-[10px] font-medium text-slate-700 sm:text-[11px]">
-                              {item.name}
+                  <span className="hidden w-[110px] sm:block" />
+                </div>
+
+                {orderDetailsLoading ? (
+                  <div className="mt-8 space-y-3 rounded-xl border border-black/10 bg-black/[0.03] px-4 py-4">
+                    <SkeletonBlock className="h-3 w-36 rounded-full" />
+                    <SkeletonBlock className="h-3 w-full rounded-full" />
+                  </div>
+                ) : orderDetailsError ? (
+                  <div className="mt-8 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-center text-[10px] uppercase tracking-[0.2em] text-red-600">
+                    {orderDetailsError}
+                  </div>
+                ) : selectedOrderDetails ? (
+                  <>
+                    <div className="mt-4 h-px w-full bg-slate-200 sm:mt-6" />
+
+                    <div className="mt-6 uppercase tracking-[0.2em] text-slate-500">
+                      {text.items}:
+                    </div>
+
+                    <div className="mt-4 space-y-4">
+                      {selectedOrderDetails.items.map((item) => (
+                        <div
+                          key={item.id}
+                          className="flex flex-col gap-3 border-b border-slate-200 pb-4 last:border-b-0 sm:flex-row sm:items-start sm:gap-4"
+                        >
+                          <Image
+                            src={item.image}
+                            alt={item.name}
+                            width={64}
+                            height={64}
+                            sizes="64px"
+                            className="h-14 w-14 shrink-0 rounded-lg object-contain sm:h-16 sm:w-16"
+                          />
+                          <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                            <div className="space-y-1 text-[10px] text-slate-600 sm:text-[11px]">
+                              <div className="text-[10px] font-medium text-slate-700 sm:text-[11px]">
+                                {item.name}
+                              </div>
+                              <div>
+                                {text.colour}: {item.color}
+                              </div>
+                              <div>
+                                {text.size}: {item.size}
+                              </div>
+                              <div>
+                                {text.quantity}: {item.quantity}
+                              </div>
+                              <div>
+                                {text.unitPrice}: {item.unitPrice}
+                              </div>
                             </div>
-                            <div>
-                              {text.colour}: {item.color}
+                            <div className="text-[10px] text-slate-600 sm:text-[11px]">
+                              {text.lineTotal}: {item.lineTotal}
                             </div>
-                            <div>
-                              {text.size}: {item.size}
-                            </div>
-                            <div>
-                              {text.quantity}: {item.quantity}
-                            </div>
-                            <div>
-                              {text.unitPrice}: {item.unitPrice}
-                            </div>
-                          </div>
-                          <div className="text-[10px] text-slate-600 sm:text-[11px]">
-                            {text.lineTotal}: {item.lineTotal}
                           </div>
                         </div>
+                      ))}
+                    </div>
+
+                    <div className="mt-4 h-px w-full bg-slate-200 sm:mt-6" />
+
+                    <div className="mt-4 uppercase tracking-[0.2em] text-slate-500">
+                      {text.orderSummary}
+                    </div>
+                    <div className="mt-3 space-y-2 text-[10px] text-slate-500 sm:text-[11px]">
+                      <div className="flex items-center justify-between">
+                        <span>{text.subtotal}</span>
+                        <span>{selectedOrderDetails.subtotal}</span>
                       </div>
-                    ))}
+                      <div className="flex items-center justify-between">
+                        <span>{text.shipping}</span>
+                        <span>{selectedOrderDetails.shippingPrice}</span>
+                      </div>
+                      <div className="flex items-center justify-between font-semibold text-slate-700">
+                        <span>{text.total}</span>
+                        <span>{selectedOrderDetails.total}</span>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 h-px w-full bg-slate-200 sm:mt-6" />
+
+                    <div className="mt-4 uppercase tracking-[0.2em] text-slate-500">
+                      {text.deliveryDetails}
+                    </div>
+                    <div className="mt-3 space-y-2 text-[10px] text-slate-600 sm:text-[11px]">
+                      <div className="flex items-center gap-2">
+                        <svg
+                          aria-hidden="true"
+                          className="h-3 w-3"
+                          viewBox="0 0 20 20"
+                          fill="none"
+                        >
+                          <path
+                            d="M10 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"
+                            stroke="currentColor"
+                            strokeWidth="1.4"
+                          />
+                          <path
+                            d="M4 16c1.4-2.6 4.1-4 6-4s4.6 1.4 6 4"
+                            stroke="currentColor"
+                            strokeWidth="1.4"
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                        <span>{selectedOrderDetails.delivery.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <svg
+                          aria-hidden="true"
+                          className="h-3 w-3"
+                          viewBox="0 0 20 20"
+                          fill="none"
+                        >
+                          <path
+                            d="M5 6c0-2 1.8-3 4-3h2c2.2 0 4 1 4 3v8c0 1.7-1.5 3-3.5 3h-3C6.5 17 5 15.7 5 14V6Z"
+                            stroke="currentColor"
+                            strokeWidth="1.4"
+                          />
+                          <path
+                            d="M8 6h4"
+                            stroke="currentColor"
+                            strokeWidth="1.4"
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                        <span>{selectedOrderDetails.delivery.phone}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <svg
+                          aria-hidden="true"
+                          className="h-3 w-3"
+                          viewBox="0 0 20 20"
+                          fill="none"
+                        >
+                          <path
+                            d="M10 17s5-5.2 5-9a5 5 0 0 0-10 0c0 3.8 5 9 5 9Z"
+                            stroke="currentColor"
+                            strokeWidth="1.4"
+                          />
+                          <circle
+                            cx="10"
+                            cy="8"
+                            r="2"
+                            stroke="currentColor"
+                            strokeWidth="1.4"
+                          />
+                        </svg>
+                        <span>{selectedOrderDetails.delivery.address}</span>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="mt-8 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-center text-[10px] uppercase tracking-[0.2em] text-red-600">
+                    {text.orderDetailsLoadFailed}
                   </div>
+                )}
 
-                  <div className="mt-4 h-px w-full bg-slate-200 sm:mt-6" />
+                <div className="mt-6 h-px w-full bg-slate-200" />
 
-                  <div className="mt-4 uppercase tracking-[0.2em] text-slate-500">
-                    {text.orderSummary}
+                <div className="mt-6 text-center text-[10px] uppercase tracking-[0.2em] text-slate-700">
+                  {text.orderHelp}
+                  <div className="mt-2 text-[11px] font-medium underline">
+                    <Link href="/contactus" className="hover:text-slate-900">
+                      {text.contactUs}
+                    </Link>
                   </div>
-                  <div className="mt-3 space-y-2 text-[10px] text-slate-500 sm:text-[11px]">
-                    <div className="flex items-center justify-between">
-                      <span>{text.subtotal}</span>
-                      <span>{selectedOrderDetails.subtotal}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>{text.shipping}</span>
-                      <span>{selectedOrderDetails.shippingPrice}</span>
-                    </div>
-                    <div className="flex items-center justify-between font-semibold text-slate-700">
-                      <span>{text.total}</span>
-                      <span>{selectedOrderDetails.total}</span>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 h-px w-full bg-slate-200 sm:mt-6" />
-
-                  <div className="mt-4 uppercase tracking-[0.2em] text-slate-500">
-                    {text.deliveryDetails}
-                  </div>
-                  <div className="mt-3 space-y-2 text-[10px] text-slate-600 sm:text-[11px]">
-                    <div className="flex items-center gap-2">
-                      <svg
-                        aria-hidden="true"
-                        className="h-3 w-3"
-                        viewBox="0 0 20 20"
-                        fill="none"
-                      >
-                        <path
-                          d="M10 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"
-                          stroke="currentColor"
-                          strokeWidth="1.4"
-                        />
-                        <path
-                          d="M4 16c1.4-2.6 4.1-4 6-4s4.6 1.4 6 4"
-                          stroke="currentColor"
-                          strokeWidth="1.4"
-                          strokeLinecap="round"
-                        />
-                      </svg>
-                      <span>{selectedOrderDetails.delivery.name}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <svg
-                        aria-hidden="true"
-                        className="h-3 w-3"
-                        viewBox="0 0 20 20"
-                        fill="none"
-                      >
-                        <path
-                          d="M5 6c0-2 1.8-3 4-3h2c2.2 0 4 1 4 3v8c0 1.7-1.5 3-3.5 3h-3C6.5 17 5 15.7 5 14V6Z"
-                          stroke="currentColor"
-                          strokeWidth="1.4"
-                        />
-                        <path
-                          d="M8 6h4"
-                          stroke="currentColor"
-                          strokeWidth="1.4"
-                          strokeLinecap="round"
-                        />
-                      </svg>
-                      <span>{selectedOrderDetails.delivery.phone}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <svg
-                        aria-hidden="true"
-                        className="h-3 w-3"
-                        viewBox="0 0 20 20"
-                        fill="none"
-                      >
-                        <path
-                          d="M10 17s5-5.2 5-9a5 5 0 0 0-10 0c0 3.8 5 9 5 9Z"
-                          stroke="currentColor"
-                          strokeWidth="1.4"
-                        />
-                        <circle
-                          cx="10"
-                          cy="8"
-                          r="2"
-                          stroke="currentColor"
-                          strokeWidth="1.4"
-                        />
-                      </svg>
-                      <span>{selectedOrderDetails.delivery.address}</span>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div className="mt-8 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-center text-[10px] uppercase tracking-[0.2em] text-red-600">
-                  {text.orderDetailsLoadFailed}
-                </div>
-              )}
-
-              <div className="mt-6 h-px w-full bg-slate-200" />
-
-              <div className="mt-6 text-center text-[10px] uppercase tracking-[0.2em] text-slate-700">
-                {text.orderHelp}
-                <div className="mt-2 text-[11px] font-medium underline">
-                  <Link href="/contactus" className="hover:text-slate-900">
-                    {text.contactUs}
-                  </Link>
                 </div>
               </div>
             </div>
