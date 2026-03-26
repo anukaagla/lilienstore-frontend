@@ -1,37 +1,47 @@
-import type { CartItem } from "./cart"
-
 export type OrderConfirmationSnapshot = {
-  orderNumber: string
-  status: string
-  subtotal: number
-  shippingFee: number
-  total: number
-  itemCount: number
-  items: CartItem[]
-  customerName: string
-  phone: string
-  deliveryAddress: string
-  addressLabel: string
-  paymentMethod: string
-  estimatedDelivery: string
-  email: string
-  placedAt: string
-  checkoutId?: string
-  checkoutResponse?: unknown
-  paymentResponse?: unknown
+  orderId: string
 }
 
 const STORAGE_KEY = "lilien-order-confirmation"
+
+export const normalizeOrderId = (value: unknown) => {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return String(value)
+  }
+
+  if (typeof value !== "string") {
+    return ""
+  }
+
+  return value.trim().replace(/^#/, "")
+}
+
+const extractOrderId = (value: unknown) => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return ""
+  }
+
+  const record = value as Record<string, unknown>
+  return (
+    normalizeOrderId(record.orderId) ||
+    normalizeOrderId(record.order_id) ||
+    normalizeOrderId(record.checkoutId) ||
+    normalizeOrderId(record.checkout_id) ||
+    normalizeOrderId(record.id) ||
+    normalizeOrderId(record.orderNumber) ||
+    normalizeOrderId(record.order_number)
+  )
+}
 
 const safeParse = (value: string | null): OrderConfirmationSnapshot | null => {
   if (!value) return null
 
   try {
     const parsed = JSON.parse(value)
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-      return null
-    }
-    return parsed as OrderConfirmationSnapshot
+    const orderId = extractOrderId(parsed)
+    if (!orderId) return null
+
+    return { orderId }
   } catch {
     return null
   }
@@ -49,6 +59,10 @@ export const readOrderConfirmation = () => {
 }
 
 export const writeOrderConfirmation = (snapshot: OrderConfirmationSnapshot) => {
+  if (!snapshot.orderId.trim()) return
   if (typeof window === "undefined") return
-  window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot))
+  window.sessionStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify({ orderId: normalizeOrderId(snapshot.orderId) }),
+  )
 }

@@ -2,15 +2,25 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useSyncExternalStore } from "react";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useState, useSyncExternalStore } from "react";
 
+import { fetchWithAuthRetry } from "../lib/auth";
 import { writeCart } from "../lib/cart";
 import { byLanguage } from "../lib/i18n";
 import { toAbsoluteMediaUrl } from "../lib/media";
 import {
+  buildApiUrl,
+  getApiMessage,
+  normalizeOrderDetailsSummary,
+  pickOrderIdFromSearchParams,
+  type OrderDetailsSummary,
+} from "../lib/order-details";
+import {
+  normalizeOrderId,
   parseOrderConfirmation,
   readOrderConfirmationValue,
-  type OrderConfirmationSnapshot,
+  writeOrderConfirmation,
 } from "../lib/order-confirmation";
 import Footer from "./footer";
 import { useLanguage } from "./language-provider";
@@ -53,19 +63,140 @@ const formatPlacedAt = (value: string, locale: "en-US" | "ka-GE", fallback: stri
 
 export default function PaymentSuccess() {
   const { language } = useLanguage()
+  const searchParams = useSearchParams()
   const confirmationValue = useSyncExternalStore(
     subscribeToSnapshot,
     readOrderConfirmationValue,
     () => null,
   )
   const confirmation = parseOrderConfirmation(confirmationValue)
-  const ready = useSyncExternalStore(subscribeToSnapshot, () => true, () => false)
+  const [orderSummary, setOrderSummary] = useState<OrderDetailsSummary | null>(null)
+  const [orderLoading, setOrderLoading] = useState(true)
+  const [orderError, setOrderError] = useState<string | null>(null)
+
+  const queryOrderId = pickOrderIdFromSearchParams(searchParams)
+  const storedOrderId = confirmation ? normalizeOrderId(confirmation.orderId) : ""
+  const orderId = queryOrderId || storedOrderId
 
   useEffect(() => {
-    if (confirmationValue) {
+    if (queryOrderId) {
+      writeOrderConfirmation({ orderId: queryOrderId })
+    }
+  }, [queryOrderId])
+
+  useEffect(() => {
+    let isActive = true
+
+    const missingOrderIdMessage = byLanguage(
+      {
+        EN: "Order ID is missing. Please retry payment from checkout.",
+        KA: "შეკვეთის ID ვერ მოიძებნა. გთხოვ ჩექაუთიდან თავიდან სცადო.",
+      },
+      language,
+    )
+    const missingApiBaseUrlMessage = byLanguage(
+      {
+        EN: "API base URL is missing. Set NEXT_PUBLIC_API_BASE_URL.",
+        KA: "API მისამართი არ არის კონფიგურირებული.",
+      },
+      language,
+    )
+    const missingAccessTokenMessage = byLanguage(
+      {
+        EN: "Please log in to load your order details.",
+        KA: "შეკვეთის დეტალების სანახავად გაიარეთ ავტორიზაცია.",
+      },
+      language,
+    )
+    const orderLoadFailedMessage = byLanguage(
+      {
+        EN: "Failed to load order details.",
+        KA: "შეკვეთის დეტალების ჩატვირთვა ვერ მოხერხდა.",
+      },
+      language,
+    )
+
+    const loadOrder = async () => {
+      if (!orderId) {
+        if (isActive) {
+          setOrderSummary(null)
+          setOrderError(missingOrderIdMessage)
+          setOrderLoading(false)
+        }
+        return
+      }
+
+      const detailsUrl = buildApiUrl(`/api/orders/${encodeURIComponent(orderId)}/`)
+      if (!detailsUrl) {
+        if (isActive) {
+          setOrderSummary(null)
+          setOrderError(missingApiBaseUrlMessage)
+          setOrderLoading(false)
+        }
+        return
+      }
+
+      if (isActive) {
+        setOrderLoading(true)
+        setOrderError(null)
+      }
+
+      const response = await fetchWithAuthRetry(detailsUrl, {
+        method: "GET",
+        cache: "no-store",
+      })
+      if (!response) {
+        if (isActive) {
+          setOrderSummary(null)
+          setOrderError(orderLoadFailedMessage)
+          setOrderLoading(false)
+        }
+        return
+      }
+
+      const payload = await response.json().catch(() => null)
+      if (!response.ok) {
+        if (isActive) {
+          if (response.status === 401 || response.status === 403) {
+            setOrderError(missingAccessTokenMessage)
+          } else {
+            setOrderError(getApiMessage(payload, orderLoadFailedMessage))
+          }
+          setOrderSummary(null)
+          setOrderLoading(false)
+        }
+        return
+      }
+
+      const normalized = normalizeOrderDetailsSummary(payload, language)
+      if (!normalized) {
+        if (isActive) {
+          setOrderSummary(null)
+          setOrderError(orderLoadFailedMessage)
+          setOrderLoading(false)
+        }
+        return
+      }
+
+      if (isActive) {
+        setOrderSummary(normalized)
+        setOrderError(null)
+        setOrderLoading(false)
+      }
+    }
+
+    void loadOrder()
+
+    return () => {
+      isActive = false
+    }
+  }, [language, orderId])
+
+  useEffect(() => {
+    if (orderSummary) {
       writeCart([])
     }
-  }, [confirmationValue])
+  }, [orderSummary])
 
   const text = {
     pill: byLanguage({ EN: "Payment Successful", KA: "გადახდა წარმატებულია" }, language),
@@ -151,7 +282,8 @@ export default function PaymentSuccess() {
     itemPlural: byLanguage({ EN: "items", KA: "ნივთი" }, language),
   }
 
-  const fallbackSummary: OrderConfirmationSnapshot = {
+  const fallbackSummary: OrderDetailsSummary = {
+    orderId: orderId || "-",
     orderNumber: "#-",
     status: text.confirmed,
     subtotal: 0,
@@ -169,12 +301,15 @@ export default function PaymentSuccess() {
     placedAt: "",
   }
 
-  const summary = confirmation ?? fallbackSummary
+  const summary = orderSummary ?? fallbackSummary
+  const ready = !orderLoading
   const locale = language === "KA" ? "ka-GE" : "en-US"
   const placedAtLabel = formatPlacedAt(summary.placedAt, locale, text.justNow)
-  const itemCount = summary.items.reduce((total, item) => total + item.quantity, 0) || summary.itemCount
+  const itemCount =
+    summary.items.reduce((total, item) => total + item.quantity, 0) || summary.itemCount
   const contactDetail = summary.email || text.updatesEmail
-  const showFallbackNote = ready && confirmationValue === null
+  const showFallbackNote = ready && Boolean(orderError)
+  const fallbackNote = orderError || text.fallbackNote
 
   return (
     <div className="relative flex min-h-screen flex-col overflow-hidden bg-white text-slate-900">
@@ -212,7 +347,7 @@ export default function PaymentSuccess() {
                     </p>
                     {showFallbackNote ? (
                       <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">
-                        {text.fallbackNote}
+                        {fallbackNote}
                       </p>
                     ) : null}
                   </div>

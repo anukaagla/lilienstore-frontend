@@ -1,10 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { useSyncExternalStore } from "react";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useState, useSyncExternalStore } from "react";
 
+import { fetchWithAuthRetry } from "../lib/auth";
 import { byLanguage } from "../lib/i18n";
-import { parseOrderConfirmation, readOrderConfirmationValue } from "../lib/order-confirmation";
+import {
+  buildApiUrl,
+  getApiMessage,
+  normalizeOrderDetailsSummary,
+  pickOrderIdFromSearchParams,
+  type OrderDetailsSummary,
+} from "../lib/order-details";
+import {
+  normalizeOrderId,
+  parseOrderConfirmation,
+  readOrderConfirmationValue,
+  writeOrderConfirmation,
+} from "../lib/order-confirmation";
 import Footer from "./footer";
 import { useLanguage } from "./language-provider";
 import SiteHeader from "./site-header";
@@ -25,12 +39,134 @@ const cancelIcon = (
 
 export default function PaymentCancel() {
   const { language } = useLanguage()
+  const searchParams = useSearchParams()
   const confirmationValue = useSyncExternalStore(
     subscribeToSnapshot,
     readOrderConfirmationValue,
     () => null,
   )
   const confirmation = parseOrderConfirmation(confirmationValue)
+  const [orderSummary, setOrderSummary] = useState<OrderDetailsSummary | null>(null)
+  const [orderLoading, setOrderLoading] = useState(true)
+  const [orderError, setOrderError] = useState<string | null>(null)
+
+  const queryOrderId = pickOrderIdFromSearchParams(searchParams)
+  const storedOrderId = confirmation ? normalizeOrderId(confirmation.orderId) : ""
+  const orderId = queryOrderId || storedOrderId
+
+  useEffect(() => {
+    if (queryOrderId) {
+      writeOrderConfirmation({ orderId: queryOrderId })
+    }
+  }, [queryOrderId])
+
+  useEffect(() => {
+    let isActive = true
+
+    const missingOrderIdMessage = byLanguage(
+      {
+        EN: "Order ID is missing. Please retry payment from checkout.",
+        KA: "შეკვეთის ID ვერ მოიძებნა. გთხოვ ჩექაუთიდან თავიდან სცადო.",
+      },
+      language,
+    )
+    const missingApiBaseUrlMessage = byLanguage(
+      {
+        EN: "API base URL is missing. Set NEXT_PUBLIC_API_BASE_URL.",
+        KA: "API მისამართი არ არის კონფიგურირებული.",
+      },
+      language,
+    )
+    const missingAccessTokenMessage = byLanguage(
+      {
+        EN: "Please log in to load your order details.",
+        KA: "შეკვეთის დეტალების სანახავად გაიარეთ ავტორიზაცია.",
+      },
+      language,
+    )
+    const orderLoadFailedMessage = byLanguage(
+      {
+        EN: "Failed to load order details.",
+        KA: "შეკვეთის დეტალების ჩატვირთვა ვერ მოხერხდა.",
+      },
+      language,
+    )
+
+    const loadOrder = async () => {
+      if (!orderId) {
+        if (isActive) {
+          setOrderSummary(null)
+          setOrderError(missingOrderIdMessage)
+          setOrderLoading(false)
+        }
+        return
+      }
+
+      const detailsUrl = buildApiUrl(`/api/orders/${encodeURIComponent(orderId)}/`)
+      if (!detailsUrl) {
+        if (isActive) {
+          setOrderSummary(null)
+          setOrderError(missingApiBaseUrlMessage)
+          setOrderLoading(false)
+        }
+        return
+      }
+
+      if (isActive) {
+        setOrderLoading(true)
+        setOrderError(null)
+      }
+
+      const response = await fetchWithAuthRetry(detailsUrl, {
+        method: "GET",
+        cache: "no-store",
+      })
+      if (!response) {
+        if (isActive) {
+          setOrderSummary(null)
+          setOrderError(orderLoadFailedMessage)
+          setOrderLoading(false)
+        }
+        return
+      }
+
+      const payload = await response.json().catch(() => null)
+      if (!response.ok) {
+        if (isActive) {
+          if (response.status === 401 || response.status === 403) {
+            setOrderError(missingAccessTokenMessage)
+          } else {
+            setOrderError(getApiMessage(payload, orderLoadFailedMessage))
+          }
+          setOrderSummary(null)
+          setOrderLoading(false)
+        }
+        return
+      }
+
+      const normalized = normalizeOrderDetailsSummary(payload, language)
+      if (!normalized) {
+        if (isActive) {
+          setOrderSummary(null)
+          setOrderError(orderLoadFailedMessage)
+          setOrderLoading(false)
+        }
+        return
+      }
+
+      if (isActive) {
+        setOrderSummary(normalized)
+        setOrderError(null)
+        setOrderLoading(false)
+      }
+    }
+
+    void loadOrder()
+
+    return () => {
+      isActive = false
+    }
+  }, [language, orderId])
 
   const text = {
     pill: byLanguage({ EN: "Payment Cancelled", KA: "გადახდა გაუქმდა" }, language),
@@ -74,9 +210,14 @@ export default function PaymentCancel() {
       { EN: "Continue Shopping", KA: "შოპინგის გაგრძელება" },
       language,
     ),
+    loadingOrder: byLanguage(
+      { EN: "Loading order details...", KA: "შეკვეთის დეტალები იტვირთება..." },
+      language,
+    ),
   }
 
-  const orderNumber = confirmation?.orderNumber || text.noOrderNumber
+  const orderNumber = orderSummary?.orderNumber || text.noOrderNumber
+  const orderStatus = orderSummary?.status || text.cancelled
 
   return (
     <div className="relative flex min-h-screen flex-col overflow-hidden bg-white text-slate-900">
@@ -111,6 +252,16 @@ export default function PaymentCancel() {
                   <p className="max-w-2xl text-sm leading-6 text-slate-600 sm:text-[15px]">
                     {text.description} {text.orderNumber}: {orderNumber}
                   </p>
+                  {orderLoading ? (
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500">
+                      {text.loadingOrder}
+                    </p>
+                  ) : null}
+                  {orderError ? (
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-[#b44b4b]">
+                      {orderError}
+                    </p>
+                  ) : null}
                 </div>
               </div>
 
@@ -129,7 +280,7 @@ export default function PaymentCancel() {
                     {text.status}
                   </p>
                   <p className="mt-2 text-sm font-semibold uppercase tracking-[0.18em] text-[#b44b4b]">
-                    {text.cancelled}
+                    {orderStatus}
                   </p>
                 </div>
               </div>

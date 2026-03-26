@@ -168,29 +168,6 @@ const pickPayloadText = (payload: unknown, keys: string[]) => {
   return "";
 };
 
-const pickPayloadNumber = (payload: unknown, keys: string[]) => {
-  const candidates = getCheckoutPayloadCandidates(payload);
-
-  for (const record of candidates) {
-    for (const key of keys) {
-      const value = record[key];
-
-      if (typeof value === "number" && Number.isFinite(value)) {
-        return value;
-      }
-
-      if (typeof value === "string" && value.trim()) {
-        const parsed = Number(value.replace(/[^0-9.-]/g, ""));
-        if (Number.isFinite(parsed)) {
-          return parsed;
-        }
-      }
-    }
-  }
-
-  return null;
-};
-
 const parsePriceValue = (value: unknown) => {
   if (typeof value === "number" && Number.isFinite(value)) {
     return value;
@@ -205,19 +182,6 @@ const parsePriceValue = (value: unknown) => {
 
   return null;
 };
-
-const formatDeliveryAddress = (address: Address) =>
-  [
-    address.address1,
-    address.address2,
-    address.city,
-    address.state,
-    address.country,
-    address.postalCode,
-  ]
-    .map((value) => value.trim())
-    .filter((value) => value.length > 0)
-    .join(", ");
 
 const getApiMessage = (payload: unknown, fallback: string) => {
   if (typeof payload === "string" && payload.trim()) {
@@ -517,34 +481,6 @@ export default function Checkout() {
       {
         EN: "Payment link is missing. Please try again.",
         KA: "გადახდის ბმული არ არის დაბრუნებული. სცადეთ ხელახლა.",
-      },
-      language,
-    ),
-    orderConfirmed: byLanguage(
-      {
-        EN: "Confirmed",
-        KA: "დადასტურებულია",
-      },
-      language,
-    ),
-    paymentMethodFallback: byLanguage(
-      {
-        EN: "UniPay",
-        KA: "UniPay",
-      },
-      language,
-    ),
-    estimatedDeliveryFallback: byLanguage(
-      {
-        EN: "Our team will contact you shortly with delivery timing.",
-        KA: "ჩვენი გუნდი მალე დაგიკავშირდება მიწოდების დროის დასაზუსტებლად.",
-      },
-      language,
-    ),
-    customerFallback: byLanguage(
-      {
-        EN: "Customer",
-        KA: "მომხმარებელი",
       },
       language,
     ),
@@ -905,70 +841,9 @@ export default function Checkout() {
         return;
       }
 
-      const rawOrderNumber =
-        pickPayloadText(payload, [
-          "order_number",
-          "orderNumber",
-          "number",
-          "reference",
-          "order_reference",
-          "id",
-        ]) || Date.now().toString().slice(-8);
-      const orderNumber = rawOrderNumber.startsWith("#")
-        ? rawOrderNumber
-        : `#${rawOrderNumber}`;
-
-      const snapshot = {
-        orderNumber,
-        status:
-          pickPayloadText(payload, ["status", "payment_status", "paymentStatus"]) ||
-          text.orderConfirmed,
-        subtotal:
-          pickPayloadNumber(payload, ["subtotal", "subtotal_amount", "cart_subtotal"]) ??
-          subtotal,
-        shippingFee:
-          pickPayloadNumber(payload, [
-            "shipping_price",
-            "shipping",
-            "shipping_fee",
-            "delivery_fee",
-          ]) ?? deliveryFee,
-        total:
-          pickPayloadNumber(payload, [
-            "total",
-            "estimated_total",
-            "amount",
-            "total_amount",
-          ]) ?? total,
-        itemCount: items.reduce((count, item) => count + item.quantity, 0),
-        items,
-        customerName:
-          `${selectedAddress.firstName} ${selectedAddress.lastName}`.trim() ||
-          selectedAddress.name.trim() ||
-          text.customerFallback,
-        phone: selectedAddress.phone.trim() || "-",
-        deliveryAddress: formatDeliveryAddress(selectedAddress) || "-",
-        addressLabel: selectedAddress.name.trim(),
-        paymentMethod:
-          pickPayloadText(payload, [
-            "payment_method",
-            "paymentMethod",
-            "provider",
-            "gateway",
-          ]) || text.paymentMethodFallback,
-        estimatedDelivery:
-          pickPayloadText(payload, [
-            "estimated_delivery",
-            "estimated_delivery_date",
-            "delivery_estimate",
-            "eta",
-          ]) || text.estimatedDeliveryFallback,
-        email: pickPayloadText(payload, ["email", "customer_email", "customerEmail"]),
-        placedAt: new Date().toISOString(),
-        checkoutId,
-        checkoutResponse: payload,
-      };
-      writeOrderConfirmation(snapshot);
+      writeOrderConfirmation({
+        orderId: checkoutId,
+      });
 
       const payUrl = buildApiUrl(
         `/api/orders/${encodeURIComponent(checkoutId)}/pay/unipay/`,
@@ -1011,27 +886,12 @@ export default function Checkout() {
         return;
       }
 
-      writeOrderConfirmation({
-        ...snapshot,
-        status:
-          pickPayloadText(payPayload, ["status", "payment_status", "paymentStatus"]) ||
-          snapshot.status,
-        paymentMethod:
-          pickPayloadText(payPayload, [
-            "payment_method",
-            "paymentMethod",
-            "provider",
-            "gateway",
-          ]) || snapshot.paymentMethod,
-        paymentResponse: payPayload,
-      });
-
       if (paymentRedirectUrl && typeof window !== "undefined") {
         window.location.assign(paymentRedirectUrl);
         return;
       }
 
-      router.push("/checkout/success");
+      router.push(`/checkout/success?order_id=${encodeURIComponent(checkoutId)}`);
     } catch {
       setOrderError(text.placeOrderFailed);
     } finally {
