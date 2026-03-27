@@ -19,7 +19,11 @@ export type Brand = {
   shipping_and_delivery_policy: LocalizedText;
   logo: string | null;
   hero_image: string | null;
+  about_us_image_1: string | null;
+  about_us_image_2: string | null;
   logo_url: string | null;
   hero_image_url: string | null;
+  about_us_image_1_url: string | null;
+  about_us_image_2_url: string | null;
   updated_at: string;
 };

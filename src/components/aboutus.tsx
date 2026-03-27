@@ -13,6 +13,14 @@ export default function AboutUs() {
   const { brand, isLoading: brandLoading } = useBrandState();
   const brandName = getLocalizedText(brand?.brand_name, language, "Lilien");
   const description = getLocalizedText(brand?.description, language, "");
+  const aboutUsImage1Src =
+    brand?.about_us_image_1_url?.trim() ||
+    brand?.about_us_image_1?.trim() ||
+    "/images/aboutus1.png";
+  const aboutUsImage2Src =
+    brand?.about_us_image_2_url?.trim() ||
+    brand?.about_us_image_2?.trim() ||
+    "/images/aboutus2.png";
   const text = {
     fallbackIntroFirst: byLanguage(
       {
@@ -84,7 +92,7 @@ export default function AboutUs() {
               )}
             </div>
             <Image
-              src="/images/aboutus1.png"
+              src={aboutUsImage1Src}
               alt={`${brandName} evening look`}
               width={640}
               height={960}
@@ -95,7 +103,7 @@ export default function AboutUs() {
 
           <div className="grid items-center gap-10 xl:grid-cols-[380px_minmax(0,1fr)] xl:gap-14">
             <Image
-              src="/images/aboutus2.png"
+              src={aboutUsImage2Src}
               alt={`${brandName} studio portrait`}
               width={760}
               height={980}
