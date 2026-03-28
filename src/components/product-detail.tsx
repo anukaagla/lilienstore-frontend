@@ -76,7 +76,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
   );
   const [availabilitySize, setAvailabilitySize] = useState<string | null>(null);
   const [availabilityResults, setAvailabilityResults] = useState<
-    Array<{ color: string; size: string; inStock: boolean }>
+    Array<{ color: string; size: string; inStock: boolean; allowOrder: boolean }>
   >([]);
   const hasVariantData = variants.length > 0;
   const resolvedSelectedColor = colorOptions.some(
@@ -152,6 +152,20 @@ export default function ProductDetail({ product }: ProductDetailProps) {
       stock.set(size, (stock.get(size) ?? 0) + Math.max(0, variant.stockQty));
     });
     return stock;
+  }, [availabilityVariants]);
+  const availabilityAllowOrderBySize = useMemo(() => {
+    const allowOrderBySize = new Map<string, boolean>();
+    availabilityVariants.forEach((variant) => {
+      const size = variant.size.trim();
+      if (!size) {
+        return;
+      }
+      allowOrderBySize.set(
+        size,
+        (allowOrderBySize.get(size) ?? false) || variant.allowOrder
+      );
+    });
+    return allowOrderBySize;
   }, [availabilityVariants]);
   const sizeOptions = useMemo(() => {
     if (!hasVariantData) {
@@ -275,6 +289,13 @@ export default function ProductDetail({ product }: ProductDetailProps) {
     ),
     inStock: byLanguage({ EN: "In stock", KA: "მარაგშია" }, language),
     outOfStock: byLanguage({ EN: "Out of stock", KA: "არ არის მარაგში" }, language),
+    addDeliveryTimeNotice: byLanguage(
+      {
+        EN: "If ordered 3 bussines days will be added to delivery time",
+        KA: "შეკვეთის შემთხვევაში მიწოდებას დაემატება 3 სამუშაო დღე",
+      },
+      language
+    ),
     care: byLanguage({ EN: "Care", KA: "მოვლა" }, language),
     material: byLanguage({ EN: "Material", KA: "მასალა" }, language),
     size: byLanguage({ EN: "size", KA: "ზომა" }, language),
@@ -669,6 +690,9 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                       ? (availabilityInStoreStockBySize.get(resolvedAvailabilitySize) ?? 0) >
                         0
                       : true,
+                    allowOrder: hasVariantData
+                      ? (availabilityAllowOrderBySize.get(resolvedAvailabilitySize) ?? false)
+                      : false,
                   },
                 ]);
               }}
@@ -682,7 +706,11 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                   <div
                     key={`availability-${result.color}-${result.size}`}
                     className={`flex items-center justify-center gap-2 ${
-                      result.inStock ? "text-emerald-600" : "text-red-500"
+                      result.inStock
+                        ? "text-emerald-600"
+                        : result.allowOrder
+                          ? "text-amber-500"
+                          : "text-red-500"
                     }`}
                   >
                     {result.inStock ? (
@@ -697,6 +725,21 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                         strokeLinejoin="round"
                       >
                         <path d="M3 8l3 3 7-7" />
+                      </svg>
+                    ) : result.allowOrder ? (
+                      <svg
+                        aria-hidden="true"
+                        viewBox="0 0 16 16"
+                        className="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M8 2.2L14 13H2L8 2.2Z" />
+                        <path d="M8 6.3v3.1" />
+                        <path d="M8 11.3h.01" />
                       </svg>
                     ) : (
                       <svg
@@ -714,9 +757,24 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                       </svg>
                     )}
                     <span>
-                      {result.inStock ? text.inStock : text.outOfStock} -{" "}
-                      {hasVariantData ? `${result.color} / ` : ""}
-                      {text.size} {result.size}
+                      {result.inStock ? (
+                        <>
+                          {text.inStock} - {hasVariantData ? `${result.color} / ` : ""}
+                          {text.size} {result.size}
+                        </>
+                      ) : result.allowOrder ? (
+                        <>
+                          {text.addDeliveryTimeNotice} -{" "}
+                          {hasVariantData
+                            ? `${result.color} / SIZE ${result.size}`
+                            : `SIZE ${result.size}`}
+                        </>
+                      ) : (
+                        <>
+                          {text.outOfStock} - {hasVariantData ? `${result.color} / ` : ""}
+                          {text.size} {result.size}
+                        </>
+                      )}
                     </span>
                   </div>
                 ))}
