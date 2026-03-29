@@ -5,7 +5,7 @@ import { WEBSITE_NAME } from "./site-config";
 const FALLBACK_SITE_ORIGIN = "https://lilienstore.com";
 const MAX_DESCRIPTION_LENGTH = 160;
 
-export const DEFAULT_OG_IMAGE_PATH = "/images/link-pic.JPG.jpeg";
+export const DEFAULT_OG_IMAGE_PATH = "/images/link-pic-og.jpg";
 export const DEFAULT_SEO_DESCRIPTION =
   "Shop curated contemporary fashion from Lilienstore, with elegant silhouettes, premium fabrics, and limited collections.";
 
