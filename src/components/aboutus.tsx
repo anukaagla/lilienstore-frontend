@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Footer from "./footer";
 import { byLanguage, getLocalizedText } from "../lib/i18n";
+import Breadcrumbs from "./breadcrumbs";
 import SiteHeader from "./site-header";
 import { useBrandState } from "./brand-provider";
 import { useLanguage } from "./language-provider";
@@ -54,6 +55,8 @@ export default function AboutUs() {
       },
       language
     ),
+    home: byLanguage({ EN: "Home", KA: "მთავარი" }, language),
+    aboutUs: byLanguage({ EN: "About Us", KA: "ჩვენს შესახებ" }, language),
   };
   const descriptionParts = description
     .replace(/\r\n?/g, "\n")
@@ -70,6 +73,14 @@ export default function AboutUs() {
     <div className="relative flex min-h-screen flex-col overflow-hidden bg-white text-slate-900">
       <SiteHeader showFullLogo />
       <main className="mx-auto flex-1 w-full max-w-6xl px-5 pb-24 pt-28">
+        <h1 className="sr-only">{text.aboutUs}</h1>
+        <Breadcrumbs
+          className="mb-5 mt-1"
+          items={[
+            { label: text.home, href: "/" },
+            { label: text.aboutUs },
+          ]}
+        />
         <div className="h-px w-full bg-black" />
         <section className="mt-16 space-y-12 lg:space-y-16">
           <div className="grid items-center gap-4 xl:grid-cols-[minmax(0,1fr)_320px] xl:gap-6">

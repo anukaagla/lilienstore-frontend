@@ -34,6 +34,10 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
     shopNow: byLanguage({ EN: "Shop Now", KA: "შეიძინე" }, language),
     seeMore: byLanguage({ EN: "See more", KA: "მეტის ნახვა" }, language),
     blogPostCover: byLanguage({ EN: "Blog post cover", KA: "ბლოგის ფოტო" }, language),
+    homeHeading: byLanguage(
+      { EN: `${brandName} Fashion Showroom`, KA: `${brandName} შოურუმი` },
+      language
+    ),
     mainShowroom: byLanguage(
       { EN: "Main fashion showroom", KA: "მთავარი შოურუმი" },
       language
@@ -149,6 +153,7 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
 
 
       <main className="relative mx-auto flex w-full max-w-6xl flex-col px-4 pt-24 sm:px-6 md:pt-0">
+        <h1 className="sr-only">{text.homeHeading}</h1>
         <section
           className="flex min-h-[70vh] w-full items-center justify-center py-8 opacity-0 sm:min-h-screen sm:py-0 animate-[fade-up_0.9s_ease-out_forwards]"
           style={{ animationDelay: "120ms" }}
@@ -156,10 +161,13 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
           <div className="w-full max-w-5xl">
             <div className="flex justify-center sm:hidden">
               <div className="relative inline-flex max-w-[calc(100vw-2rem)] overflow-hidden rounded-3xl shadow-[0_30px_60px_-40px_rgba(0,0,0,0.45)]">
-                <img
+                <Image
                   className="block h-auto max-h-[70vh] w-auto max-w-full"
                   src={mobileHeroSrc}
                   alt={`${brandName} hero`}
+                  width={1080}
+                  height={1440}
+                  sizes="(max-width: 639px) calc(100vw - 2rem), 0px"
                 />
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 px-6 pb-12 text-center">
                   <Image
@@ -182,10 +190,13 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
 
             <div className="hidden items-center gap-6 sm:grid sm:grid-cols-2">
               <div className="justify-self-center sm:justify-self-start">
-                <img
+                <Image
                   className="block h-auto max-h-[72vh] w-auto max-w-full rounded-3xl shadow-[0_30px_60px_-40px_rgba(0,0,0,0.45)]"
                   src={heroSrc}
                   alt={text.mainShowroom}
+                  width={1200}
+                  height={1600}
+                  sizes="(min-width: 640px) 44vw, 0px"
                 />
               </div>
               <div className="flex h-full flex-col items-center justify-center gap-5 sm:gap-6 pb-10">

@@ -20,6 +20,7 @@ cp .env.example .env.local
 | `NEXT_PUBLIC_API_BASE_URL` | Yes | Backend API origin used by browser-side requests |
 | `API_BASE_URL` | No (recommended) | Backend API origin for server route handlers |
 | `NEXT_PUBLIC_SITE_URL` | No | Public frontend URL for metadata/canonical links |
+| `GOOGLE_SITE_VERIFICATION` | No | Google Search Console verification token used in metadata |
 
 `npm run validate:env` is automatically executed before `build` and `start`.
 

@@ -3,6 +3,7 @@
 import { getLocalizedText, type Language } from "../lib/i18n";
 import type { Brand } from "../types/brand";
 import Footer from "./footer";
+import Breadcrumbs from "./breadcrumbs";
 import SiteHeader from "./site-header";
 import { useBrandState } from "./brand-provider";
 import { useLanguage } from "./language-provider";
@@ -97,6 +98,7 @@ export default function PolicyPage({
 }: PolicyPageProps) {
   const { language } = useLanguage();
   const { brand, isLoading: brandLoading } = useBrandState();
+  const homeText = language === "EN" ? "Home" : "მთავარი";
 
   if (brandLoading && !brand) {
     return <StaticContentPageSkeleton />;
@@ -110,6 +112,13 @@ export default function PolicyPage({
     <div className="relative flex min-h-screen flex-col overflow-hidden bg-white text-slate-900">
       <SiteHeader showFullLogo />
       <main className="mx-auto flex-1 w-full max-w-4xl px-5 pb-24 pt-28">
+        <Breadcrumbs
+          className="mb-5 mt-1"
+          items={[
+            { label: homeText, href: "/" },
+            { label: title[language] },
+          ]}
+        />
         <div className="h-px w-full bg-black" />
         <section className="mt-12 space-y-8">
           <h1 className="text-center text-2xl font-semibold uppercase tracking-[0.2em] text-[#A79974] md:text-3xl">

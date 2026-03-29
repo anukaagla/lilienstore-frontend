@@ -45,6 +45,19 @@ export type ApiProductDetail = {
       EN: string;
     };
   };
+  brand?:
+    | string
+    | {
+        name?:
+          | string
+          | {
+              KA?: string;
+              EN?: string;
+            };
+      }
+    | null;
+  sku?: string | null;
+  currency?: string | null;
   name: {
     KA: string;
     EN: string;

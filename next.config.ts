@@ -44,6 +44,8 @@ const r2RemotePattern: ImageRemotePattern = {
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  trailingSlash: false,
+  // TODO: Keep permanent HTTP->HTTPS and www/non-www redirects at the CDN/edge layer.
   poweredByHeader: false,
   compress: true,
   output: "standalone",

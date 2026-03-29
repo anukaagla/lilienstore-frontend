@@ -9,6 +9,7 @@ import type { Product, ProductVariant } from "../data/products";
 import { addToCart, readCart, subscribeToCart } from "../lib/cart";
 import { addCartItem } from "../lib/cart-api";
 import { byLanguage, getLocalizedText } from "../lib/i18n";
+import Breadcrumbs from "./breadcrumbs";
 import Footer from "./footer";
 import { useLanguage } from "./language-provider";
 import SiteHeader from "./site-header";
@@ -26,6 +27,15 @@ const normalizeHexColor = (value: string) => {
   }
   return "#000000";
 };
+
+const humanizeSlug = (value: string) =>
+  value
+    .trim()
+    .replace(/[-_]+/g, " ")
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 
 const canPurchaseVariant = (variant: ProductVariant) =>
   variant.stockQty > 0 || variant.allowOrder;
@@ -243,6 +253,14 @@ export default function ProductDetail({ product }: ProductDetailProps) {
     language,
     product.material ?? ""
   );
+  const categoryLabel = product.categoryNameLocalized
+    ? getLocalizedText(product.categoryNameLocalized, language, "")
+    : product.categorySlug
+      ? humanizeSlug(product.categorySlug)
+      : "";
+  const categoryHref = product.categorySlug
+    ? `/market?category=${encodeURIComponent(product.categorySlug)}`
+    : "/market";
   const text = {
     viewImage: byLanguage({ EN: "View image", KA: "ფოტოს ნახვა" }, language),
     mainView: byLanguage({ EN: "main view", KA: "მთავარი ხედი" }, language),
@@ -299,6 +317,8 @@ export default function ProductDetail({ product }: ProductDetailProps) {
     care: byLanguage({ EN: "Care", KA: "მოვლა" }, language),
     material: byLanguage({ EN: "Material", KA: "მასალა" }, language),
     size: byLanguage({ EN: "size", KA: "ზომა" }, language),
+    home: byLanguage({ EN: "Home", KA: "მთავარი" }, language),
+    shop: byLanguage({ EN: "Shop", KA: "პროდუქცია" }, language),
     shoppingBag: byLanguage({ EN: "Shopping bag", KA: "კალათა" }, language),
   };
 
@@ -315,6 +335,15 @@ export default function ProductDetail({ product }: ProductDetailProps) {
     <div className="relative flex min-h-screen flex-col overflow-x-hidden bg-white text-slate-900">
       <SiteHeader showFullLogo />
       <main className="mx-auto flex-1 w-full max-w-6xl overflow-x-hidden px-5 pb-24 pt-28">
+        <Breadcrumbs
+          className="mb-5 mt-1"
+          items={[
+            { label: text.home, href: "/" },
+            { label: text.shop, href: "/market" },
+            ...(categoryLabel ? [{ label: categoryLabel, href: categoryHref }] : []),
+            { label: displayName },
+          ]}
+        />
         <div className="h-px w-full bg-black" />
         <section className="mt-10 grid gap-10 lg:grid-cols-[96px_minmax(0,1fr)_320px] xl:grid-cols-[110px_minmax(0,1fr)_360px]">
           <div className="order-2 flex min-w-0 flex-wrap items-start justify-center gap-4 self-start lg:order-1 lg:flex-col lg:items-start">
@@ -356,7 +385,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
           <aside className="order-3 min-w-0 flex flex-col gap-4 text-xs uppercase tracking-[0.2em] text-slate-500 lg:order-3 lg:min-h-[68vh] lg:justify-start">
             <div className="space-y-5 pt-6">
               <div className="space-y-2">
-                <p className="text-slate-900">{displayName}</p>
+                <h1 className="text-slate-900">{displayName}</h1>
                 <p>{displayPrice} GEL</p>
               </div>
               <div className="h-px w-full bg-black/20" />

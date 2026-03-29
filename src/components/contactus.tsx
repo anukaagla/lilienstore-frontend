@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { byLanguage, getLocalizedText } from "../lib/i18n";
+import Breadcrumbs from "./breadcrumbs";
 import Footer from "./footer";
 import SiteHeader from "./site-header";
 import { useBrandState } from "./brand-provider";
@@ -78,6 +79,8 @@ export default function ContactUs() {
       },
       language
     ),
+    home: byLanguage({ EN: "Home", KA: "მთავარი" }, language),
+    contact: byLanguage({ EN: "Contact Us", KA: "კონტაქტი" }, language),
     yourName: byLanguage({ EN: "Your name", KA: "თქვენი სახელი" }, language),
     namePlaceholder: byLanguage({ EN: "e.g. Nino", KA: "მაგ. ნინო" }, language),
     yourMail: byLanguage({ EN: "Your mail", KA: "თქვენი ელ.ფოსტა" }, language),
@@ -190,6 +193,13 @@ export default function ContactUs() {
     <div className="relative flex min-h-screen flex-col overflow-hidden bg-white text-slate-900">
       <SiteHeader showFullLogo />
       <main className="mx-auto flex-1 w-full max-w-6xl px-5 pb-24 pt-28">
+        <Breadcrumbs
+          className="mb-5 mt-1"
+          items={[
+            { label: text.home, href: "/" },
+            { label: text.contact },
+          ]}
+        />
         <div className="h-px w-full bg-black" />
         <section className="mt-16 grid gap-16 md:grid-cols-2 md:items-start">
           <div className="space-y-10">
@@ -346,9 +356,9 @@ export default function ContactUs() {
           </div>
 
           <div className="flex flex-col items-center gap-8 md:items-start">
-            <h2 className="text-center text-2xl font-bold uppercase tracking-[0.22em] text-[#A79974] md:text-left">
+            <h1 className="text-center text-2xl font-bold uppercase tracking-[0.22em] text-[#A79974] md:text-left">
               {text.heading}
-            </h2>
+            </h1>
             <form className="w-full max-w-sm space-y-8" onSubmit={handleSubmit}>
               <label className="block">
                 <span className="sr-only">{text.yourName}</span>

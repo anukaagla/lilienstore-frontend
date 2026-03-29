@@ -1,10 +1,19 @@
 export type Product = {
   id: string;
+  slug?: string;
   name: string;
   nameLocalized?: {
     KA: string;
     EN: string;
   };
+  categorySlug?: string;
+  categoryNameLocalized?: {
+    KA: string;
+    EN: string;
+  };
+  brandName?: string;
+  sku?: string;
+  currency?: string;
   price: number;
   primaryImage: string;
   secondaryImage: string;

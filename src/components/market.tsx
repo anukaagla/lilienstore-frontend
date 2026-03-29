@@ -9,6 +9,7 @@ import { readCart, subscribeToCart } from "../lib/cart";
 import { byLanguage, getLocalizedText } from "../lib/i18n";
 import { toAbsoluteMediaUrl } from "../lib/media";
 import type { ApiProductListItem, Category } from "../types/catalog";
+import Breadcrumbs from "./breadcrumbs";
 import Footer from "./footer";
 import { useLanguage } from "./language-provider";
 import SiteHeader from "./site-header";
@@ -20,13 +21,41 @@ type MarketProductCard = {
   primaryImage: string;
   secondaryImage: string;
   createdAt: string;
-  productId?: number;
 };
 
 type MarketProps = {
   products?: ApiProductListItem[];
   categories?: Category[];
 };
+
+const findCategoryName = (
+  categories: Category[],
+  slug: string,
+  language: "KA" | "EN"
+): string | null => {
+  for (const category of categories) {
+    if (category.slug === slug) {
+      return category.name[language];
+    }
+    if (category.children?.length) {
+      const nested = findCategoryName(category.children, slug, language);
+      if (nested) {
+        return nested;
+      }
+    }
+  }
+
+  return null;
+};
+
+const humanizeSlug = (value: string) =>
+  value
+    .trim()
+    .replace(/[-_]+/g, " ")
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 
 const mapApiProduct = (
   item: ApiProductListItem,
@@ -53,7 +82,6 @@ const mapApiProduct = (
     primaryImage,
     secondaryImage,
     createdAt: item.created_at,
-    productId: item.id,
   };
 };
 
@@ -101,6 +129,7 @@ export default function Market({
       { EN: "Price: high to low", KA: "ფასი: მაღლიდან დაბლა" },
       language
     ),
+    shop: byLanguage({ EN: "Shop", KA: "პროდუქცია" }, language),
     newest: byLanguage({ EN: "Newest", KA: "უახლესი" }, language),
     noProducts: byLanguage(
       {
@@ -109,6 +138,7 @@ export default function Market({
       },
       language
     ),
+    home: byLanguage({ EN: "Home", KA: "მთავარი" }, language),
     shoppingBag: byLanguage({ EN: "Shopping bag", KA: "კალათა" }, language),
   };
 
@@ -121,6 +151,7 @@ export default function Market({
 
   const currentSort = normalizeSort(searchParams?.get("sort"));
   const currentQuery = searchParams?.get("q") ?? "";
+  const currentCategory = searchParams?.get("category")?.trim() ?? "";
   const cardImageSizes =
     view === "6x2"
       ? "(min-width: 1024px) 16vw, (min-width: 640px) 28vw, 44vw"
@@ -158,6 +189,21 @@ export default function Market({
     () => (apiProducts ?? []).map((item) => mapApiProduct(item, language)),
     [apiProducts, language]
   );
+  const resolvedCategories = useMemo(() => categories ?? [], [categories]);
+  const selectedCategoryLabel = useMemo(() => {
+    if (!currentCategory) {
+      return null;
+    }
+
+    return (
+      findCategoryName(resolvedCategories, currentCategory, language) ||
+      humanizeSlug(currentCategory) ||
+      null
+    );
+  }, [currentCategory, language, resolvedCategories]);
+  const pageHeading = selectedCategoryLabel
+    ? `${selectedCategoryLabel} ${text.shop}`
+    : text.shop;
 
   const sortedProducts = (() => {
     if (!sort) return resolvedProducts;
@@ -193,6 +239,15 @@ export default function Market({
         categories={categories}
       />
       <main className="mx-auto flex-1 w-full max-w-6xl px-5 pb-24 pt-28">
+        <h1 className="sr-only">{pageHeading}</h1>
+        <Breadcrumbs
+          className="mb-5 mt-1"
+          items={[
+            { label: text.home, href: "/" },
+            { label: text.shop, href: "/market" },
+            ...(selectedCategoryLabel ? [{ label: selectedCategoryLabel }] : []),
+          ]}
+        />
         <div className="h-px w-full bg-black" />
         {searchOpen ? (
           <div className="mt-6 flex w-full justify-center">
@@ -323,9 +378,7 @@ export default function Market({
               }`}
             >
               {sortedProducts.map((product) => {
-                const productHref = product.productId
-                  ? `/market/${product.slug}?pid=${product.productId}`
-                  : `/market/${product.slug}`;
+                const productHref = `/market/${product.slug}`;
                 return (
                   <Link
                     key={product.slug}

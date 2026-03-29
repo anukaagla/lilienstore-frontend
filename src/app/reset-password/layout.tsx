@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 
-import Checkout from "../../components/checkout";
 import {
   noindexRobots,
   normalizeDescription,
@@ -8,18 +7,18 @@ import {
   toCanonicalUrl,
 } from "../../lib/seo";
 
-const canonicalUrl = toCanonicalUrl("/checkout");
+const canonicalUrl = toCanonicalUrl("/reset-password");
 
 export const metadata: Metadata = {
-  title: "Checkout",
-  description: normalizeDescription("Secure checkout for completing your order."),
+  title: "Reset Password",
+  description: normalizeDescription("Reset your account password securely."),
   alternates: {
     canonical: canonicalUrl,
   },
   robots: noindexRobots,
   openGraph: {
-    title: "Checkout",
-    description: "Secure checkout",
+    title: "Reset Password",
+    description: "Password reset",
     url: canonicalUrl,
     images: [
       {
@@ -29,12 +28,16 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Checkout",
-    description: "Secure checkout",
+    title: "Reset Password",
+    description: "Password reset",
     images: [resolveOgImageUrl()],
   },
 };
 
-export default function CheckoutPage() {
-  return <Checkout />;
+export default function ResetPasswordLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return children;
 }
