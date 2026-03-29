@@ -312,12 +312,12 @@ export default function ProductDetail({ product }: ProductDetailProps) {
       : null;
 
   return (
-    <div className="relative flex min-h-screen flex-col overflow-hidden bg-white text-slate-900">
+    <div className="relative flex min-h-screen flex-col overflow-x-hidden bg-white text-slate-900">
       <SiteHeader showFullLogo />
-      <main className="mx-auto flex-1 w-full max-w-6xl px-5 pb-24 pt-28">
+      <main className="mx-auto flex-1 w-full max-w-6xl overflow-x-hidden px-5 pb-24 pt-28">
         <div className="h-px w-full bg-black" />
         <section className="mt-10 grid gap-10 lg:grid-cols-[96px_minmax(0,1fr)_320px] xl:grid-cols-[110px_minmax(0,1fr)_360px]">
-          <div className="order-2 flex flex-wrap items-start justify-center gap-4 self-start lg:order-1 lg:flex-col lg:items-start">
+          <div className="order-2 flex min-w-0 flex-wrap items-start justify-center gap-4 self-start lg:order-1 lg:flex-col lg:items-start">
             {thumbnails.map((image, index) => (
               <button
                 key={`${image}-${index}`}
@@ -340,20 +340,20 @@ export default function ProductDetail({ product }: ProductDetailProps) {
             ))}
           </div>
 
-          <div className="order-1 lg:order-2">
-            <div className="relative aspect-[4/5] overflow-hidden lg:aspect-auto lg:h-[68vh] lg:max-h-[68vh]">
+          <div className="order-1 min-w-0 lg:order-2">
+            <div className="relative aspect-[4/5] w-full max-w-full overflow-hidden lg:aspect-auto lg:h-[68vh] lg:max-h-[68vh]">
               <Image
                 src={resolvedMainImage}
                 alt={`${displayName} ${text.mainView}`}
                 fill
                 preload
                 sizes="(min-width: 1280px) 40vw, (min-width: 1024px) 48vw, 100vw"
-                className="marketpic"
+                className="marketpic max-w-full"
               />
             </div>
           </div>
 
-          <aside className="order-3 flex flex-col gap-4 text-xs uppercase tracking-[0.2em] text-slate-500 lg:order-3 lg:min-h-[68vh] lg:justify-start">
+          <aside className="order-3 min-w-0 flex flex-col gap-4 text-xs uppercase tracking-[0.2em] text-slate-500 lg:order-3 lg:min-h-[68vh] lg:justify-start">
             <div className="space-y-5 pt-6">
               <div className="space-y-2">
                 <p className="text-slate-900">{displayName}</p>
