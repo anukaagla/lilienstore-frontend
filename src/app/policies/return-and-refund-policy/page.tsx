@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     url: canonicalUrl,
     images: [
       {
-        url: resolveOgImageUrl("/images/main-pic.png"),
+        url: resolveOgImageUrl(),
       },
     ],
   },
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Return & Refund Policy",
     description,
-    images: [resolveOgImageUrl("/images/main-pic.png")],
+    images: [resolveOgImageUrl()],
   },
 };
 
