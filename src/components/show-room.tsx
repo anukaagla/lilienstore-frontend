@@ -188,6 +188,7 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
       language
     ),
   };
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const footerSignupText = {
     title: byLanguage(
       { EN: "Sign Up To Our Newsletter", KA: "გამოიწერე ჩვენი ნიუსლეთერი" },
@@ -256,13 +257,6 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
   const [newsletterError, setNewsletterError] = useState<string | null>(null);
   const [newsletterSuccess, setNewsletterSuccess] = useState<string | null>(null);
   const [newsletterSubmitting, setNewsletterSubmitting] = useState(false);
-  const [footerSignupEmail, setFooterSignupEmail] = useState("");
-  const [footerSignupFeedback, setFooterSignupFeedback] = useState<{
-    type: "success" | "error";
-    message: string;
-  } | null>(null);
-  const [footerSignupHidden, setFooterSignupHidden] = useState(false);
-  const [footerSignupCollapsing, setFooterSignupCollapsing] = useState(false);
   const [instagramEmbeds, setInstagramEmbeds] = useState<InstagramEmbed[]>([]);
 
   const visiblePosts = resolvedPosts.slice(0, visibleCount);
@@ -391,8 +385,8 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
   const hideFooterSignupStrip = () => {
     if (typeof window !== "undefined") {
       window.sessionStorage.setItem(FOOTER_NEWSLETTER_HIDDEN_SESSION_KEY, "true");
+      window.dispatchEvent(new Event("lilien-footer-newsletter-hide"));
     }
-    setFooterSignupCollapsing(true);
   };
 
   const handleNewsletterSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -425,38 +419,6 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
 
       setNewsletterSuccess(null);
       setNewsletterError(newsletterText.failed);
-    } finally {
-      setNewsletterSubmitting(false);
-    }
-  };
-
-  const handleFooterSignupSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    const normalizedEmail = footerSignupEmail.trim();
-
-    if (!isValidNewsletterEmail(normalizedEmail)) {
-      setFooterSignupFeedback({ type: "error", message: newsletterText.invalidEmail });
-      return;
-    }
-
-    if (newsletterSubmitting) {
-      return;
-    }
-
-    setFooterSignupFeedback(null);
-    setNewsletterSubmitting(true);
-
-    try {
-      const isSubscribed = await subscribeToNewsletter(normalizedEmail);
-      if (isSubscribed) {
-        setNewsletterEmail("");
-        setFooterSignupEmail("");
-        setFooterSignupFeedback({ type: "success", message: newsletterText.success });
-        return;
-      }
-
-      setFooterSignupFeedback({ type: "error", message: newsletterText.failed });
     } finally {
       setNewsletterSubmitting(false);
     }
@@ -756,79 +718,6 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
         </div>
 
         <InstagramEmbedsSection embeds={instagramEmbeds} />
-
-        {!footerSignupHidden ? (
-          <section
-            onTransitionEnd={(event) => {
-              if (
-                footerSignupCollapsing &&
-                event.target === event.currentTarget &&
-                event.propertyName === "max-height"
-              ) {
-                setFooterSignupHidden(true);
-                setFooterSignupCollapsing(false);
-              }
-            }}
-            className={`mx-auto w-full max-w-[calc(100%-48px)] overflow-hidden px-4 transition-[max-height,opacity,padding,margin] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] sm:max-w-[calc(100%-100px)] sm:px-6 ${
-              footerSignupCollapsing
-                ? "pointer-events-none max-h-0 opacity-0 pt-0 pb-0 mt-0 mb-0"
-                : "max-h-48 opacity-100 pt-0 pb-0 mt-0 mb-0"
-            }`}
-          >
-            <div
-              className={`border-t border-black/20 transition-[opacity,padding,margin] duration-500 ease-out ${
-                footerSignupCollapsing
-                  ? "opacity-0 pt-0 pb-0"
-                  : "opacity-100 pt-4 sm:pt-5"
-              }`}
-            >
-              <form
-                className="grid grid-cols-[minmax(0,1.15fr)_auto_auto_minmax(0,1fr)] items-center gap-x-3 gap-y-3 lg:flex lg:flex-row lg:items-center lg:gap-8"
-                onSubmit={handleFooterSignupSubmit}
-                noValidate
-              >
-                <p className="font-display text-[11px] font-semibold leading-[1.15] text-slate-900 sm:text-[0.98rem]">
-                  {footerSignupText.title}
-                </p>
-                <span
-                  aria-hidden="true"
-                  className="h-11 w-px bg-black/20 lg:h-16"
-                />
-                <button
-                  type="submit"
-                  disabled={newsletterSubmitting}
-                  className="inline-flex min-w-[104px] items-center justify-center rounded-[0.35rem] bg-black px-4 py-2.5 text-[11px] font-medium uppercase tracking-[0.14em] text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70 sm:min-w-[168px] sm:px-6 sm:py-3 sm:text-sm sm:tracking-[0.16em]"
-                >
-                  {footerSignupText.button}
-                </button>
-                <label className="block min-w-0">
-                  <span className="sr-only">{footerSignupText.placeholder}</span>
-                  <input
-                    type="email"
-                    value={footerSignupEmail}
-                    onChange={(event) => {
-                      setFooterSignupEmail(event.target.value);
-                      if (footerSignupFeedback) {
-                        setFooterSignupFeedback(null);
-                      }
-                    }}
-                    placeholder={footerSignupText.placeholder}
-                    className="w-full border-b border-black/20 bg-transparent pb-2 text-[11px] uppercase tracking-[0.12em] text-slate-700 placeholder:text-slate-500 focus:border-black focus:outline-none sm:pb-3 sm:text-sm sm:tracking-[0.16em]"
-                  />
-                </label>
-              </form>
-              {footerSignupFeedback ? (
-                <p
-                  className={`mt-2 text-[11px] sm:text-sm ${
-                    footerSignupFeedback.type === "success" ? "text-[#2e7d32]" : "text-[#9f3a32]"
-                  }`}
-                >
-                  {footerSignupFeedback.message}
-                </p>
-              ) : null}
-            </div>
-          </section>
-        ) : null}
       </main>
       <Footer />
     </div>

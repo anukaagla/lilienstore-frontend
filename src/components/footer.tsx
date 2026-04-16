@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { byLanguage, getLocalizedText } from "../lib/i18n";
 import { useBrandState } from "./brand-provider";
+import FooterNewsletterStrip from "./footer-newsletter-strip";
 import { SkeletonBlock } from "./page-skeletons";
 import { useLanguage } from "./language-provider";
 
@@ -199,14 +200,16 @@ export default function Footer({ variant = "dark" }: FooterProps) {
   ];
 
   return (
-    <footer
-      className={
-        isLight
-          ? "border-t-2 border-black bg-white text-slate-900"
-          : "bg-[#0b0b0b] text-white"
-      }
-    >
-      <div className="w-full px-6 py-10">
+    <>
+      <FooterNewsletterStrip language={language} />
+      <footer
+        className={
+          isLight
+            ? "border-t-2 border-black bg-white text-slate-900"
+            : "bg-[#0b0b0b] text-white"
+        }
+      >
+        <div className="w-full px-6 py-10">
         <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-3">
@@ -356,7 +359,8 @@ export default function Footer({ variant = "dark" }: FooterProps) {
           </a>
           .
         </p>
-      </div>
-    </footer>
+        </div>
+      </footer>
+    </>
   );
 }
