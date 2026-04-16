@@ -64,8 +64,8 @@ export default function NewsletterModal({
             </svg>
           </button>
 
-          <div className="grid gap-4 p-3 sm:grid-cols-[0.95fr_1.05fr] sm:gap-8 sm:p-6 md:p-7">
-            <div className="relative min-h-[180px] overflow-hidden rounded-[1.3rem] sm:min-h-[520px] sm:rounded-[1.6rem]">
+          <div className="grid gap-2 p-2.5 sm:grid-cols-[0.95fr_1.05fr] sm:gap-8 sm:p-6 md:p-7">
+            <div className="relative min-h-[145px] overflow-hidden rounded-[1.2rem] sm:min-h-[520px] sm:rounded-[1.6rem]">
               <Image
                 src="/images/newsletter-pic.png"
                 alt={text.imageAlt}
@@ -75,42 +75,42 @@ export default function NewsletterModal({
               />
             </div>
 
-            <div className="flex flex-col justify-center px-1 pb-2 pt-0 text-[#4b433c] sm:min-h-[520px] sm:px-1 sm:pb-1 sm:pt-1 sm:pr-10">
+            <div className="flex flex-col justify-center px-1 pb-1 pt-0 text-[#4b433c] sm:min-h-[520px] sm:px-1 sm:pb-1 sm:pt-1 sm:pr-10">
               {success ? (
-                <div className="flex min-h-[180px] items-center justify-center text-center sm:min-h-[520px]">
+                <div className="flex min-h-[145px] items-center justify-center text-center sm:min-h-[520px]">
                   <p className="max-w-md font-display text-xl leading-[1.35] text-[#4f8a53] sm:text-[2rem]">
                     {success}
                   </p>
                 </div>
               ) : (
                 <>
-                  <p className="translate-y-1 font-display text-[1.2rem] leading-none tracking-[0.01em] text-[#171412] sm:translate-y-[55px] sm:text-[1.75rem]">
+                  <p className="translate-y-0 font-display text-[1.08rem] leading-none tracking-[0.01em] text-[#171412] sm:translate-y-[55px] sm:text-[1.75rem]">
                     {text.title}
                   </p>
-                  <div className="translate-y-2 sm:translate-y-16">
-                    <h2 className="mt-4 font-display text-[1.15rem] leading-none tracking-[0.01em] text-[#7a7066] sm:mt-10 sm:text-[1.6rem]">
+                  <div className="translate-y-1 sm:translate-y-16">
+                    <h2 className="mt-2 font-display text-[1rem] leading-none tracking-[0.01em] text-[#7a7066] sm:mt-10 sm:text-[1.6rem]">
                       {text.heading}
                     </h2>
-                    <p className="mt-3 max-w-md font-display text-[0.82rem] leading-5 text-[#8a8177] sm:mt-6 sm:text-[0.96rem] sm:leading-6">
+                    <p className="mt-2 max-w-md font-display text-[0.78rem] leading-[1.35] text-[#8a8177] sm:mt-6 sm:text-[0.96rem] sm:leading-6">
                       {text.description}
                     </p>
                   </div>
 
-                  <form className="relative mt-6 sm:mt-14" onSubmit={onSubmit} noValidate>
-                    <label className="mt-6 block sm:mt-16">
+                  <form className="relative mt-3 sm:mt-14" onSubmit={onSubmit} noValidate>
+                    <label className="mt-3 block sm:mt-16">
                       <span className="sr-only">{text.emailPlaceholder}</span>
                       <input
                         type="email"
                         value={email}
                         onChange={(event) => onEmailChange(event.target.value)}
                         placeholder={text.emailPlaceholder}
-                        className="w-full border-b border-[#d9d0c6] bg-transparent pb-2 font-display text-[0.98rem] tracking-[0.01em] text-[#4b433c] placeholder:text-[#8f867d] focus:border-[#8b8175] focus:outline-none sm:pb-3 sm:text-[1.08rem]"
+                        className="w-full border-b border-[#d9d0c6] bg-transparent pb-1.5 font-display text-[0.92rem] tracking-[0.01em] text-[#4b433c] placeholder:text-[#8f867d] focus:border-[#8b8175] focus:outline-none sm:pb-3 sm:text-[1.08rem]"
                       />
                     </label>
-                    <div className="mt-6 flex justify-center sm:mt-14">
+                    <div className="mt-4 flex justify-center sm:mt-14">
                       <button
                         type="submit"
-                        className="min-w-[150px] rounded-full border border-[#8f8780] bg-white px-7 py-2.5 text-[0.98rem] text-[#39322d] shadow-[0_8px_24px_-18px_rgba(0,0,0,0.55)] transition hover:-translate-y-0.5 sm:min-w-[170px] sm:px-8 sm:py-3 sm:text-[1.08rem]"
+                        className="min-w-[138px] rounded-full border border-[#8f8780] bg-white px-6 py-2 text-[0.92rem] text-[#39322d] shadow-[0_8px_24px_-18px_rgba(0,0,0,0.55)] transition hover:-translate-y-0.5 sm:min-w-[170px] sm:px-8 sm:py-3 sm:text-[1.08rem]"
                       >
                         {text.signUp}
                       </button>
@@ -126,10 +126,10 @@ export default function NewsletterModal({
                       />
                     </div>
 
-                    {error ? <p className="mt-3 text-sm text-[#9f3a32]">{error}</p> : null}
+                    {error ? <p className="mt-2 text-sm text-[#9f3a32]">{error}</p> : null}
                   </form>
 
-                  <p className="mt-auto pt-4 text-[10px] uppercase tracking-[0.05em] text-[#8b8178] sm:pt-6 sm:text-[11px]">
+                  <p className="mt-auto pt-3 text-[9px] uppercase tracking-[0.04em] text-[#8b8178] sm:pt-6 sm:text-[11px]">
                     {text.privacyPrefix}{" "}
                     <Link
                       href="/policies/privacy-policy"
