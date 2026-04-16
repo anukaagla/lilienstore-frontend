@@ -179,8 +179,34 @@ export const buildOrganizationSchema = ({
   ...(sameAs && sameAs.length ? { sameAs } : {}),
 });
 
+const SCHEMA_ORG_CONTEXT = "https://schema.org";
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  Boolean(value) && typeof value === "object" && !Array.isArray(value);
+
+const normalizeJsonLdPayload = (payload: unknown) => {
+  if (!Array.isArray(payload)) {
+    return payload;
+  }
+
+  return {
+    "@context": SCHEMA_ORG_CONTEXT,
+    "@graph": payload.map((entry) => {
+      if (!isRecord(entry)) {
+        return entry;
+      }
+
+      const normalizedEntry = { ...entry };
+      if (typeof normalizedEntry["@context"] === "string") {
+        delete normalizedEntry["@context"];
+      }
+      return normalizedEntry;
+    }),
+  };
+};
+
 export const jsonLdStringify = (payload: unknown) =>
-  JSON.stringify(payload)
+  JSON.stringify(normalizeJsonLdPayload(payload))
     .replace(/</g, "\\u003c")
     .replace(/\u2028/g, "\\u2028")
     .replace(/\u2029/g, "\\u2029");

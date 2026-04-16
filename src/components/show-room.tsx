@@ -2,26 +2,30 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { byLanguage, getLocalizedText } from "../lib/i18n";
 import { getHomeCollectionHeroImage } from "../lib/home-collection";
 import {
-  FOOTER_NEWSLETTER_HIDE_EVENT,
   FOOTER_NEWSLETTER_HIDDEN_SESSION_KEY,
   NEWSLETTER_DISMISSED_SESSION_KEY,
-  getNewsletterText,
   isValidNewsletterEmail,
 } from "../lib/newsletter";
 import { useBrandState } from "./brand-provider";
 import { useLanguage } from "./language-provider";
 import type { BlogPost } from "../types/blog";
 import Footer from "./footer";
-import NewsletterModal from "./newsletter-modal";
 import { HomePageSkeleton } from "./page-skeletons";
 import SiteHeader from "./site-header";
 
 type ShowRoomProps = {
   posts?: BlogPost[];
+};
+
+type InstagramEmbed = {
+  id: number;
+  post_url: string;
+  embed_html: string;
+  updated_at: string;
 };
 
 const Divider = () => (
@@ -30,7 +34,120 @@ const Divider = () => (
   </div>
 );
 
+const InstagramEmbedsSection = memo(function InstagramEmbedsSection({
+  embeds,
+}: {
+  embeds: InstagramEmbed[];
+}) {
+  if (!embeds.length) {
+    return null;
+  }
+
+  return (
+    <>
+      <Divider />
+      <section className="mx-auto w-full max-w-6xl px-4 pb-10 pt-10 sm:px-6">
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+          {embeds.map((embed, index) => (
+            <article
+              key={`${embed.id}-${embed.post_url || index}`}
+              className="rounded-[1.75rem] border border-black/10 bg-white/80 p-3 shadow-[0_18px_42px_-36px_rgba(0,0,0,0.58)]"
+            >
+              <div
+                className="mx-auto w-full max-w-[560px] [&_blockquote.instagram-media]:!m-0 [&_blockquote.instagram-media]:!min-w-0 [&_blockquote.instagram-media]:!w-full [&_blockquote.instagram-media]:max-w-full"
+                dangerouslySetInnerHTML={{ __html: embed.embed_html }}
+              />
+            </article>
+          ))}
+        </div>
+      </section>
+    </>
+  );
+});
+
 const INITIAL_NEWSLETTER_POPUP_DELAY_MS = 1600;
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
+const NEWSLETTER_SUBSCRIBE_PATH = "/api/newsletter/subscribe/";
+const INSTAGRAM_EMBEDS_PATH = "/api/instagram/embeds/";
+const INSTAGRAM_EMBED_SCRIPT_URL = "https://www.instagram.com/embed.js";
+
+const getString = (value: unknown, fallback = "") => {
+  if (typeof value === "string") return value;
+  return fallback;
+};
+
+const getNumber = (value: unknown, fallback: number) => {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return fallback;
+};
+
+const normalizeInstagramEmbeds = (payload: unknown): InstagramEmbed[] => {
+  if (!Array.isArray(payload)) {
+    return [];
+  }
+
+  return payload
+    .filter(
+      (item): item is Record<string, unknown> =>
+        !!item && typeof item === "object" && !Array.isArray(item),
+    )
+    .map((entry, index) => ({
+      id: getNumber(entry.id, index + 1),
+      post_url: getString(entry.post_url, ""),
+      embed_html: getString(entry.embed_html, ""),
+      updated_at: getString(entry.updated_at, ""),
+    }))
+    .filter((entry) => entry.embed_html.length > 0);
+};
+
+const fetchInstagramEmbeds = async (signal?: AbortSignal): Promise<InstagramEmbed[]> => {
+  if (!API_BASE_URL) {
+    return [];
+  }
+
+  try {
+    const requestUrl = new URL(INSTAGRAM_EMBEDS_PATH, API_BASE_URL);
+    const response = await fetch(requestUrl.toString(), {
+      method: "GET",
+      cache: "no-store",
+      signal,
+    });
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const payload = await response.json();
+    return normalizeInstagramEmbeds(payload);
+  } catch {
+    return [];
+  }
+};
+
+const subscribeToNewsletter = async (email: string) => {
+  if (!API_BASE_URL) {
+    return false;
+  }
+
+  try {
+    const requestUrl = new URL(NEWSLETTER_SUBSCRIBE_PATH, API_BASE_URL);
+    const response = await fetch(requestUrl.toString(), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email }),
+    });
+
+    return response.status === 200 || response.status === 201;
+  } catch {
+    return false;
+  }
+};
 
 export default function ShowRoom({ posts }: ShowRoomProps) {
   const { language } = useLanguage();
@@ -117,8 +234,15 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
     ),
     success: byLanguage(
       {
-        EN: "You have successfully subscribed to the newsletter. Stay tuned for updates.",
-        KA: "თქვენ წარმატებით გამოიწერეთ ნიუსლეთერი, დაელოდეთ სიახლეებს.",
+        EN: "Subscription is complete.",
+        KA: "გამოწერა დასრულებულია.",
+      },
+      language
+    ),
+    failed: byLanguage(
+      {
+        EN: "Subscription could not be completed.",
+        KA: "გამოწერა ვერ შესრულდა.",
       },
       language
     ),
@@ -131,22 +255,40 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [newsletterError, setNewsletterError] = useState<string | null>(null);
   const [newsletterSuccess, setNewsletterSuccess] = useState<string | null>(null);
+  const [newsletterSubmitting, setNewsletterSubmitting] = useState(false);
   const [footerSignupEmail, setFooterSignupEmail] = useState("");
+  const [footerSignupFeedback, setFooterSignupFeedback] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
   const [footerSignupHidden, setFooterSignupHidden] = useState(false);
   const [footerSignupCollapsing, setFooterSignupCollapsing] = useState(false);
+  const [instagramEmbeds, setInstagramEmbeds] = useState<InstagramEmbed[]>([]);
 
   const visiblePosts = resolvedPosts.slice(0, visibleCount);
   const canShowMore = visibleCount < resolvedPosts.length;
-  const isValidNewsletterEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
-    newsletterEmail.trim()
-  );
+
+  const processInstagramEmbeds = () => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const instagramWindow = window as Window & {
+      instgrm?: {
+        Embeds?: {
+          process?: () => void;
+        };
+      };
+    };
+    instagramWindow.instgrm?.Embeds?.process?.();
+  };
 
   useEffect(() => {
     if (typeof window === "undefined") {
       return;
     }
 
-    const dismissed = window.sessionStorage.getItem("lilien-newsletter-dismissed");
+    const dismissed = window.sessionStorage.getItem(NEWSLETTER_DISMISSED_SESSION_KEY);
     if (dismissed !== "true") {
       const openTimer = window.setTimeout(() => {
         setNewsletterVisible(true);
@@ -174,19 +316,65 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
   }, [newsletterVisible]);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
+    const abortController = new AbortController();
+
+    const loadInstagramEmbeds = async () => {
+      const embeds = await fetchInstagramEmbeds(abortController.signal);
+      if (!abortController.signal.aborted) {
+        setInstagramEmbeds(embeds);
+      }
+    };
+
+    void loadInstagramEmbeds();
+
+    return () => {
+      abortController.abort();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!instagramEmbeds.length || typeof window === "undefined" || typeof document === "undefined") {
       return;
     }
 
-    const hidden = window.sessionStorage.getItem("lilien-footer-newsletter-hidden") === "true";
-    const syncTimer = window.setTimeout(() => {
-      setFooterSignupHidden(hidden);
-    }, 0);
+    const triggerInstagramRender = () => {
+      processInstagramEmbeds();
+    };
+
+    const existingScript = document.querySelector(
+      `script[src="${INSTAGRAM_EMBED_SCRIPT_URL}"]`,
+    ) as HTMLScriptElement | null;
+
+    if (existingScript) {
+      const instagramWindow = window as Window & {
+        instgrm?: {
+          Embeds?: {
+            process?: () => void;
+          };
+        };
+      };
+      if (instagramWindow.instgrm?.Embeds?.process) {
+        triggerInstagramRender();
+        return;
+      }
+
+      existingScript.addEventListener("load", triggerInstagramRender);
+      return () => {
+        existingScript.removeEventListener("load", triggerInstagramRender);
+      };
+    }
+
+    const script = document.createElement("script");
+    script.src = INSTAGRAM_EMBED_SCRIPT_URL;
+    script.async = true;
+    script.defer = true;
+    script.addEventListener("load", triggerInstagramRender);
+    document.body.appendChild(script);
 
     return () => {
-      window.clearTimeout(syncTimer);
+      script.removeEventListener("load", triggerInstagramRender);
     };
-  }, []);
+  }, [instagramEmbeds]);
 
   if (brandLoading && !brand) {
     return <HomePageSkeleton />;
@@ -194,7 +382,7 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
 
   const closeNewsletter = () => {
     if (typeof window !== "undefined") {
-      window.sessionStorage.setItem("lilien-newsletter-dismissed", "true");
+      window.sessionStorage.setItem(NEWSLETTER_DISMISSED_SESSION_KEY, "true");
     }
     setNewsletterVisible(false);
     setNewsletterError(null);
@@ -202,43 +390,76 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
 
   const hideFooterSignupStrip = () => {
     if (typeof window !== "undefined") {
-      window.sessionStorage.setItem("lilien-footer-newsletter-hidden", "true");
+      window.sessionStorage.setItem(FOOTER_NEWSLETTER_HIDDEN_SESSION_KEY, "true");
     }
     setFooterSignupCollapsing(true);
   };
 
-  const handleNewsletterSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleNewsletterSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const normalizedEmail = newsletterEmail.trim();
 
-    if (!isValidNewsletterEmail) {
+    if (!isValidNewsletterEmail(normalizedEmail)) {
       setNewsletterError(newsletterText.invalidEmail);
       setNewsletterSuccess(null);
       return;
     }
 
+    if (newsletterSubmitting) {
+      return;
+    }
+
     setNewsletterError(null);
-    setNewsletterSuccess(newsletterText.success);
-    setNewsletterEmail("");
-    hideFooterSignupStrip();
+    setNewsletterSuccess(null);
+    setNewsletterSubmitting(true);
+
+    try {
+      const isSubscribed = await subscribeToNewsletter(normalizedEmail);
+      if (isSubscribed) {
+        setNewsletterError(null);
+        setNewsletterSuccess(newsletterText.success);
+        setNewsletterEmail("");
+        hideFooterSignupStrip();
+        return;
+      }
+
+      setNewsletterSuccess(null);
+      setNewsletterError(newsletterText.failed);
+    } finally {
+      setNewsletterSubmitting(false);
+    }
   };
 
-  const handleFooterSignupSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleFooterSignupSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const normalizedEmail = footerSignupEmail.trim();
-    setNewsletterEmail(normalizedEmail);
-    setNewsletterVisible(true);
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
-      setNewsletterSuccess(null);
-      setNewsletterError(newsletterText.invalidEmail);
+    if (!isValidNewsletterEmail(normalizedEmail)) {
+      setFooterSignupFeedback({ type: "error", message: newsletterText.invalidEmail });
       return;
     }
 
-    setNewsletterError(null);
-    setNewsletterSuccess(newsletterText.success);
-    setFooterSignupEmail("");
-    hideFooterSignupStrip();
+    if (newsletterSubmitting) {
+      return;
+    }
+
+    setFooterSignupFeedback(null);
+    setNewsletterSubmitting(true);
+
+    try {
+      const isSubscribed = await subscribeToNewsletter(normalizedEmail);
+      if (isSubscribed) {
+        setNewsletterEmail("");
+        setFooterSignupEmail("");
+        setFooterSignupFeedback({ type: "success", message: newsletterText.success });
+        return;
+      }
+
+      setFooterSignupFeedback({ type: "error", message: newsletterText.failed });
+    } finally {
+      setNewsletterSubmitting(false);
+    }
   };
 
   const renderPost = (post: BlogPost, index: number) => {
@@ -423,6 +644,7 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
                         <div className="mt-14 flex justify-center">
                           <button
                             type="submit"
+                            disabled={newsletterSubmitting}
                             className="min-w-[170px] rounded-full border border-[#8f8780] bg-white px-8 py-3 text-lg text-[#39322d] shadow-[0_8px_24px_-18px_rgba(0,0,0,0.55)] transition hover:-translate-y-0.5 sm:text-[1.08rem]"
                           >
                             {newsletterText.signUp}
@@ -487,7 +709,7 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
                   {collectionTitle}
                 </h2>
                 <Link
-                  href="/new-collection"
+                  href="/market"
                   className="mt-5 inline-flex border-b border-white/80 pb-1 text-sm uppercase tracking-[0.24em] text-white/92 transition hover:text-white"
                 >
                   {collectionViewMoreLabel}
@@ -533,6 +755,8 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
           ) : null}
         </div>
 
+        <InstagramEmbedsSection embeds={instagramEmbeds} />
+
         {!footerSignupHidden ? (
           <section
             onTransitionEnd={(event) => {
@@ -572,7 +796,8 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
                 />
                 <button
                   type="submit"
-                  className="inline-flex min-w-[104px] items-center justify-center rounded-[0.35rem] bg-black px-4 py-2.5 text-[11px] font-medium uppercase tracking-[0.14em] text-white transition hover:opacity-90 sm:min-w-[168px] sm:px-6 sm:py-3 sm:text-sm sm:tracking-[0.16em]"
+                  disabled={newsletterSubmitting}
+                  className="inline-flex min-w-[104px] items-center justify-center rounded-[0.35rem] bg-black px-4 py-2.5 text-[11px] font-medium uppercase tracking-[0.14em] text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70 sm:min-w-[168px] sm:px-6 sm:py-3 sm:text-sm sm:tracking-[0.16em]"
                 >
                   {footerSignupText.button}
                 </button>
@@ -581,12 +806,26 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
                   <input
                     type="email"
                     value={footerSignupEmail}
-                    onChange={(event) => setFooterSignupEmail(event.target.value)}
+                    onChange={(event) => {
+                      setFooterSignupEmail(event.target.value);
+                      if (footerSignupFeedback) {
+                        setFooterSignupFeedback(null);
+                      }
+                    }}
                     placeholder={footerSignupText.placeholder}
                     className="w-full border-b border-black/20 bg-transparent pb-2 text-[11px] uppercase tracking-[0.12em] text-slate-700 placeholder:text-slate-500 focus:border-black focus:outline-none sm:pb-3 sm:text-sm sm:tracking-[0.16em]"
                   />
                 </label>
               </form>
+              {footerSignupFeedback ? (
+                <p
+                  className={`mt-2 text-[11px] sm:text-sm ${
+                    footerSignupFeedback.type === "success" ? "text-[#2e7d32]" : "text-[#9f3a32]"
+                  }`}
+                >
+                  {footerSignupFeedback.message}
+                </p>
+              ) : null}
             </div>
           </section>
         ) : null}
