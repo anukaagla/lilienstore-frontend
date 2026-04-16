@@ -3,6 +3,16 @@ type LocalizedText = {
   EN: string;
 };
 
+export type HomeCollectionConfig = {
+  title: LocalizedText;
+  view_more_label: LocalizedText;
+  view_all_products_label: LocalizedText;
+  hero_image: string | null;
+  hero_image_url: string | null;
+  product_slugs: string[];
+  product_ids: number[];
+};
+
 export type Brand = {
   brand_name: LocalizedText;
   description: LocalizedText;
@@ -25,5 +35,6 @@ export type Brand = {
   hero_image_url: string | null;
   about_us_image_1_url: string | null;
   about_us_image_2_url: string | null;
+  home_collection?: HomeCollectionConfig;
   updated_at: string;
 };

@@ -19,6 +19,8 @@ type SiteHeaderProps = {
   onSearchClick?: () => void;
   searchHref?: string;
   isFixed?: boolean;
+  headerTone?: "dark" | "light";
+  catalogBasePath?: string;
   categories?: Category[];
   loginOpenRequest?: number;
   onLoginSuccess?: () => void;
@@ -140,6 +142,8 @@ export default function SiteHeader({
   onSearchClick,
   searchHref = "/market?search=1",
   isFixed = true,
+  headerTone = "dark",
+  catalogBasePath = "/market",
   categories,
   loginOpenRequest,
   onLoginSuccess,
@@ -165,8 +169,14 @@ export default function SiteHeader({
   const [fetchedCategories, setFetchedCategories] = useState<Category[]>([]);
   const [portalReady, setPortalReady] = useState(false);
   const languageSwitchLabel = language === "EN" ? "GE" : "ENG";
+  const isLightTone = headerTone === "light";
+  const headerPrimaryClass = isLightTone ? "text-white" : "text-slate-900";
+  const headerSecondaryClass = isLightTone ? "text-white/78" : "text-slate-500";
+  const headerHoverClass = isLightTone ? "hover:text-white" : "hover:text-slate-900";
   const searchClassName =
-    "relative pb-1 transition hover:text-slate-900 after:absolute after:bottom-0 after:left-0 after:h-px after:w-full after:bg-slate-400";
+    `relative pb-1 transition ${headerHoverClass} after:absolute after:bottom-0 after:left-0 after:h-px after:w-full ${
+      isLightTone ? "after:bg-white/65" : "after:bg-slate-400"
+    }`;
   const text = {
     search: byLanguage({ EN: "Search", KA: "ძებნა" }, language),
     profile: byLanguage({ EN: "Profile", KA: "პროფილი" }, language),
@@ -258,7 +268,7 @@ export default function SiteHeader({
 
   const getCategoryHref = (slug: string) => {
     const params =
-      pathname === "/market"
+      pathname === catalogBasePath
         ? new URLSearchParams(searchParams?.toString())
         : new URLSearchParams();
 
@@ -266,7 +276,7 @@ export default function SiteHeader({
     params.delete("search");
 
     const query = params.toString();
-    return query ? `/market?${query}` : "/market";
+    return query ? `${catalogBasePath}?${query}` : catalogBasePath;
   };
 
   useEffect(() => {
@@ -466,15 +476,15 @@ export default function SiteHeader({
             aria-expanded={menuOpen}
             aria-controls="site-menu"
             onClick={() => setMenuOpen((open) => !open)}
-            className="flex h-10 w-10 items-center justify-center text-slate-900 transition hover:opacity-70"
+            className={`flex h-10 w-10 items-center justify-center ${headerPrimaryClass} transition hover:opacity-70`}
           >
             {menuOpen ? (
               <span className="text-2xl font-light leading-none">X</span>
             ) : (
               <div className="flex flex-col gap-1.5">
-                <span className="h-0.5 w-6 bg-slate-900" />
-                <span className="h-0.5 w-6 bg-slate-900" />
-                <span className="h-0.5 w-6 bg-slate-900" />
+                <span className="h-0.5 w-6 bg-current" />
+                <span className="h-0.5 w-6 bg-current" />
+                <span className="h-0.5 w-6 bg-current" />
               </div>
             )}
           </button>
@@ -506,7 +516,7 @@ export default function SiteHeader({
         </div>
 
         <div
-          className={`flex min-h-[48px] flex-1 flex-wrap items-center justify-end gap-x-6 gap-y-2 text-[10px] uppercase leading-none tracking-[0.16em] text-slate-500 sm:gap-x-8 sm:text-[11px] sm:tracking-[0.2em] md:gap-x-10 md:text-[13px] md:tracking-[0.22em] ${
+          className={`flex min-h-[48px] flex-1 flex-wrap items-center justify-end gap-x-6 gap-y-2 text-[10px] uppercase leading-none tracking-[0.16em] ${headerSecondaryClass} sm:gap-x-8 sm:text-[11px] sm:tracking-[0.2em] md:gap-x-10 md:text-[13px] md:tracking-[0.22em] ${
             menuOpen ? "opacity-0 pointer-events-none" : ""
           }`}
         >
@@ -514,7 +524,7 @@ export default function SiteHeader({
             <button
               type="button"
               onClick={toggleLanguage}
-              className="transition hover:text-slate-900"
+              className={`transition ${headerHoverClass}`}
               aria-label={byLanguage(
                 {
                   EN: "Switch language to Georgian",
@@ -543,7 +553,7 @@ export default function SiteHeader({
             {loggedIn ? (
               <Link
                 href="/profile"
-                className="flex items-center gap-2 transition hover:text-slate-900"
+                className={`flex items-center gap-2 transition ${headerHoverClass}`}
                 aria-label={text.profile}
               >
                 <span className="hidden sm:inline">{text.profile}</span>
@@ -564,7 +574,7 @@ export default function SiteHeader({
             ) : (
               <button
                 type="button"
-                className="flex items-center gap-2 transition hover:text-slate-900"
+                className={`flex items-center gap-2 transition ${headerHoverClass}`}
                 onClick={() => {
                   setAuthView("signIn");
                   setLoginError(null);
@@ -592,7 +602,7 @@ export default function SiteHeader({
             )}
             <Link
               href="/shopping-bag"
-              className="flex items-center gap-2 transition hover:text-slate-900"
+              className={`flex items-center gap-2 transition ${headerHoverClass}`}
               aria-label={text.shoppingBag}
             >
               <span className="hidden sm:inline">{text.shoppingBag}</span>
@@ -610,7 +620,7 @@ export default function SiteHeader({
                 <path d="M9 8V6a3 3 0 0 1 6 0v2" />
               </svg>
             </Link>
-            <Link href="/contactus" className="transition hover:text-slate-900">
+            <Link href="/contactus" className={`transition ${headerHoverClass}`}>
               {text.help}
             </Link>
           </div>

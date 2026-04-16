@@ -26,6 +26,15 @@ type MarketProductCard = {
 type MarketProps = {
   products?: ApiProductListItem[];
   categories?: Category[];
+  basePath?: string;
+  pageLabel?: {
+    EN: string;
+    KA: string;
+  };
+  emptyStateLabel?: {
+    EN: string;
+    KA: string;
+  };
 };
 
 const findCategoryName = (
@@ -88,6 +97,9 @@ const mapApiProduct = (
 export default function Market({
   products: apiProducts,
   categories,
+  basePath = "/market",
+  pageLabel,
+  emptyStateLabel,
 }: MarketProps) {
   const { language } = useLanguage();
   const router = useRouter();
@@ -190,6 +202,12 @@ export default function Market({
     [apiProducts, language]
   );
   const resolvedCategories = useMemo(() => categories ?? [], [categories]);
+  const basePageLabel = pageLabel
+    ? byLanguage(pageLabel, language)
+    : text.shop;
+  const emptyStateText = emptyStateLabel
+    ? byLanguage(emptyStateLabel, language)
+    : text.noProducts;
   const selectedCategoryLabel = useMemo(() => {
     if (!currentCategory) {
       return null;
@@ -202,8 +220,8 @@ export default function Market({
     );
   }, [currentCategory, language, resolvedCategories]);
   const pageHeading = selectedCategoryLabel
-    ? `${selectedCategoryLabel} ${text.shop}`
-    : text.shop;
+    ? `${selectedCategoryLabel} ${basePageLabel}`
+    : basePageLabel;
 
   const sortedProducts = (() => {
     if (!sort) return resolvedProducts;
@@ -237,6 +255,7 @@ export default function Market({
         showFullLogo
         onSearchClick={() => setSearchOpen((open) => !open)}
         categories={categories}
+        catalogBasePath={basePath}
       />
       <main className="mx-auto flex-1 w-full max-w-6xl px-5 pb-24 pt-28">
         <h1 className="sr-only">{pageHeading}</h1>
@@ -244,7 +263,7 @@ export default function Market({
           className="mb-5 mt-1"
           items={[
             { label: text.home, href: "/" },
-            { label: text.shop, href: "/market" },
+            { label: basePageLabel, href: basePath },
             ...(selectedCategoryLabel ? [{ label: selectedCategoryLabel }] : []),
           ]}
         />
@@ -414,7 +433,7 @@ export default function Market({
             </div>
           ) : (
             <div className="flex min-h-[260px] items-center justify-center border border-dashed border-slate-300 px-6 text-center text-xs uppercase tracking-[0.26em] text-slate-500">
-              {text.noProducts}
+              {emptyStateText}
             </div>
           )}
         </section>

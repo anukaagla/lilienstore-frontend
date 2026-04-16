@@ -2,12 +2,21 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { byLanguage, getLocalizedText } from "../lib/i18n";
+import { getHomeCollectionHeroImage } from "../lib/home-collection";
+import {
+  FOOTER_NEWSLETTER_HIDE_EVENT,
+  FOOTER_NEWSLETTER_HIDDEN_SESSION_KEY,
+  NEWSLETTER_DISMISSED_SESSION_KEY,
+  getNewsletterText,
+  isValidNewsletterEmail,
+} from "../lib/newsletter";
 import { useBrandState } from "./brand-provider";
 import { useLanguage } from "./language-provider";
 import type { BlogPost } from "../types/blog";
 import Footer from "./footer";
+import NewsletterModal from "./newsletter-modal";
 import { HomePageSkeleton } from "./page-skeletons";
 import SiteHeader from "./site-header";
 
@@ -17,19 +26,32 @@ type ShowRoomProps = {
 
 const Divider = () => (
   <div className="relative left-1/2 w-screen -translate-x-1/2">
-    <div className="mx-auto h-px w-[calc(100%-160px)] bg-black" />
+    <div className="mx-auto h-px w-[calc(100%-48px)] bg-black/15 sm:w-[calc(100%-120px)] lg:w-[calc(100%-180px)]" />
   </div>
 );
+
+const INITIAL_NEWSLETTER_POPUP_DELAY_MS = 1600;
 
 export default function ShowRoom({ posts }: ShowRoomProps) {
   const { language } = useLanguage();
   const { brand, isLoading: brandLoading } = useBrandState();
   const brandName = getLocalizedText(brand?.brand_name, language, "Lilien");
-  const logoSrc = brand?.logo_url?.trim() || brand?.logo?.trim() || "/images/Logo.png";
-  const heroSrc =
-    brand?.hero_image_url?.trim() || brand?.hero_image?.trim() || "/images/HERO IMAGE.png";
-  const mobileHeroSrc =
-    brand?.hero_image_url?.trim() || brand?.hero_image?.trim() || "/images/aboutus1.png";
+  const collectionTitle = getLocalizedText(
+    brand?.home_collection?.title,
+    language,
+    "New Collection Is Here"
+  );
+  const collectionViewMoreLabel = getLocalizedText(
+    brand?.home_collection?.view_more_label,
+    language,
+    "View More"
+  );
+  const collectionViewAllProductsLabel = getLocalizedText(
+    brand?.home_collection?.view_all_products_label,
+    language,
+    "View All Products"
+  );
+  const collectionHeroSrc = getHomeCollectionHeroImage(brand);
   const text = {
     shopNow: byLanguage({ EN: "Shop Now", KA: "შეიძინე" }, language),
     seeMore: byLanguage({ EN: "See more", KA: "მეტის ნახვა" }, language),
@@ -43,15 +65,181 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
       language
     ),
   };
+  const heroText = {
+    homeHeading: byLanguage(
+      { EN: `${brandName} New Collection`, KA: `${brandName} ახალი კოლექცია` },
+      language
+    ),
+  };
+  const footerSignupText = {
+    title: byLanguage(
+      { EN: "Sign Up To Our Newsletter", KA: "გამოიწერე ჩვენი ნიუსლეთერი" },
+      language
+    ),
+    button: byLanguage({ EN: "Subscribe", KA: "გამოწერა" }, language),
+    placeholder: byLanguage(
+      { EN: "ENTER YOUR EMAIL", KA: "შეიყვანე შენი ელფოსტა" },
+      language
+    ),
+  };
+  const newsletterText = {
+    title: byLanguage(
+      { EN: "SIGN UP ON NEWSLETTER", KA: "გამოიწერე ნიუსლეთერი" },
+      language
+    ),
+    heading: byLanguage(
+      { EN: "DISCOVER LILIEN FIRST", KA: "აღმოაჩინე LILIEN პირველი" },
+      language
+    ),
+    description: byLanguage(
+      {
+        EN: "Be the first to discover new collections, curated pieces, and showroom updates.",
+        KA: "პირველმა გაიგე ახალი კოლექციების, შერჩეული ნივთებისა და showroom-ის სიახლეების შესახებ.",
+      },
+      language
+    ),
+    emailPlaceholder: byLanguage(
+      { EN: "ENTER YOUR EMAIL", KA: "შეიყვანე შენი ელფოსტა" },
+      language
+    ),
+    signUp: byLanguage({ EN: "SIGN UP", KA: "გამოწერა" }, language),
+    privacyPrefix: byLanguage(
+      { EN: "BY SIGNING UP YOU AGREE TO OUR", KA: "რეგისტრაციით ეთანხმები ჩვენს" },
+      language
+    ),
+    privacyLabel: byLanguage(
+      { EN: "PRIVACY POLICY", KA: "კონფიდენციალურობის პოლიტიკას" },
+      language
+    ),
+    invalidEmail: byLanguage(
+      { EN: "Please enter a valid email address.", KA: "გთხოვ, სწორად შეიყვანე ელფოსტა." },
+      language
+    ),
+    success: byLanguage(
+      {
+        EN: "You have successfully subscribed to the newsletter. Stay tuned for updates.",
+        KA: "თქვენ წარმატებით გამოიწერეთ ნიუსლეთერი, დაელოდეთ სიახლეებს.",
+      },
+      language
+    ),
+    close: byLanguage({ EN: "Close newsletter", KA: "ნიუსლეთერის დახურვა" }, language),
+    imageAlt: byLanguage({ EN: "Newsletter preview", KA: "ნიუსლეთერის ფოტო" }, language),
+  };
   const resolvedPosts = posts ?? [];
   const [visibleCount, setVisibleCount] = useState(3);
+  const [newsletterVisible, setNewsletterVisible] = useState(false);
+  const [newsletterEmail, setNewsletterEmail] = useState("");
+  const [newsletterError, setNewsletterError] = useState<string | null>(null);
+  const [newsletterSuccess, setNewsletterSuccess] = useState<string | null>(null);
+  const [footerSignupEmail, setFooterSignupEmail] = useState("");
+  const [footerSignupHidden, setFooterSignupHidden] = useState(false);
+  const [footerSignupCollapsing, setFooterSignupCollapsing] = useState(false);
 
   const visiblePosts = resolvedPosts.slice(0, visibleCount);
   const canShowMore = visibleCount < resolvedPosts.length;
+  const isValidNewsletterEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+    newsletterEmail.trim()
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const dismissed = window.sessionStorage.getItem("lilien-newsletter-dismissed");
+    if (dismissed !== "true") {
+      const openTimer = window.setTimeout(() => {
+        setNewsletterVisible(true);
+      }, INITIAL_NEWSLETTER_POPUP_DELAY_MS);
+
+      return () => {
+        window.clearTimeout(openTimer);
+      };
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof document === "undefined") {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    if (newsletterVisible) {
+      document.body.style.overflow = "hidden";
+    }
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [newsletterVisible]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const hidden = window.sessionStorage.getItem("lilien-footer-newsletter-hidden") === "true";
+    const syncTimer = window.setTimeout(() => {
+      setFooterSignupHidden(hidden);
+    }, 0);
+
+    return () => {
+      window.clearTimeout(syncTimer);
+    };
+  }, []);
 
   if (brandLoading && !brand) {
     return <HomePageSkeleton />;
   }
+
+  const closeNewsletter = () => {
+    if (typeof window !== "undefined") {
+      window.sessionStorage.setItem("lilien-newsletter-dismissed", "true");
+    }
+    setNewsletterVisible(false);
+    setNewsletterError(null);
+  };
+
+  const hideFooterSignupStrip = () => {
+    if (typeof window !== "undefined") {
+      window.sessionStorage.setItem("lilien-footer-newsletter-hidden", "true");
+    }
+    setFooterSignupCollapsing(true);
+  };
+
+  const handleNewsletterSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!isValidNewsletterEmail) {
+      setNewsletterError(newsletterText.invalidEmail);
+      setNewsletterSuccess(null);
+      return;
+    }
+
+    setNewsletterError(null);
+    setNewsletterSuccess(newsletterText.success);
+    setNewsletterEmail("");
+    hideFooterSignupStrip();
+  };
+
+  const handleFooterSignupSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const normalizedEmail = footerSignupEmail.trim();
+    setNewsletterEmail(normalizedEmail);
+    setNewsletterVisible(true);
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      setNewsletterSuccess(null);
+      setNewsletterError(newsletterText.invalidEmail);
+      return;
+    }
+
+    setNewsletterError(null);
+    setNewsletterSuccess(newsletterText.success);
+    setFooterSignupEmail("");
+    hideFooterSignupStrip();
+  };
 
   const renderPost = (post: BlogPost, index: number) => {
     const layoutIndex = index % 3;
@@ -148,122 +336,259 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-white text-slate-900">
-      <SiteHeader />
+    <div className="relative min-h-screen overflow-hidden bg-[#f6f1e8] text-slate-900">
+      <SiteHeader headerTone="light" />
 
+      {newsletterVisible ? (
+        <div className="fixed inset-0 z-[120]">
+          <button
+            type="button"
+            aria-label={newsletterText.close}
+            onClick={closeNewsletter}
+            className="absolute inset-0 bg-[rgba(9,7,5,0.28)] backdrop-blur-[10px]"
+          />
+          <div className="absolute left-1/2 top-1/2 z-[121] w-[calc(100vw-2rem)] max-w-4xl -translate-x-1/2 -translate-y-1/2 px-2 sm:px-0">
+            <section className="relative overflow-hidden rounded-[2rem] border border-[#9a9389] bg-[rgba(249,246,241,0.96)] shadow-[0_34px_90px_-40px_rgba(0,0,0,0.8)]">
+              <button
+                type="button"
+                aria-label={newsletterText.close}
+                onClick={closeNewsletter}
+                className="absolute right-3 top-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-transparent text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.35)] transition hover:text-white/80 sm:right-5 sm:top-5 sm:h-10 sm:w-10 sm:text-[#746a5f] sm:drop-shadow-none sm:hover:text-black"
+              >
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  className="h-7 w-7"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.2"
+                  strokeLinecap="round"
+                >
+                  <path d="M5 5 19 19" />
+                  <path d="M19 5 5 19" />
+                </svg>
+              </button>
 
-      <main className="relative mx-auto flex w-full max-w-6xl flex-col px-4 pt-24 sm:px-6 md:pt-0">
-        <h1 className="sr-only">{text.homeHeading}</h1>
-        <section
-          className="flex min-h-[70vh] w-full items-center justify-center py-8 opacity-0 sm:min-h-screen sm:py-0 animate-[fade-up_0.9s_ease-out_forwards]"
-          style={{ animationDelay: "120ms" }}
-        >
-          <div className="w-full max-w-5xl">
-            <div className="flex justify-center sm:hidden">
-              <div className="relative inline-flex max-w-[calc(100vw-2rem)] overflow-hidden rounded-3xl shadow-[0_30px_60px_-40px_rgba(0,0,0,0.45)]">
-                <Image
-                  className="block h-auto max-h-[70vh] w-auto max-w-full"
-                  src={mobileHeroSrc}
-                  alt={`${brandName} hero`}
-                  width={1080}
-                  height={1440}
-                  sizes="(max-width: 639px) calc(100vw - 2rem), 0px"
-                />
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 px-6 pb-12 text-center">
+              <div className="grid gap-6 p-4 sm:grid-cols-[0.95fr_1.05fr] sm:gap-8 sm:p-6 md:p-7">
+                <div className="relative min-h-[280px] overflow-hidden rounded-[1.6rem] sm:min-h-[520px]">
                   <Image
-                    className="h-40 w-full max-w-[240px] object-contain"
-                    src={logoSrc}
-                    alt={`${brandName} logo`}
-                    width={480}
-                    height={240}
-                    sizes="240px"
+                    src="/images/newsletter-pic.png"
+                    alt={newsletterText.imageAlt}
+                    fill
+                    sizes="(min-width: 640px) 34vw, 100vw"
+                    className="object-cover"
                   />
-                  <Link
-                    href="/market"
-                    className="inline-flex items-center justify-center rounded-full border border-black/10 bg-white px-10 py-3 text-base font-semibold uppercase tracking-[0.18em] text-slate-900 shadow-[0_10px_20px_-12px_rgba(0,0,0,0.5)]"
-                  >
-                    {text.shopNow}
-                  </Link>
+                </div>
+
+                <div className="flex flex-col justify-center px-2 pb-3 pt-1 text-[#4b433c] sm:min-h-[520px] sm:px-1 sm:pb-1 sm:pr-10">
+                  {newsletterSuccess ? (
+                    <div className="flex min-h-[420px] items-center justify-center text-center sm:min-h-[520px]">
+                      <p className="max-w-md font-display text-2xl leading-[1.35] text-[#4f8a53] sm:text-[2rem]">
+                        {newsletterSuccess}
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="translate-y-[51px] font-display text-[1.55rem] leading-none tracking-[0.01em] text-[#171412] sm:translate-y-[55px] sm:text-[1.75rem]">
+                        {newsletterText.title}
+                      </p>
+                      <div className="translate-y-14 sm:translate-y-16">
+                        <h2 className="mt-10 font-display text-[1.45rem] leading-none tracking-[0.01em] text-[#7a7066] sm:text-[1.6rem]">
+                          {newsletterText.heading}
+                        </h2>
+                        <p className="mt-6 max-w-md font-display text-sm leading-6 text-[#8a8177] sm:text-[0.96rem]">
+                          {newsletterText.description}
+                        </p>
+                      </div>
+
+                      <form className="relative mt-14" onSubmit={handleNewsletterSubmit} noValidate>
+                        <label className="mt-16 block">
+                          <span className="sr-only">{newsletterText.emailPlaceholder}</span>
+                          <input
+                            type="email"
+                            value={newsletterEmail}
+                            onChange={(event) => {
+                              setNewsletterEmail(event.target.value);
+                              if (newsletterError) {
+                                setNewsletterError(null);
+                              }
+                              if (newsletterSuccess) {
+                                setNewsletterSuccess(null);
+                              }
+                            }}
+                            placeholder={newsletterText.emailPlaceholder}
+                            className="w-full border-b border-[#d9d0c6] bg-transparent pb-3 font-display text-lg tracking-[0.01em] text-[#4b433c] placeholder:text-[#8f867d] focus:border-[#8b8175] focus:outline-none sm:text-[1.08rem]"
+                          />
+                        </label>
+                        <div className="mt-14 flex justify-center">
+                          <button
+                            type="submit"
+                            className="min-w-[170px] rounded-full border border-[#8f8780] bg-white px-8 py-3 text-lg text-[#39322d] shadow-[0_8px_24px_-18px_rgba(0,0,0,0.55)] transition hover:-translate-y-0.5 sm:text-[1.08rem]"
+                          >
+                            {newsletterText.signUp}
+                          </button>
+                        </div>
+
+                        <div className="absolute right-0 top-[200px] hidden sm:block">
+                          <Image
+                            src={brand?.logo_url?.trim() || brand?.logo?.trim() || "/images/full.png"}
+                            alt={`${brandName} logo`}
+                            width={68}
+                            height={68}
+                            className="h-auto w-[68px] object-contain opacity-80"
+                          />
+                        </div>
+
+                        {newsletterError ? (
+                          <p className="mt-4 text-sm text-[#9f3a32]">{newsletterError}</p>
+                        ) : null}
+                      </form>
+
+                      <p className="mt-auto pt-6 text-[11px] uppercase tracking-[0.05em] text-[#8b8178]">
+                        {newsletterText.privacyPrefix}{" "}
+                        <Link
+                          href="/policies/privacy-policy"
+                          className="underline underline-offset-2"
+                        >
+                          {newsletterText.privacyLabel}
+                        </Link>
+                      </p>
+                    </>
+                  )}
                 </div>
               </div>
-            </div>
+            </section>
+          </div>
+        </div>
+      ) : null}
 
-            <div className="hidden items-center gap-6 sm:grid sm:grid-cols-2">
-              <div className="justify-self-center sm:justify-self-start">
-                <Image
-                  className="block h-auto max-h-[72vh] w-auto max-w-full rounded-3xl shadow-[0_30px_60px_-40px_rgba(0,0,0,0.45)]"
-                  src={heroSrc}
-                  alt={text.mainShowroom}
-                  width={1200}
-                  height={1600}
-                  sizes="(min-width: 640px) 44vw, 0px"
-                />
+      <main className="relative">
+        <h1 className="sr-only">{heroText.homeHeading}</h1>
+        <section
+          className="relative left-1/2 w-screen -translate-x-1/2 overflow-hidden bg-[#120d0a] opacity-0 animate-[fade-up_0.9s_ease-out_forwards]"
+          style={{ animationDelay: "120ms" }}
+        >
+          <div className="relative h-[100svh] min-h-[100svh]">
+            <Image
+              src={collectionHeroSrc}
+              alt={`${brandName} new collection hero`}
+              fill
+              priority
+              sizes="100vw"
+              className="object-cover"
+            />
+            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,3,1,0.55)_0%,rgba(10,8,5,0.24)_32%,rgba(10,7,4,0.58)_100%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.06),transparent_48%)]" />
+            <div className="pointer-events-none absolute left-1/2 top-[5.9rem] z-10 h-px w-[84vw] max-w-6xl -translate-x-1/2 bg-white/70 sm:top-[6.6rem]" />
+
+            <div className="relative z-10 mx-auto box-border h-[100svh] w-full max-w-6xl px-6 pb-14 pt-32 text-center text-white sm:px-10 sm:pb-20 sm:pt-40">
+              <div className="absolute inset-x-0 top-1/2 flex -translate-y-[calc(44%+40px)] flex-col items-center px-6 sm:-translate-y-[calc(42%+40px)]">
+                <h2 className="max-w-4xl text-3xl font-semibold leading-[0.98] sm:text-5xl md:text-[4.35rem]">
+                  {collectionTitle}
+                </h2>
+                <Link
+                  href="/new-collection"
+                  className="mt-5 inline-flex border-b border-white/80 pb-1 text-sm uppercase tracking-[0.24em] text-white/92 transition hover:text-white"
+                >
+                  {collectionViewMoreLabel}
+                </Link>
               </div>
-              <div className="flex h-full flex-col items-center justify-center gap-5 sm:gap-6 pb-10">
-                <Image
-                  className="h-[180px] w-full max-w-[280px] object-contain sm:h-[220px] sm:max-w-[320px] md:h-[260px]"
-                  src={logoSrc}
-                  alt={`${brandName} logo`}
-                  width={640}
-                  height={320}
-                  sizes="320px"
-                />
+              <div className="flex h-[calc(100svh-8rem)] items-end justify-center sm:h-[calc(100svh-10rem)]">
                 <Link
                   href="/market"
-                  className="relative flex items-center justify-center rounded-full border border-white/60 bg-[#A79974]/85 px-12 py-4 text-lg font-semibold uppercase tracking-[0.18em] text-slate-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.6),_0_14px_30px_-18px_rgba(0,0,0,0.65)] backdrop-blur-md transition hover:translate-y-[-1px]"
+                  className="mb-[20px] inline-flex items-center justify-center rounded-full border border-white/70 bg-transparent px-8 py-3 text-sm font-medium uppercase tracking-[0.24em] text-white shadow-[0_18px_42px_-24px_rgba(0,0,0,0.8)] transition hover:-translate-y-0.5 hover:bg-transparent"
                 >
-                  <span className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-br from-white/70 via-white/10 to-transparent opacity-70" />
-                  <span className="pointer-events-none absolute -top-6 left-10 h-12 w-40 rotate-12 rounded-full bg-white/50 blur-xl" />
-                  <span className="relative z-10 flex items-center gap-3">
-                    <span>{text.shopNow}</span>
-                    <svg
-                      aria-hidden="true"
-                      viewBox="0 0 24 24"
-                      className="h-5 w-5"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M7 17L17 7" />
-                      <path d="M8 7h9v9" />
-                    </svg>
-                  </span>
+                  {collectionViewAllProductsLabel}
                 </Link>
               </div>
             </div>
           </div>
         </section>
 
-        <div className="relative left-1/2 w-screen -translate-x-1/2 -mt-[20px] md:-mt-[50px]">
-          <div className="mx-auto h-px w-[calc(100%-160px)] bg-black" />
+        <div className="mx-auto flex w-full max-w-6xl flex-col px-4 pb-14 pt-8 sm:px-6 sm:pb-16">
+          {visiblePosts.map((post, index) => (
+            <div key={post.id}>
+              {renderPost(post, index)}
+              {index !== visiblePosts.length - 1 ? <Divider /> : null}
+            </div>
+          ))}
+
+          {canShowMore ? (
+            <>
+              <Divider />
+              <div className="flex justify-center py-10">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setVisibleCount((count) =>
+                      Math.min(count + 3, resolvedPosts.length)
+                    )
+                  }
+                  className="rounded-full border border-black/20 bg-white/90 px-10 py-3 text-xs uppercase tracking-[0.3em] text-slate-700 shadow-[0_16px_28px_-18px_rgba(0,0,0,0.45)] transition hover:-translate-y-0.5"
+                >
+                  {text.seeMore}
+                </button>
+              </div>
+            </>
+          ) : null}
         </div>
 
-        {visiblePosts.map((post, index) => (
-          <div key={post.id}>
-            {renderPost(post, index)}
-            {index !== visiblePosts.length - 1 ? <Divider /> : null}
-          </div>
-        ))}
-
-        {canShowMore ? (
-          <>
-            <Divider />
-            <div className="flex justify-center py-10">
-              <button
-                type="button"
-                onClick={() =>
-                  setVisibleCount((count) =>
-                    Math.min(count + 3, resolvedPosts.length)
-                  )
-                }
-                className="rounded-full border border-black/20 bg-white/90 px-10 py-3 text-xs uppercase tracking-[0.3em] text-slate-700 shadow-[0_16px_28px_-18px_rgba(0,0,0,0.45)] transition hover:-translate-y-0.5"
+        {!footerSignupHidden ? (
+          <section
+            onTransitionEnd={(event) => {
+              if (
+                footerSignupCollapsing &&
+                event.target === event.currentTarget &&
+                event.propertyName === "max-height"
+              ) {
+                setFooterSignupHidden(true);
+                setFooterSignupCollapsing(false);
+              }
+            }}
+            className={`mx-auto w-full max-w-[calc(100%-48px)] overflow-hidden px-4 transition-[max-height,opacity,padding,margin] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] sm:max-w-[calc(100%-100px)] sm:px-6 ${
+              footerSignupCollapsing
+                ? "pointer-events-none max-h-0 opacity-0 pt-0 pb-0 mt-0 mb-0"
+                : "max-h-48 opacity-100 pt-0 pb-0 mt-0 mb-0"
+            }`}
+          >
+            <div
+              className={`border-t border-black/20 transition-[opacity,padding,margin] duration-500 ease-out ${
+                footerSignupCollapsing
+                  ? "opacity-0 pt-0 pb-0"
+                  : "opacity-100 pt-4 sm:pt-5"
+              }`}
+            >
+              <form
+                className="grid grid-cols-[minmax(0,1.15fr)_auto_auto_minmax(0,1fr)] items-center gap-x-3 gap-y-3 lg:flex lg:flex-row lg:items-center lg:gap-8"
+                onSubmit={handleFooterSignupSubmit}
+                noValidate
               >
-                {text.seeMore}
-              </button>
+                <p className="font-display text-[11px] font-semibold leading-[1.15] text-slate-900 sm:text-[0.98rem]">
+                  {footerSignupText.title}
+                </p>
+                <span
+                  aria-hidden="true"
+                  className="h-11 w-px bg-black/20 lg:h-16"
+                />
+                <button
+                  type="submit"
+                  className="inline-flex min-w-[104px] items-center justify-center rounded-[0.35rem] bg-black px-4 py-2.5 text-[11px] font-medium uppercase tracking-[0.14em] text-white transition hover:opacity-90 sm:min-w-[168px] sm:px-6 sm:py-3 sm:text-sm sm:tracking-[0.16em]"
+                >
+                  {footerSignupText.button}
+                </button>
+                <label className="block min-w-0">
+                  <span className="sr-only">{footerSignupText.placeholder}</span>
+                  <input
+                    type="email"
+                    value={footerSignupEmail}
+                    onChange={(event) => setFooterSignupEmail(event.target.value)}
+                    placeholder={footerSignupText.placeholder}
+                    className="w-full border-b border-black/20 bg-transparent pb-2 text-[11px] uppercase tracking-[0.12em] text-slate-700 placeholder:text-slate-500 focus:border-black focus:outline-none sm:pb-3 sm:text-sm sm:tracking-[0.16em]"
+                  />
+                </label>
+              </form>
             </div>
-          </>
+          </section>
         ) : null}
       </main>
       <Footer />

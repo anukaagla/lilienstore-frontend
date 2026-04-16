@@ -19,6 +19,11 @@ const staticEntries = [
     priority: 0.9,
   },
   {
+    path: "/new-collection",
+    changeFrequency: "daily" as const,
+    priority: 0.85,
+  },
+  {
     path: "/aboutus",
     changeFrequency: "monthly" as const,
     priority: 0.5,
