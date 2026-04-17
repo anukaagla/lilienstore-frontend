@@ -171,11 +171,11 @@ export default function SiteHeader({
   const languageSwitchLabel = language === "EN" ? "GE" : "ENG";
   const isLightTone = headerTone === "light";
   const headerPrimaryClass = isLightTone ? "text-white" : "text-slate-900";
-  const headerSecondaryClass = isLightTone ? "text-white/78" : "text-slate-500";
+  const headerSecondaryClass = isLightTone ? "text-white/78" : "text-slate-900";
   const headerHoverClass = isLightTone ? "hover:text-white" : "hover:text-slate-900";
   const searchClassName =
     `relative pb-1 transition ${headerHoverClass} after:absolute after:bottom-0 after:left-0 after:h-px after:w-full ${
-      isLightTone ? "after:bg-white/65" : "after:bg-slate-400"
+      isLightTone ? "after:bg-white/65" : "after:bg-slate-900"
     }`;
   const text = {
     search: byLanguage({ EN: "Search", KA: "ძებნა" }, language),
