@@ -2,9 +2,14 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 import { memo, useEffect, useRef, useState } from "react";
 import { byLanguage, getLocalizedText } from "../lib/i18n";
-import { getHomeCollectionHeroImage } from "../lib/home-collection";
+import { buildCategoryHref } from "../lib/catalog-routing";
+import {
+  getHomeCollectionHeroImage,
+  getHomeCollectionMobileHeroImage,
+} from "../lib/home-collection";
 import {
   FOOTER_NEWSLETTER_HIDDEN_SESSION_KEY,
   NEWSLETTER_DISMISSED_SESSION_KEY,
@@ -253,9 +258,11 @@ const subscribeToNewsletter = async (
 export default function ShowRoom({ posts }: ShowRoomProps) {
   const { language } = useLanguage();
   const { brand, isLoading: brandLoading } = useBrandState();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const brandName = getLocalizedText(brand?.brand_name, language, "Lilien");
   const collectionTitle = getLocalizedText(
-    brand?.home_collection?.title,
+    brand?.hero_title ?? brand?.home_collection?.title,
     language,
     "New Collection Is Here"
   );
@@ -270,6 +277,17 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
     "View All Products"
   );
   const collectionHeroSrc = getHomeCollectionHeroImage(brand);
+  const collectionMobileHeroSrc = getHomeCollectionMobileHeroImage(brand);
+  const collectionViewMoreHref = buildCategoryHref({
+    slug: brand?.hero_category?.slug,
+    catalogBasePath: "/market",
+    pathname,
+    searchParams,
+  });
+  const newsletterPopupImageSrc =
+    brand?.newsletter_signup_popup_image_url?.trim() ||
+    brand?.newsletter_signup_popup_image?.trim() ||
+    "/images/newsletter-pic.png";
   const text = {
     shopNow: byLanguage({ EN: "Shop Now", KA: "შეიძინე" }, language),
     seeMore: byLanguage({ EN: "See more", KA: "მეტის ნახვა" }, language),
@@ -284,10 +302,7 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
     ),
   };
   const heroText = {
-    homeHeading: byLanguage(
-      { EN: `${brandName} New Collection`, KA: `${brandName} ახალი კოლექცია` },
-      language
-    ),
+    homeHeading: `${brandName} ${collectionTitle}`.trim(),
   };
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const footerSignupText = {
@@ -730,7 +745,7 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
               <div className="grid gap-[28px] p-3 sm:grid-cols-[0.95fr_1.05fr] sm:gap-8 sm:p-6 md:p-7">
                 <div className="relative min-h-[272px] overflow-hidden rounded-[1.2rem] sm:min-h-[520px] sm:rounded-[1.6rem]">
                   <Image
-                    src="/images/newsletter-pic.png"
+                    src={newsletterPopupImageSrc}
                     alt={newsletterText.imageAlt}
                     fill
                     sizes="(min-width: 640px) 34vw, 100vw"
@@ -834,12 +849,20 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
         >
           <div className="relative h-[100svh] min-h-[100svh]">
             <Image
-              src={collectionHeroSrc}
-              alt={`${brandName} new collection hero`}
+              src={collectionMobileHeroSrc}
+              alt={`${brandName} ${collectionTitle}`}
               fill
               priority
               sizes="100vw"
-              className="object-cover"
+              className="object-cover sm:hidden"
+            />
+            <Image
+              src={collectionHeroSrc}
+              alt={`${brandName} ${collectionTitle}`}
+              fill
+              priority
+              sizes="100vw"
+              className="hidden object-cover sm:block"
             />
             <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,3,1,0.55)_0%,rgba(10,8,5,0.24)_32%,rgba(10,7,4,0.58)_100%)]" />
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.06),transparent_48%)]" />
@@ -851,7 +874,8 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
                   {collectionTitle}
                 </h2>
                 <Link
-                  href="/market"
+                  href={collectionViewMoreHref}
+                  scroll={pathname !== "/market"}
                   className="mt-5 inline-flex border-b border-white/80 pb-1 text-sm uppercase tracking-[0.24em] text-white/92 transition hover:text-white"
                 >
                   {collectionViewMoreLabel}

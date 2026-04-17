@@ -37,6 +37,11 @@ export const getHomeCollectionHeroImage = (brand?: Brand | null) =>
   brand?.hero_image?.trim() ||
   "/images/hola.png";
 
+export const getHomeCollectionMobileHeroImage = (brand?: Brand | null) =>
+  brand?.mobile_hero_image_url?.trim() ||
+  brand?.mobile_hero_image?.trim() ||
+  getHomeCollectionHeroImage(brand);
+
 export const getSelectedHomeCollectionProducts = (
   products: ApiProductListItem[],
   brand?: Brand | null,

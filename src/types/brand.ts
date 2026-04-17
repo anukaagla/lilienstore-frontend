@@ -1,6 +1,19 @@
-type LocalizedText = {
+export type LocalizedText = {
   KA: string;
   EN: string;
+};
+
+export type BrandHeroCategoryLink = {
+  slug: string;
+  name: LocalizedText;
+};
+
+export type BrandHeroCategory = BrandHeroCategoryLink & {
+  id: number;
+  parent: BrandHeroCategoryLink | null;
+  children: BrandHeroCategoryLink[];
+  is_active: boolean;
+  created_at: string;
 };
 
 export type HomeCollectionConfig = {
@@ -15,6 +28,7 @@ export type HomeCollectionConfig = {
 
 export type Brand = {
   brand_name: LocalizedText;
+  hero_title: LocalizedText;
   description: LocalizedText;
   address: LocalizedText;
   working_hours: LocalizedText;
@@ -29,12 +43,17 @@ export type Brand = {
   shipping_and_delivery_policy: LocalizedText;
   logo: string | null;
   hero_image: string | null;
+  mobile_hero_image: string | null;
   about_us_image_1: string | null;
   about_us_image_2: string | null;
+  newsletter_signup_popup_image: string | null;
+  hero_category: BrandHeroCategory | null;
   logo_url: string | null;
   hero_image_url: string | null;
+  mobile_hero_image_url: string | null;
   about_us_image_1_url: string | null;
   about_us_image_2_url: string | null;
+  newsletter_signup_popup_image_url: string | null;
   home_collection?: HomeCollectionConfig;
   updated_at: string;
 };

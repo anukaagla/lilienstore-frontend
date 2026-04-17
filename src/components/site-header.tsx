@@ -7,6 +7,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { createPortal } from "react-dom";
 import { clearLegacyAuthStorage, fetchAuthSession } from "../lib/auth";
 import { byLanguage, getLocalizedText } from "../lib/i18n";
+import { buildCategoryHref } from "../lib/catalog-routing";
 import type { Category } from "../types/catalog";
 import { useBrandState } from "./brand-provider";
 import { SkeletonBlock } from "./page-skeletons";
@@ -267,16 +268,12 @@ export default function SiteHeader({
     resolvedCategories[0];
 
   const getCategoryHref = (slug: string) => {
-    const params =
-      pathname === catalogBasePath
-        ? new URLSearchParams(searchParams?.toString())
-        : new URLSearchParams();
-
-    params.set("category", slug);
-    params.delete("search");
-
-    const query = params.toString();
-    return query ? `${catalogBasePath}?${query}` : catalogBasePath;
+    return buildCategoryHref({
+      slug,
+      catalogBasePath,
+      pathname,
+      searchParams,
+    });
   };
 
   useEffect(() => {
