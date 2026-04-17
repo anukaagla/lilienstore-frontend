@@ -416,17 +416,51 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
   }, []);
 
   useEffect(() => {
-    if (typeof document === "undefined") {
+    if (
+      typeof window === "undefined" ||
+      typeof document === "undefined" ||
+      !newsletterVisible
+    ) {
       return;
     }
 
-    const previousOverflow = document.body.style.overflow;
-    if (newsletterVisible) {
-      document.body.style.overflow = "hidden";
-    }
+    const { body, documentElement } = document;
+    const scrollY = window.scrollY;
+    const previousBodyStyles = {
+      overflow: body.style.overflow,
+      position: body.style.position,
+      top: body.style.top,
+      left: body.style.left,
+      right: body.style.right,
+      width: body.style.width,
+      touchAction: body.style.touchAction,
+    };
+    const previousHtmlStyles = {
+      overflow: documentElement.style.overflow,
+      overscrollBehavior: documentElement.style.overscrollBehavior,
+    };
+
+    body.style.overflow = "hidden";
+    body.style.position = "fixed";
+    body.style.top = `-${scrollY}px`;
+    body.style.left = "0";
+    body.style.right = "0";
+    body.style.width = "100%";
+    body.style.touchAction = "none";
+    documentElement.style.overflow = "hidden";
+    documentElement.style.overscrollBehavior = "none";
 
     return () => {
-      document.body.style.overflow = previousOverflow;
+      body.style.overflow = previousBodyStyles.overflow;
+      body.style.position = previousBodyStyles.position;
+      body.style.top = previousBodyStyles.top;
+      body.style.left = previousBodyStyles.left;
+      body.style.right = previousBodyStyles.right;
+      body.style.width = previousBodyStyles.width;
+      body.style.touchAction = previousBodyStyles.touchAction;
+      documentElement.style.overflow = previousHtmlStyles.overflow;
+      documentElement.style.overscrollBehavior = previousHtmlStyles.overscrollBehavior;
+      window.scrollTo({ top: scrollY, behavior: "auto" });
     };
   }, [newsletterVisible]);
 
