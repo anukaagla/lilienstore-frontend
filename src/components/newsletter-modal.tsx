@@ -5,10 +5,21 @@ import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 import type { NewsletterText } from "../lib/newsletter";
 
-const SUCCESS_TYPING_INTERVAL_MS = 64;
+const SUCCESS_TYPING_INTERVAL_MS = 50;
 
-function TypingSuccessMessage({ text, className }: { text: string; className: string }) {
+function SuccessMessageBlock({
+  text,
+  description,
+  className,
+  descriptionClassName,
+}: {
+  text: string;
+  description?: string;
+  className: string;
+  descriptionClassName: string;
+}) {
   const [typedText, setTypedText] = useState("");
+  const [showDescription, setShowDescription] = useState(false);
 
   useEffect(() => {
     let nextIndex = 0;
@@ -18,6 +29,7 @@ function TypingSuccessMessage({ text, className }: { text: string; className: st
 
       if (nextIndex >= text.length) {
         window.clearInterval(typingTimer);
+        setShowDescription(true);
       }
     }, SUCCESS_TYPING_INTERVAL_MS);
 
@@ -27,9 +39,14 @@ function TypingSuccessMessage({ text, className }: { text: string; className: st
   }, [text]);
 
   return (
-    <p aria-live="polite" className={className}>
-      {typedText}
-    </p>
+    <div className="flex max-w-md flex-col items-center text-center">
+      <p aria-live="polite" className={className}>
+        {typedText}
+      </p>
+      {showDescription && description ? (
+        <p className={descriptionClassName}>{description}</p>
+      ) : null}
+    </div>
   );
 }
 
@@ -106,10 +123,12 @@ export default function NewsletterModal({
             <div className="flex flex-col justify-center px-1 pb-1 pt-0 text-[#4b433c] sm:min-h-[520px] sm:px-1 sm:pb-1 sm:pt-1 sm:pr-10">
               {success ? (
                 <div className="flex min-h-[145px] items-center justify-center text-center sm:min-h-[520px]">
-                  <TypingSuccessMessage
+                  <SuccessMessageBlock
                     key={success}
                     text={success}
+                    description={text.successDescription}
                     className="max-w-md font-display text-xl leading-[1.35] text-[#171412] sm:text-[2rem]"
+                    descriptionClassName="mt-3 max-w-md font-display text-[0.8rem] leading-[1.45] text-[#4b433c] sm:mt-5 sm:text-[1rem]"
                   />
                 </div>
               ) : (

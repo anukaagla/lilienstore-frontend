@@ -14,6 +14,7 @@ export type NewsletterText = {
   privacyLabel: string;
   invalidEmail: string;
   success: string;
+  successDescription?: string;
   close: string;
   imageAlt: string;
 };
@@ -62,7 +63,7 @@ export const getNewsletterText = (language: Language): NewsletterText => ({
   ),
   success: byLanguage(
     {
-      EN: "You have successfully subscribed to the newsletter. Stay tuned for updates.",
+      EN: "Thank you for subscribing!",
       KA: "თქვენ წარმატებით გამოიწერეთ ნიუსლეთერი, დაელოდეთ სიახლეებს.",
     },
     language
