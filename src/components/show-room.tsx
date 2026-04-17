@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { byLanguage, getLocalizedText } from "../lib/i18n";
 import { getHomeCollectionHeroImage } from "../lib/home-collection";
 import {
@@ -72,6 +72,7 @@ const INSTAGRAM_EMBEDS_PATH = "/api/instagram/embeds/";
 const INSTAGRAM_EMBED_SCRIPT_URL = "https://www.instagram.com/embed.js";
 const SUCCESS_TYPING_INTERVAL_MS = 50;
 const SUCCESS_DESCRIPTION_DELAY_MS = 500;
+const HEADER_TONE_SWITCH_OFFSET_PX = 96;
 
 function SuccessMessageBlock({
   text,
@@ -376,6 +377,8 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
   const [newsletterSuccess, setNewsletterSuccess] = useState<string | null>(null);
   const [newsletterSubmitting, setNewsletterSubmitting] = useState(false);
   const [instagramEmbeds, setInstagramEmbeds] = useState<InstagramEmbed[]>([]);
+  const [headerTone, setHeaderTone] = useState<"light" | "dark">("light");
+  const heroSectionRef = useRef<HTMLElement | null>(null);
 
   const visiblePosts = resolvedPosts.slice(0, visibleCount);
   const canShowMore = visibleCount < resolvedPosts.length;
@@ -426,6 +429,26 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
       document.body.style.overflow = previousOverflow;
     };
   }, [newsletterVisible]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const updateHeaderTone = () => {
+      const heroBottom = heroSectionRef.current?.getBoundingClientRect().bottom ?? Infinity;
+      setHeaderTone(heroBottom <= HEADER_TONE_SWITCH_OFFSET_PX ? "dark" : "light");
+    };
+
+    updateHeaderTone();
+    window.addEventListener("scroll", updateHeaderTone, { passive: true });
+    window.addEventListener("resize", updateHeaderTone);
+
+    return () => {
+      window.removeEventListener("scroll", updateHeaderTone);
+      window.removeEventListener("resize", updateHeaderTone);
+    };
+  }, []);
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -638,7 +661,7 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#f6f1e8] text-slate-900">
-      <SiteHeader headerTone="light" />
+      <SiteHeader headerTone={headerTone} />
 
       {newsletterVisible ? (
         <div className="fixed inset-0 z-[120]">
@@ -771,6 +794,7 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
       <main className="relative">
         <h1 className="sr-only">{heroText.homeHeading}</h1>
         <section
+          ref={heroSectionRef}
           className="relative left-1/2 w-screen -translate-x-1/2 overflow-hidden bg-[#120d0a] opacity-0 animate-[fade-up_0.9s_ease-out_forwards]"
           style={{ animationDelay: "120ms" }}
         >
