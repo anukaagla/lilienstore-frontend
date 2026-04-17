@@ -71,6 +71,7 @@ const NEWSLETTER_SUBSCRIBE_PATH = "/api/proxy/newsletter/subscribe/";
 const INSTAGRAM_EMBEDS_PATH = "/api/instagram/embeds/";
 const INSTAGRAM_EMBED_SCRIPT_URL = "https://www.instagram.com/embed.js";
 const SUCCESS_TYPING_INTERVAL_MS = 50;
+const SUCCESS_DESCRIPTION_DELAY_MS = 300;
 
 function SuccessMessageBlock({
   text,
@@ -88,18 +89,24 @@ function SuccessMessageBlock({
 
   useEffect(() => {
     let nextIndex = 0;
+    let descriptionTimer: number | null = null;
     const typingTimer = window.setInterval(() => {
       nextIndex += 1;
       setTypedText(text.slice(0, nextIndex));
 
       if (nextIndex >= text.length) {
         window.clearInterval(typingTimer);
-        setShowDescription(true);
+        descriptionTimer = window.setTimeout(() => {
+          setShowDescription(true);
+        }, SUCCESS_DESCRIPTION_DELAY_MS);
       }
     }, SUCCESS_TYPING_INTERVAL_MS);
 
     return () => {
       window.clearInterval(typingTimer);
+      if (descriptionTimer) {
+        window.clearTimeout(descriptionTimer);
+      }
     };
   }, [text]);
 
@@ -108,7 +115,11 @@ function SuccessMessageBlock({
       <p aria-live="polite" className={className}>
         {typedText}
       </p>
-      {showDescription ? <p className={descriptionClassName}>{description}</p> : null}
+      {showDescription ? (
+        <p className={`${descriptionClassName} animate-[fadeIn_400ms_ease-out]`}>
+          {description}
+        </p>
+      ) : null}
     </div>
   );
 }

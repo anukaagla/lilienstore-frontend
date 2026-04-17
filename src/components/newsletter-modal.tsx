@@ -6,6 +6,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import type { NewsletterText } from "../lib/newsletter";
 
 const SUCCESS_TYPING_INTERVAL_MS = 50;
+const SUCCESS_DESCRIPTION_DELAY_MS = 300;
 
 function SuccessMessageBlock({
   text,
@@ -23,18 +24,24 @@ function SuccessMessageBlock({
 
   useEffect(() => {
     let nextIndex = 0;
+    let descriptionTimer: number | null = null;
     const typingTimer = window.setInterval(() => {
       nextIndex += 1;
       setTypedText(text.slice(0, nextIndex));
 
       if (nextIndex >= text.length) {
         window.clearInterval(typingTimer);
-        setShowDescription(true);
+        descriptionTimer = window.setTimeout(() => {
+          setShowDescription(true);
+        }, SUCCESS_DESCRIPTION_DELAY_MS);
       }
     }, SUCCESS_TYPING_INTERVAL_MS);
 
     return () => {
       window.clearInterval(typingTimer);
+      if (descriptionTimer) {
+        window.clearTimeout(descriptionTimer);
+      }
     };
   }, [text]);
 
@@ -44,7 +51,11 @@ function SuccessMessageBlock({
         {typedText}
       </p>
       {showDescription && description ? (
-        <p className={descriptionClassName}>{description}</p>
+        <p
+          className={`${descriptionClassName} animate-[fadeIn_400ms_ease-out]`}
+        >
+          {description}
+        </p>
       ) : null}
     </div>
   );
