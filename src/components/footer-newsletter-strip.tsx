@@ -99,6 +99,8 @@ export default function FooterNewsletterStrip({
 }: FooterNewsletterStripProps) {
   const footerSignupText = getFooterNewsletterStripText(language);
   const newsletterText = getNewsletterText(language) as NewsletterTextWithFailure;
+  const footerInputPlaceholder =
+    language === "KA" ? "შეიყვანე ელფოსტა." : footerSignupText.placeholder;
   const [email, setEmail] = useState("");
   const [feedback, setFeedback] = useState<FeedbackState>(null);
   const showSuccessIndicator = feedback?.type === "success";
@@ -210,28 +212,30 @@ export default function FooterNewsletterStrip({
             >
               {footerSignupText.button}
             </button>
-            <label className="relative block min-w-0 flex-1 sm:flex-none sm:min-w-0 sm:w-auto">
-              <span className="sr-only">{footerSignupText.placeholder}</span>
-              <input
-                type="email"
-                value={email}
-                onChange={(event) => {
-                  setEmail(event.target.value);
-                  if (feedback) {
-                    setFeedback(null);
-                  }
-                }}
-                placeholder={footerSignupText.placeholder}
-                className="w-[170px] max-w-full border-b border-black/20 bg-transparent pb-2 pr-7 text-[11px] tracking-[0.04em] text-slate-700 placeholder:text-slate-500 focus:border-black focus:outline-none sm:w-full sm:pb-3 sm:text-sm sm:tracking-[0.16em]"
-              />
+            <div className="flex items-center gap-2">
+              <label className="block min-w-0 flex-1 sm:flex-none sm:min-w-0 sm:w-auto">
+                <span className="sr-only">{footerInputPlaceholder}</span>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(event) => {
+                    setEmail(event.target.value);
+                    if (feedback) {
+                      setFeedback(null);
+                    }
+                  }}
+                  placeholder={footerInputPlaceholder}
+                  className="w-[150px] max-w-full border-b border-black/20 bg-transparent pb-2 text-[11px] tracking-[0.04em] text-slate-700 placeholder:text-slate-500 focus:border-black focus:outline-none sm:w-[188px] sm:pb-3 sm:text-sm sm:tracking-[0.16em]"
+                />
+              </label>
               {showSuccessIndicator ? (
                 <span
                   aria-hidden="true"
-                  className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-[#171412]"
+                  className="pointer-events-none inline-flex shrink-0 items-center text-[#171412]"
                 >
                   <svg
                     viewBox="0 0 16 16"
-                    className="h-[15px] w-[15px] sm:h-4 sm:w-4"
+                    className="h-[17px] w-[17px] sm:h-[18px] sm:w-[18px]"
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="1.8"
@@ -242,15 +246,11 @@ export default function FooterNewsletterStrip({
                   </svg>
                 </span>
               ) : null}
-            </label>
+            </div>
           </div>
         </form>
-        {feedback ? (
-          <p
-            className={`mt-2 text-[11px] sm:text-sm ${
-              feedback.type === "success" ? "text-[#2e7d32]" : "text-[#9f3a32]"
-            }`}
-          >
+        {feedback?.type === "error" ? (
+          <p className="mt-2 text-[11px] text-[#9f3a32] sm:text-sm">
             {feedback.message}
           </p>
         ) : null}
