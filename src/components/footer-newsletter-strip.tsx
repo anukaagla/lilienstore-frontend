@@ -101,6 +101,7 @@ export default function FooterNewsletterStrip({
   const newsletterText = getNewsletterText(language) as NewsletterTextWithFailure;
   const [email, setEmail] = useState("");
   const [feedback, setFeedback] = useState<FeedbackState>(null);
+  const showSuccessIndicator = feedback?.type === "success";
   const [hidden, setHidden] = useState(false);
   const [collapsing, setCollapsing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -209,7 +210,7 @@ export default function FooterNewsletterStrip({
             >
               {footerSignupText.button}
             </button>
-            <label className="block min-w-0 flex-1 sm:flex-none sm:min-w-0 sm:w-auto">
+            <label className="relative block min-w-0 flex-1 sm:flex-none sm:min-w-0 sm:w-auto">
               <span className="sr-only">{footerSignupText.placeholder}</span>
               <input
                 type="email"
@@ -221,8 +222,26 @@ export default function FooterNewsletterStrip({
                   }
                 }}
                 placeholder={footerSignupText.placeholder}
-                className="w-[170px] max-w-full border-b border-black/20 bg-transparent pb-2 text-[11px] tracking-[0.04em] text-slate-700 placeholder:text-slate-500 focus:border-black focus:outline-none sm:w-full sm:pb-3 sm:text-sm sm:tracking-[0.16em]"
+                className="w-[170px] max-w-full border-b border-black/20 bg-transparent pb-2 pr-7 text-[11px] tracking-[0.04em] text-slate-700 placeholder:text-slate-500 focus:border-black focus:outline-none sm:w-full sm:pb-3 sm:text-sm sm:tracking-[0.16em]"
               />
+              {showSuccessIndicator ? (
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-[#171412]"
+                >
+                  <svg
+                    viewBox="0 0 16 16"
+                    className="h-[15px] w-[15px] sm:h-4 sm:w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M3.5 8.5 6.5 11.5 12.5 4.5" />
+                  </svg>
+                </span>
+              ) : null}
             </label>
           </div>
         </form>
