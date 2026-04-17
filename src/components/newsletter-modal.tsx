@@ -2,8 +2,36 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import type { FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import type { NewsletterText } from "../lib/newsletter";
+
+const SUCCESS_TYPING_INTERVAL_MS = 28;
+
+function TypingSuccessMessage({ text, className }: { text: string; className: string }) {
+  const [typedText, setTypedText] = useState("");
+
+  useEffect(() => {
+    let nextIndex = 0;
+    const typingTimer = window.setInterval(() => {
+      nextIndex += 1;
+      setTypedText(text.slice(0, nextIndex));
+
+      if (nextIndex >= text.length) {
+        window.clearInterval(typingTimer);
+      }
+    }, SUCCESS_TYPING_INTERVAL_MS);
+
+    return () => {
+      window.clearInterval(typingTimer);
+    };
+  }, [text]);
+
+  return (
+    <p aria-live="polite" className={className}>
+      {typedText}
+    </p>
+  );
+}
 
 type NewsletterModalProps = {
   visible: boolean;
@@ -78,9 +106,11 @@ export default function NewsletterModal({
             <div className="flex flex-col justify-center px-1 pb-1 pt-0 text-[#4b433c] sm:min-h-[520px] sm:px-1 sm:pb-1 sm:pt-1 sm:pr-10">
               {success ? (
                 <div className="flex min-h-[145px] items-center justify-center text-center sm:min-h-[520px]">
-                  <p className="max-w-md font-display text-xl leading-[1.35] text-[#4f8a53] sm:text-[2rem]">
-                    {success}
-                  </p>
+                  <TypingSuccessMessage
+                    key={success}
+                    text={success}
+                    className="max-w-md font-display text-xl leading-[1.35] text-[#171412] sm:text-[2rem]"
+                  />
                 </div>
               ) : (
                 <>

@@ -67,9 +67,36 @@ const InstagramEmbedsSection = memo(function InstagramEmbedsSection({
 
 const INITIAL_NEWSLETTER_POPUP_DELAY_MS = 1600;
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
-const NEWSLETTER_SUBSCRIBE_PATH = "/api/newsletter/subscribe/";
+const NEWSLETTER_SUBSCRIBE_PATH = "/api/proxy/newsletter/subscribe/";
 const INSTAGRAM_EMBEDS_PATH = "/api/instagram/embeds/";
 const INSTAGRAM_EMBED_SCRIPT_URL = "https://www.instagram.com/embed.js";
+const SUCCESS_TYPING_INTERVAL_MS = 28;
+
+function TypingSuccessMessage({ text, className }: { text: string; className: string }) {
+  const [typedText, setTypedText] = useState("");
+
+  useEffect(() => {
+    let nextIndex = 0;
+    const typingTimer = window.setInterval(() => {
+      nextIndex += 1;
+      setTypedText(text.slice(0, nextIndex));
+
+      if (nextIndex >= text.length) {
+        window.clearInterval(typingTimer);
+      }
+    }, SUCCESS_TYPING_INTERVAL_MS);
+
+    return () => {
+      window.clearInterval(typingTimer);
+    };
+  }, [text]);
+
+  return (
+    <p aria-live="polite" className={className}>
+      {typedText}
+    </p>
+  );
+}
 
 const getString = (value: unknown, fallback = "") => {
   if (typeof value === "string") return value;
@@ -128,24 +155,71 @@ const fetchInstagramEmbeds = async (signal?: AbortSignal): Promise<InstagramEmbe
   }
 };
 
-const subscribeToNewsletter = async (email: string) => {
-  if (!API_BASE_URL) {
-    return false;
+type NewsletterSubscribeResult =
+  | { ok: true }
+  | { ok: false; message: string };
+
+const getNewsletterApiMessage = (payload: unknown, fallback: string) => {
+  if (typeof payload === "string" && payload.trim()) {
+    return payload;
   }
 
+  if (!payload || typeof payload !== "object") {
+    return fallback;
+  }
+
+  const detail = (payload as { detail?: unknown }).detail;
+  if (typeof detail === "string" && detail.trim()) {
+    return detail;
+  }
+
+  const parts = Object.entries(payload as Record<string, unknown>)
+    .map(([field, value]) => {
+      if (typeof value === "string" && value.trim()) {
+        return `${field}: ${value}`;
+      }
+
+      if (Array.isArray(value)) {
+        const firstText = value.find(
+          (entry): entry is string => typeof entry === "string" && entry.trim().length > 0,
+        );
+        if (firstText) {
+          return `${field}: ${firstText}`;
+        }
+      }
+
+      return null;
+    })
+    .filter((value): value is string => Boolean(value));
+
+  return parts[0] ?? fallback;
+};
+
+const subscribeToNewsletter = async (
+  email: string,
+  fallbackMessage: string,
+): Promise<NewsletterSubscribeResult> => {
   try {
-    const requestUrl = new URL(NEWSLETTER_SUBSCRIBE_PATH, API_BASE_URL);
-    const response = await fetch(requestUrl.toString(), {
+    const response = await fetch(NEWSLETTER_SUBSCRIBE_PATH, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
+      credentials: "include",
       body: JSON.stringify({ email }),
     });
 
-    return response.status === 200 || response.status === 201;
+    if (response.ok) {
+      return { ok: true };
+    }
+
+    const payload = await response.json().catch(() => null);
+    return {
+      ok: false,
+      message: getNewsletterApiMessage(payload, fallbackMessage),
+    };
   } catch {
-    return false;
+    return { ok: false, message: fallbackMessage };
   }
 };
 
@@ -408,8 +482,8 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
     setNewsletterSubmitting(true);
 
     try {
-      const isSubscribed = await subscribeToNewsletter(normalizedEmail);
-      if (isSubscribed) {
+      const result = await subscribeToNewsletter(normalizedEmail, newsletterText.failed);
+      if (result.ok) {
         setNewsletterError(null);
         setNewsletterSuccess(newsletterText.success);
         setNewsletterEmail("");
@@ -418,7 +492,7 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
       }
 
       setNewsletterSuccess(null);
-      setNewsletterError(newsletterText.failed);
+      setNewsletterError(result.message);
     } finally {
       setNewsletterSubmitting(false);
     }
@@ -566,9 +640,11 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
                 <div className="flex flex-col justify-center px-1 pb-1 pt-0 text-[#4b433c] sm:min-h-[520px] sm:px-1 sm:pb-1 sm:pr-10">
                   {newsletterSuccess ? (
                     <div className="flex min-h-[145px] items-center justify-center text-center sm:min-h-[520px]">
-                      <p className="max-w-md font-display text-xl leading-[1.35] text-[#4f8a53] sm:text-[2rem]">
-                        {newsletterSuccess}
-                      </p>
+                      <TypingSuccessMessage
+                        key={newsletterSuccess}
+                        text={newsletterSuccess}
+                        className="max-w-md font-display text-xl leading-[1.35] text-[#171412] sm:text-[2rem]"
+                      />
                     </div>
                   ) : (
                     <>

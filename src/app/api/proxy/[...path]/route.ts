@@ -6,7 +6,14 @@ import {
 } from "../../../../lib/server/auth-session";
 
 const ALLOWED_METHODS = new Set(["GET", "POST", "PUT", "PATCH", "DELETE"]);
-const ALLOWED_ROOT_SEGMENTS = new Set(["auth", "cart", "me", "orders", "shipping"]);
+const ALLOWED_ROOT_SEGMENTS = new Set([
+  "auth",
+  "cart",
+  "me",
+  "newsletter",
+  "orders",
+  "shipping",
+]);
 const BODYLESS_RESPONSE_STATUSES = new Set([204, 205, 304]);
 const VALID_PATH_SEGMENT = /^[A-Za-z0-9._~:@-]+$/;
 const MAX_JSON_BODY_SIZE = 64_000;
@@ -42,7 +49,8 @@ const normalizePath = (segments: string[]) => {
 };
 
 const isPublicProxyPath = (segments: string[]) =>
-  segments.length >= 2 && segments[0] === "shipping" && segments[1] === "settings";
+  (segments.length >= 2 && segments[0] === "shipping" && segments[1] === "settings") ||
+  (segments.length >= 2 && segments[0] === "newsletter" && segments[1] === "subscribe");
 
 const buildUpstreamHeaders = (request: NextRequest, accessToken = "") => {
   const headers = new Headers();

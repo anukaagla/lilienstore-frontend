@@ -11,27 +11,73 @@ import {
   isValidNewsletterEmail,
 } from "../lib/newsletter";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
-const NEWSLETTER_SUBSCRIBE_PATH = "/api/newsletter/subscribe/";
+const NEWSLETTER_SUBSCRIBE_PATH = "/api/proxy/newsletter/subscribe/";
 
-const subscribeToNewsletter = async (email: string) => {
-  if (!API_BASE_URL) {
-    return false;
+type NewsletterSubscribeResult =
+  | { ok: true }
+  | { ok: false; message: string };
+
+const getNewsletterApiMessage = (payload: unknown, fallback: string) => {
+  if (typeof payload === "string" && payload.trim()) {
+    return payload;
   }
 
+  if (!payload || typeof payload !== "object") {
+    return fallback;
+  }
+
+  const detail = (payload as { detail?: unknown }).detail;
+  if (typeof detail === "string" && detail.trim()) {
+    return detail;
+  }
+
+  const parts = Object.entries(payload as Record<string, unknown>)
+    .map(([field, value]) => {
+      if (typeof value === "string" && value.trim()) {
+        return `${field}: ${value}`;
+      }
+
+      if (Array.isArray(value)) {
+        const firstText = value.find(
+          (entry): entry is string => typeof entry === "string" && entry.trim().length > 0,
+        );
+        if (firstText) {
+          return `${field}: ${firstText}`;
+        }
+      }
+
+      return null;
+    })
+    .filter((value): value is string => Boolean(value));
+
+  return parts[0] ?? fallback;
+};
+
+const subscribeToNewsletter = async (
+  email: string,
+  fallbackMessage: string,
+): Promise<NewsletterSubscribeResult> => {
   try {
-    const requestUrl = new URL(NEWSLETTER_SUBSCRIBE_PATH, API_BASE_URL);
-    const response = await fetch(requestUrl.toString(), {
+    const response = await fetch(NEWSLETTER_SUBSCRIBE_PATH, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
+      credentials: "include",
       body: JSON.stringify({ email }),
     });
 
-    return response.status === 200 || response.status === 201;
+    if (response.ok) {
+      return { ok: true };
+    }
+
+    const payload = await response.json().catch(() => null);
+    return {
+      ok: false,
+      message: getNewsletterApiMessage(payload, fallbackMessage),
+    };
   } catch {
-    return false;
+    return { ok: false, message: fallbackMessage };
   }
 };
 
@@ -96,8 +142,11 @@ export default function FooterNewsletterStrip({
     setSubmitting(true);
 
     try {
-      const isSubscribed = await subscribeToNewsletter(normalizedEmail);
-      if (isSubscribed) {
+      const result = await subscribeToNewsletter(
+        normalizedEmail,
+        newsletterText.failed ?? newsletterText.invalidEmail,
+      );
+      if (result.ok) {
         if (typeof window !== "undefined") {
           window.sessionStorage.setItem(NEWSLETTER_DISMISSED_SESSION_KEY, "true");
         }
@@ -108,7 +157,7 @@ export default function FooterNewsletterStrip({
 
       setFeedback({
         type: "error",
-        message: newsletterText.failed ?? newsletterText.invalidEmail,
+        message: result.message,
       });
     } finally {
       setSubmitting(false);
