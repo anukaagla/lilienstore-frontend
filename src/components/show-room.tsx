@@ -531,7 +531,7 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
             className="absolute inset-0 bg-[rgba(9,7,5,0.28)] backdrop-blur-[10px]"
           />
           <div className="absolute left-1/2 top-1/2 z-[121] w-[calc(100vw-1.5rem)] max-w-4xl -translate-x-1/2 -translate-y-1/2 px-1 sm:w-[calc(100vw-2rem)] sm:px-0">
-            <section className="relative max-h-[calc(70svh+14px)] overflow-y-auto rounded-[1.6rem] border border-[#9a9389] bg-[rgba(249,246,241,0.96)] shadow-[0_34px_90px_-40px_rgba(0,0,0,0.8)] sm:max-h-none sm:overflow-hidden sm:rounded-[2rem]">
+            <section className="relative max-h-[calc(70svh+24px)] overflow-y-auto rounded-[1.6rem] border border-[#9a9389] bg-[rgba(249,246,241,0.96)] shadow-[0_34px_90px_-40px_rgba(0,0,0,0.8)] sm:max-h-none sm:overflow-hidden sm:rounded-[2rem]">
               <button
                 type="button"
                 aria-label={newsletterText.close}
