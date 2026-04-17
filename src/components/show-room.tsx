@@ -70,7 +70,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 const NEWSLETTER_SUBSCRIBE_PATH = "/api/proxy/newsletter/subscribe/";
 const INSTAGRAM_EMBEDS_PATH = "/api/instagram/embeds/";
 const INSTAGRAM_EMBED_SCRIPT_URL = "https://www.instagram.com/embed.js";
-const SUCCESS_TYPING_INTERVAL_MS = 28;
+const SUCCESS_TYPING_INTERVAL_MS = 64;
 
 function TypingSuccessMessage({ text, className }: { text: string; className: string }) {
   const [typedText, setTypedText] = useState("");

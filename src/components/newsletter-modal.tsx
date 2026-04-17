@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 import type { NewsletterText } from "../lib/newsletter";
 
-const SUCCESS_TYPING_INTERVAL_MS = 28;
+const SUCCESS_TYPING_INTERVAL_MS = 64;
 
 function TypingSuccessMessage({ text, className }: { text: string; className: string }) {
   const [typedText, setTypedText] = useState("");
