@@ -43,7 +43,7 @@ export default function NewsletterModal({
         className="absolute inset-0 bg-[rgba(9,7,5,0.28)] backdrop-blur-[10px]"
       />
       <div className="absolute left-1/2 top-1/2 z-[121] w-[calc(100vw-1.5rem)] max-w-4xl -translate-x-1/2 -translate-y-1/2 px-1 sm:w-[calc(100vw-2rem)] sm:px-0">
-        <section className="relative max-h-[calc(100svh-1.5rem)] overflow-y-auto rounded-[1.6rem] border border-[#9a9389] bg-[rgba(249,246,241,0.96)] shadow-[0_34px_90px_-40px_rgba(0,0,0,0.8)] sm:max-h-none sm:overflow-hidden sm:rounded-[2rem]">
+        <section className="relative max-h-[70svh] overflow-y-auto rounded-[1.6rem] border border-[#9a9389] bg-[rgba(249,246,241,0.96)] shadow-[0_34px_90px_-40px_rgba(0,0,0,0.8)] sm:max-h-none sm:overflow-hidden sm:rounded-[2rem]">
           <button
             type="button"
             aria-label={text.close}
@@ -64,7 +64,7 @@ export default function NewsletterModal({
             </svg>
           </button>
 
-          <div className="grid gap-2 p-2.5 sm:grid-cols-[0.95fr_1.05fr] sm:gap-8 sm:p-6 md:p-7">
+          <div className="grid gap-[28px] p-2.5 sm:grid-cols-[0.95fr_1.05fr] sm:gap-8 sm:p-6 md:p-7">
             <div className="relative min-h-[145px] overflow-hidden rounded-[1.2rem] sm:min-h-[520px] sm:rounded-[1.6rem]">
               <Image
                 src="/images/newsletter-pic.png"
