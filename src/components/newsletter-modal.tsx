@@ -6,7 +6,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import type { NewsletterText } from "../lib/newsletter";
 
 const SUCCESS_TYPING_INTERVAL_MS = 50;
-const SUCCESS_DESCRIPTION_DELAY_MS = 300;
+const SUCCESS_DESCRIPTION_DELAY_MS = 500;
 
 function SuccessMessageBlock({
   text,
@@ -52,7 +52,7 @@ function SuccessMessageBlock({
       </p>
       {showDescription && description ? (
         <p
-          className={`${descriptionClassName} animate-[fadeIn_400ms_ease-out]`}
+          className={`${descriptionClassName} animate-[fadeIn_650ms_ease-out]`}
         >
           {description}
         </p>

@@ -71,7 +71,7 @@ const NEWSLETTER_SUBSCRIBE_PATH = "/api/proxy/newsletter/subscribe/";
 const INSTAGRAM_EMBEDS_PATH = "/api/instagram/embeds/";
 const INSTAGRAM_EMBED_SCRIPT_URL = "https://www.instagram.com/embed.js";
 const SUCCESS_TYPING_INTERVAL_MS = 50;
-const SUCCESS_DESCRIPTION_DELAY_MS = 300;
+const SUCCESS_DESCRIPTION_DELAY_MS = 500;
 
 function SuccessMessageBlock({
   text,
@@ -116,7 +116,7 @@ function SuccessMessageBlock({
         {typedText}
       </p>
       {showDescription ? (
-        <p className={`${descriptionClassName} animate-[fadeIn_400ms_ease-out]`}>
+        <p className={`${descriptionClassName} animate-[fadeIn_650ms_ease-out]`}>
           {description}
         </p>
       ) : null}
