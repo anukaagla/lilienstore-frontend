@@ -183,7 +183,7 @@ export default function FooterNewsletterStrip({
           setCollapsing(false);
         }
       }}
-      className={`mx-auto mb-3 w-full max-w-[calc(100%-48px)] overflow-hidden px-4 transition-[max-height,opacity,padding,margin] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] sm:mb-4 sm:max-w-[calc(100%-100px)] sm:px-6 ${
+      className={`mx-auto mb-3 w-full max-w-[calc(100%-48px)] overflow-hidden bg-white px-4 transition-[max-height,opacity,padding,margin] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] sm:mb-4 sm:max-w-[calc(100%-100px)] sm:px-6 ${
         collapsing
           ? "pointer-events-none max-h-0 opacity-0 pt-0 pb-0 mt-0 mb-0"
           : "max-h-48 opacity-100 pt-0 pb-0 mt-0 mb-0"

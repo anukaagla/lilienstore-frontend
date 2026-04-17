@@ -721,7 +721,7 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
             className="absolute inset-0 bg-[rgba(9,7,5,0.28)] backdrop-blur-[10px]"
           />
           <div className="absolute left-1/2 top-1/2 z-[121] w-[calc(100vw-1.5rem)] max-w-4xl -translate-x-1/2 -translate-y-1/2 px-1 sm:w-[calc(100vw-2rem)] sm:px-0">
-            <section className="relative max-h-[calc(70svh+59px)] overflow-y-auto rounded-[1.6rem] border border-[#9a9389] bg-[rgba(249,246,241,0.96)] shadow-[0_34px_90px_-40px_rgba(0,0,0,0.8)] sm:max-h-none sm:overflow-hidden sm:rounded-[2rem]">
+            <section className="relative max-h-[calc(70svh+59px)] overflow-y-auto rounded-[1.6rem] border border-[#9a9389] bg-white shadow-[0_34px_90px_-40px_rgba(0,0,0,0.8)] sm:max-h-none sm:overflow-hidden sm:rounded-[2rem]">
               <button
                 type="button"
                 aria-label={newsletterText.close}
@@ -893,32 +893,34 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
           </div>
         </section>
 
-        <div className="mx-auto flex w-full max-w-6xl flex-col px-4 pb-14 pt-8 sm:px-6 sm:pb-16">
-          {visiblePosts.map((post, index) => (
-            <div key={post.id}>
-              {renderPost(post, index)}
-              {index !== visiblePosts.length - 1 ? <Divider /> : null}
-            </div>
-          ))}
-
-          {canShowMore ? (
-            <>
-              <Divider />
-              <div className="flex justify-center py-10">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setVisibleCount((count) =>
-                      Math.min(count + 3, resolvedPosts.length)
-                    )
-                  }
-                  className="rounded-full border border-black/20 bg-white/90 px-10 py-3 text-xs uppercase tracking-[0.3em] text-slate-700 shadow-[0_16px_28px_-18px_rgba(0,0,0,0.45)] transition hover:-translate-y-0.5"
-                >
-                  {text.seeMore}
-                </button>
+        <div className="w-full bg-white">
+          <div className="mx-auto flex w-full max-w-6xl flex-col px-4 pb-14 pt-8 sm:px-6 sm:pb-16">
+            {visiblePosts.map((post, index) => (
+              <div key={post.id}>
+                {renderPost(post, index)}
+                {index !== visiblePosts.length - 1 ? <Divider /> : null}
               </div>
-            </>
-          ) : null}
+            ))}
+
+            {canShowMore ? (
+              <>
+                <Divider />
+                <div className="flex justify-center py-10">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setVisibleCount((count) =>
+                        Math.min(count + 3, resolvedPosts.length)
+                      )
+                    }
+                    className="rounded-full border border-black/20 bg-white/90 px-10 py-3 text-xs uppercase tracking-[0.3em] text-slate-700 shadow-[0_16px_28px_-18px_rgba(0,0,0,0.45)] transition hover:-translate-y-0.5"
+                  >
+                    {text.seeMore}
+                  </button>
+                </div>
+              </>
+            ) : null}
+          </div>
         </div>
 
         <InstagramEmbedsSection embeds={instagramEmbeds} />
