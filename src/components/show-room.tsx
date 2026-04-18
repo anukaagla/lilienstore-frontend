@@ -921,9 +921,9 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
               </>
             ) : null}
           </div>
-        </div>
 
-        <InstagramEmbedsSection embeds={instagramEmbeds} />
+          <InstagramEmbedsSection embeds={instagramEmbeds} />
+        </div>
       </main>
       <Footer />
     </div>
