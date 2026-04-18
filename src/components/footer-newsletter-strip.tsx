@@ -183,77 +183,79 @@ export default function FooterNewsletterStrip({
           setCollapsing(false);
         }
       }}
-      className={`mx-auto mb-3 w-full max-w-[calc(100%-48px)] overflow-hidden bg-white px-4 transition-[max-height,opacity,padding,margin] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] sm:mb-4 sm:max-w-[calc(100%-100px)] sm:px-6 ${
+      className={`mb-0 w-full overflow-hidden bg-white transition-[max-height,opacity,padding,margin] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
         collapsing
           ? "pointer-events-none max-h-0 opacity-0 pt-0 pb-0 mt-0 mb-0"
           : "max-h-48 opacity-100 pt-0 pb-0 mt-0 mb-0"
       }`}
     >
-      <div
-        className={`transition-[opacity,padding,margin] duration-500 ease-out sm:border-t sm:border-black/20 ${
-          collapsing ? "opacity-0 pt-0 pb-0" : "opacity-100 pt-4 sm:pt-5"
-        }`}
-      >
-        <form
-          className="flex flex-col gap-3 sm:grid sm:grid-cols-[minmax(0,1.15fr)_auto_auto_minmax(0,1fr)] sm:items-center sm:gap-x-3 sm:gap-y-3 lg:flex lg:flex-row lg:items-center lg:gap-8"
-          onSubmit={handleSubmit}
-          noValidate
+      <div className="mx-auto w-full max-w-[calc(100%-48px)] px-4 sm:max-w-[calc(100%-100px)] sm:px-6">
+        <div
+          className={`transition-[opacity,padding,margin] duration-500 ease-out sm:border-t sm:border-black/20 ${
+            collapsing ? "opacity-0 pt-0 pb-0" : "opacity-100 pt-4 sm:pt-5"
+          }`}
         >
-          <p className="font-display text-[11px] font-semibold leading-[1.15] text-slate-900 sm:text-[0.98rem]">
-            {footerSignupText.title}
-          </p>
-          <span aria-hidden="true" className="h-px w-[88%] bg-black sm:hidden" />
-          <div className="flex items-center gap-4 sm:contents">
-            <span aria-hidden="true" className="hidden h-11 w-px bg-black/20 lg:h-16 sm:block" />
-            <button
-              type="submit"
-              disabled={submitting}
-              className="inline-flex min-w-[114px] items-center justify-center rounded-[0.35rem] bg-black px-5 py-2.5 text-[11px] font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70 sm:min-w-[168px] sm:px-6 sm:py-3 sm:text-sm sm:uppercase sm:tracking-[0.16em]"
-            >
-              {footerSignupText.button}
-            </button>
-            <div className="flex items-center gap-2">
-              <label className="block min-w-0 flex-1 sm:flex-none sm:min-w-0 sm:w-auto">
-                <span className="sr-only">{footerInputPlaceholder}</span>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(event) => {
-                    setEmail(event.target.value);
-                    if (feedback) {
-                      setFeedback(null);
-                    }
-                  }}
-                  placeholder={footerInputPlaceholder}
-                  className="w-[150px] max-w-full border-b border-black/20 bg-transparent pb-2 text-[11px] tracking-[0.04em] text-slate-700 placeholder:text-slate-500 focus:border-black focus:outline-none sm:w-[188px] sm:pb-3 sm:text-sm sm:tracking-[0.16em]"
-                />
-              </label>
-              {showSuccessIndicator ? (
-                <span
-                  aria-hidden="true"
-                  className="pointer-events-none inline-flex shrink-0 items-center text-[#171412]"
-                >
-                  <svg
-                    viewBox="0 0 16 16"
-                    className="h-[17px] w-[17px] sm:h-[18px] sm:w-[18px]"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
+          <form
+            className="flex flex-col gap-3 sm:grid sm:grid-cols-[minmax(0,1.15fr)_auto_auto_minmax(0,1fr)] sm:items-center sm:gap-x-3 sm:gap-y-3 lg:flex lg:flex-row lg:items-center lg:gap-8"
+            onSubmit={handleSubmit}
+            noValidate
+          >
+            <p className="font-display text-[11px] font-semibold leading-[1.15] text-slate-900 sm:text-[0.98rem]">
+              {footerSignupText.title}
+            </p>
+            <span aria-hidden="true" className="h-px w-[88%] bg-black sm:hidden" />
+            <div className="flex items-center gap-4 sm:contents">
+              <span aria-hidden="true" className="hidden h-11 w-px bg-black/20 lg:h-16 sm:block" />
+              <button
+                type="submit"
+                disabled={submitting}
+                className="inline-flex min-w-[114px] items-center justify-center rounded-[0.35rem] bg-black px-5 py-2.5 text-[11px] font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70 sm:min-w-[168px] sm:px-6 sm:py-3 sm:text-sm sm:uppercase sm:tracking-[0.16em]"
+              >
+                {footerSignupText.button}
+              </button>
+              <div className="flex items-center gap-2">
+                <label className="block min-w-0 flex-1 sm:flex-none sm:min-w-0 sm:w-auto">
+                  <span className="sr-only">{footerInputPlaceholder}</span>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(event) => {
+                      setEmail(event.target.value);
+                      if (feedback) {
+                        setFeedback(null);
+                      }
+                    }}
+                    placeholder={footerInputPlaceholder}
+                    className="w-[150px] max-w-full border-b border-black/20 bg-transparent pb-2 text-[11px] tracking-[0.04em] text-slate-700 placeholder:text-slate-500 focus:border-black focus:outline-none sm:w-[188px] sm:pb-3 sm:text-sm sm:tracking-[0.16em]"
+                  />
+                </label>
+                {showSuccessIndicator ? (
+                  <span
+                    aria-hidden="true"
+                    className="pointer-events-none inline-flex shrink-0 items-center text-[#171412]"
                   >
-                    <path d="M3.5 8.5 6.5 11.5 12.5 4.5" />
-                  </svg>
-                </span>
-              ) : null}
+                    <svg
+                      viewBox="0 0 16 16"
+                      className="h-[17px] w-[17px] sm:h-[18px] sm:w-[18px]"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M3.5 8.5 6.5 11.5 12.5 4.5" />
+                    </svg>
+                  </span>
+                ) : null}
+              </div>
             </div>
-          </div>
-        </form>
-        {feedback?.type === "error" ? (
-          <p className="mt-2 text-[11px] text-[#9f3a32] sm:text-sm">
-            {feedback.message}
-          </p>
-        ) : null}
+          </form>
+          {feedback?.type === "error" ? (
+            <p className="mt-2 text-[11px] text-[#9f3a32] sm:text-sm">
+              {feedback.message}
+            </p>
+          ) : null}
+        </div>
       </div>
     </section>
   );
