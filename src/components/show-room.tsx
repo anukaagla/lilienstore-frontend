@@ -59,7 +59,7 @@ const InstagramEmbedsSection = memo(function InstagramEmbedsSection({
               className="rounded-[1.75rem] border border-black/10 bg-white/80 p-3 shadow-[0_18px_42px_-36px_rgba(0,0,0,0.58)]"
             >
               <div
-                className="mx-auto w-full max-w-[calc(100%-43px)] sm:max-w-[560px] [&_blockquote.instagram-media]:!m-0 [&_blockquote.instagram-media]:!min-w-0 [&_blockquote.instagram-media]:!w-full [&_blockquote.instagram-media]:max-w-full"
+                className="mx-auto w-full max-w-[calc(100%-68px)] sm:max-w-[560px] [&_blockquote.instagram-media]:!m-0 [&_blockquote.instagram-media]:!min-w-0 [&_blockquote.instagram-media]:!w-full [&_blockquote.instagram-media]:max-w-full"
                 dangerouslySetInnerHTML={{ __html: embed.embed_html }}
               />
             </article>
