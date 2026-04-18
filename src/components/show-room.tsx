@@ -840,7 +840,7 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
         </div>
       ) : null}
 
-      <main className="relative">
+      <main className="relative bg-white">
         <h1 className="sr-only">{heroText.homeHeading}</h1>
         <section
           ref={heroSectionRef}
