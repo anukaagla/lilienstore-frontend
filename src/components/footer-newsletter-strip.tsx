@@ -186,7 +186,7 @@ export default function FooterNewsletterStrip({
       className={`mb-0 w-full overflow-hidden bg-white transition-[max-height,opacity,padding,margin] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
         collapsing
           ? "pointer-events-none max-h-0 opacity-0 pt-0 pb-0 mt-0 mb-0"
-          : "max-h-48 opacity-100 pt-0 pb-0 mt-0 mb-0"
+          : "max-h-48 opacity-100 pt-0 pb-0 mt-0 mb-1 sm:mb-0"
       }`}
     >
       <div className="mx-auto w-full max-w-[calc(100%-48px)] px-4 sm:max-w-[calc(100%-100px)] sm:px-6">
