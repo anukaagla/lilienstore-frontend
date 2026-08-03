@@ -10,6 +10,7 @@ import { ProfilePageSkeleton, SkeletonBlock } from "./page-skeletons";
 import SiteHeader from "./site-header";
 import { writeAddresses } from "../lib/addresses";
 import { clearLegacyAuthStorage, fetchWithAuthRetry } from "../lib/auth";
+import { formatMoney } from "../lib/currency";
 import { byLanguage, getLocalizedText, type Language } from "../lib/i18n";
 import { toAbsoluteMediaUrl } from "../lib/media";
 import { useLanguage } from "./language-provider";
@@ -392,6 +393,21 @@ const normalizeDisplayValue = (value: unknown, fallback = "-") => {
   return fallback;
 };
 
+/**
+ * Orders keep the currency they were placed in, so history stays correct no matter
+ * where the customer is browsing from now.
+ */
+const formatOrderAmount = (
+  value: unknown,
+  currency: unknown,
+  fallback = "-",
+) => {
+  if (typeof value !== "number" && typeof value !== "string") {
+    return fallback;
+  }
+  return formatMoney(value, currency) || fallback;
+};
+
 const formatOrderDate = (value: string) => {
   const trimmed = value.trim();
   if (!trimmed) return "-";
@@ -437,7 +453,7 @@ const mapOrderHistory = (payload: unknown[]): OrderListItem[] =>
         id: displayIdCandidate || rawApiIdCandidate || `#${index + 1}`,
         apiId: apiIdCandidate || null,
         date: dateCandidate ? formatOrderDate(dateCandidate) : "-",
-        total: totalCandidate || "-",
+        total: formatOrderAmount(totalCandidate || null, record.currency),
         items: itemsCountCandidate || itemsFromArray || "-",
         canViewDetails: Boolean(apiIdCandidate),
       };
@@ -458,6 +474,7 @@ const normalizeOrderDetailsResponse = (
     return null;
   }
 
+  const orderCurrency = record.currency;
   const shippingAddressRecord =
     record.shipping_address && typeof record.shipping_address === "object"
       ? (record.shipping_address as Record<string, unknown>)
@@ -520,8 +537,8 @@ const normalizeOrderDetailsResponse = (
         color: variantRecord ? pickRecordValue(variantRecord, ["color"]) || "-" : "-",
         size: variantRecord ? pickRecordValue(variantRecord, ["size"]) || "-" : "-",
         quantity: normalizeDisplayValue(itemRecord.quantity),
-        unitPrice: normalizeDisplayValue(itemRecord.unit_price),
-        lineTotal: normalizeDisplayValue(itemRecord.line_total),
+        unitPrice: formatOrderAmount(itemRecord.unit_price, orderCurrency),
+        lineTotal: formatOrderAmount(itemRecord.line_total, orderCurrency),
         image: toAbsoluteMediaUrl(image) || "/images/marketpic1.png",
       };
     })
@@ -539,9 +556,9 @@ const normalizeOrderDetailsResponse = (
     placedOn: createdAtCandidate ? formatOrderDate(createdAtCandidate) : "-",
     status: pickRecordValue(record, ["status"]) || "-",
     items,
-    subtotal: normalizeDisplayValue(record.subtotal),
-    shippingPrice: normalizeDisplayValue(record.shipping_price),
-    total: normalizeDisplayValue(record.total),
+    subtotal: formatOrderAmount(record.subtotal, orderCurrency),
+    shippingPrice: formatOrderAmount(record.shipping_price, orderCurrency),
+    total: formatOrderAmount(record.total, orderCurrency),
     delivery: {
       name: deliveryName,
       phone: phone || "-",

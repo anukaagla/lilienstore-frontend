@@ -12,6 +12,7 @@ import {
   subscribeToCart,
   writeCart,
 } from "../lib/cart";
+import type { ApiCart, CartSnapshot } from "../lib/cart-api";
 import {
   clearCart,
   fetchCart,
@@ -19,6 +20,8 @@ import {
   updateCartItem,
 } from "../lib/cart-api";
 import { fetchAuthSession, fetchWithAuthRetry } from "../lib/auth";
+import { isThrottled } from "../lib/api-errors";
+import { DEFAULT_CURRENCY, formatMoney, normalizeCurrency } from "../lib/currency";
 import { byLanguage } from "../lib/i18n";
 import { toAbsoluteMediaUrl } from "../lib/media";
 import Footer from "./footer";
@@ -26,7 +29,9 @@ import { useLanguage } from "./language-provider";
 import { ShoppingBagPageSkeleton } from "./page-skeletons";
 import SiteHeader from "./site-header";
 
-const formatPrice = (value: number) => `${value.toFixed(2)} GEL`;
+// Falls back to the flat estimate the bag has always shown when the server cart is
+// unavailable (offline edits, 204 responses).
+const LEGACY_DELIVERY_FEE = 5;
 
 const fetchAccountActiveStatus = async (): Promise<boolean | null> => {
   const endpoints = ["/api/me/", "/api/auth/me/"];
@@ -57,7 +62,8 @@ const fetchAccountActiveStatus = async (): Promise<boolean | null> => {
       return typeof activeStatus === "boolean" ? activeStatus : null;
     }
 
-    if (response.status !== 404 || isLastEndpoint) {
+    // Retrying the second endpoint under a throttle only burns more of the budget.
+    if (response.status !== 404 || isLastEndpoint || isThrottled(response)) {
       return null;
     }
   }
@@ -69,6 +75,7 @@ export default function ShoppingBag() {
   const { language } = useLanguage();
   const router = useRouter();
   const [items, setItems] = useState<CartItem[]>([]);
+  const [serverCart, setServerCart] = useState<ApiCart | null>(null);
   const [cartLoading, setCartLoading] = useState(true);
   const [loginRequired, setLoginRequired] = useState(false);
   const [verificationRequired, setVerificationRequired] = useState(false);
@@ -121,6 +128,13 @@ export default function ShoppingBag() {
       language
     ),
   };
+  // The server owns the amounts, including which currency they are quoted in.
+  // Declared above the effect that calls it so the effect always sees this binding.
+  const applySnapshot = (snapshot: CartSnapshot) => {
+    setItems(snapshot.items);
+    setServerCart(snapshot.cart);
+  };
+
   useEffect(() => {
     let isActive = true;
     const handleStorage = (event: StorageEvent) => {
@@ -168,7 +182,7 @@ export default function ShoppingBag() {
       const snapshot = await fetchCart();
       if (!isActive) return;
       if (snapshot) {
-        setItems(snapshot.items);
+        applySnapshot(snapshot);
       }
       setCartLoading(false);
     };
@@ -193,6 +207,8 @@ export default function ShoppingBag() {
       writeCart(next);
       return next;
     });
+    // Locally edited totals no longer match the server's; recompute them instead.
+    setServerCart(null);
   };
 
   const handleRemoveItem = async (id: string) => {
@@ -203,7 +219,7 @@ export default function ShoppingBag() {
     }
     const snapshot = await removeCartItem(itemId);
     if (snapshot) {
-      setItems(snapshot.items);
+      applySnapshot(snapshot);
     }
   };
 
@@ -228,20 +244,20 @@ export default function ShoppingBag() {
     if (nextQuantity <= 0) {
       const snapshot = await removeCartItem(itemId);
       if (snapshot) {
-        setItems(snapshot.items);
+        applySnapshot(snapshot);
       }
       return;
     }
     const snapshot = await updateCartItem(itemId, nextQuantity);
     if (snapshot) {
-      setItems(snapshot.items);
+      applySnapshot(snapshot);
     }
   };
 
   const handleClear = async () => {
     const snapshot = await clearCart();
     if (snapshot) {
-      setItems(snapshot.items);
+      applySnapshot(snapshot);
       return;
     }
     const hasLocalIds = items.some(
@@ -251,7 +267,7 @@ export default function ShoppingBag() {
       updateItems(() => []);
     }
   };
-  const subtotal = useMemo(
+  const localSubtotal = useMemo(
     () =>
       items.reduce(
         (total, item) => total + item.price * item.quantity,
@@ -259,8 +275,16 @@ export default function ShoppingBag() {
       ),
     [items],
   );
-  const deliveryFee = subtotal > 0 ? 5 : 0;
-  const total = subtotal + deliveryFee;
+  // Every amount on this screen is quoted in one currency, chosen by the backend from
+  // the visitor's country. The server cart is authoritative; local items only cover
+  // the window before it responds.
+  const currency = serverCart
+    ? normalizeCurrency(serverCart.currency)
+    : items[0]?.currency ?? DEFAULT_CURRENCY;
+  const subtotal = serverCart?.subtotal ?? localSubtotal;
+  const deliveryFee =
+    serverCart?.shipping_price ?? (subtotal > 0 ? LEGACY_DELIVERY_FEE : 0);
+  const total = serverCart?.estimated_total ?? subtotal + deliveryFee;
 
   if (cartLoading) {
     return <ShoppingBagPageSkeleton />;
@@ -401,10 +425,10 @@ export default function ShoppingBag() {
                         <div className="flex items-center justify-between gap-4 text-slate-700">
                           <span>{item.name}</span>
                           <span className="hidden sm:inline">
-                            {formatPrice(item.price)}
+                            {formatMoney(item.price, item.currency)}
                           </span>
                         </div>
-                        <span>{formatPrice(item.price)}</span>
+                        <span>{formatMoney(item.price, item.currency)}</span>
                         {item.color ? (
                           <span className="inline-flex items-center gap-2">
                             {text.color}: {item.color}
@@ -476,15 +500,15 @@ export default function ShoppingBag() {
             <div className="space-y-3 text-[11px] uppercase tracking-[0.2em] text-slate-600">
               <div className="flex items-center justify-between border-b border-black/20 pb-2">
                 <span>{text.subtotal}:</span>
-                <span>{formatPrice(subtotal)}</span>
+                <span>{formatMoney(subtotal, currency)}</span>
               </div>
               <div className="flex items-center justify-between border-b border-black/20 pb-2">
                 <span>{text.delivery}:</span>
-                <span>{formatPrice(deliveryFee)}</span>
+                <span>{formatMoney(deliveryFee, currency)}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span>{text.total}:</span>
-                <span>{formatPrice(total)}</span>
+                <span>{formatMoney(total, currency)}</span>
               </div>
             </div>
             <div className="space-y-1 text-[10px] uppercase tracking-[0.2em] text-slate-400">

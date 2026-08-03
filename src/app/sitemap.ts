@@ -5,6 +5,7 @@ import {
   fetchCatalogProducts,
   flattenCategories,
 } from "../lib/catalog-api";
+import { INDEXING_COUNTRY } from "../lib/server/visitor-context";
 import { toCanonicalUrl } from "../lib/seo";
 
 const staticEntries = [
@@ -79,7 +80,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const [categories, products] = await Promise.all([
     fetchCatalogCategories(),
-    fetchCatalogProducts(),
+    // Pinned to GE so products without a USD price still get indexed; otherwise the
+    // catalog would shrink or grow depending on where the crawler happens to sit.
+    fetchCatalogProducts({ visitor: { country: INDEXING_COUNTRY, ip: "" } }),
   ]);
 
   const categoryEntries: MetadataRoute.Sitemap = [];

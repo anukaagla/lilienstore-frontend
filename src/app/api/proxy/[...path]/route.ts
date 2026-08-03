@@ -4,6 +4,7 @@ import {
   buildBackendUrl,
   readSessionTokens,
 } from "../../../../lib/server/auth-session";
+import { buildVisitorHeaders } from "../../../../lib/server/visitor-context";
 
 const ALLOWED_METHODS = new Set(["GET", "POST", "PUT", "PATCH", "DELETE"]);
 const ALLOWED_ROOT_SEGMENTS = new Set([
@@ -53,7 +54,14 @@ const isPublicProxyPath = (segments: string[]) =>
   (segments.length >= 2 && segments[0] === "newsletter" && segments[1] === "subscribe");
 
 const buildUpstreamHeaders = (request: NextRequest, accessToken = "") => {
-  const headers = new Headers();
+  // Cloudflare sits in front of this app, so these describe the real visitor. Without
+  // forwarding them the backend would only ever see this server's address — meaning
+  // the wrong currency and a rate limit shared by every user at once.
+  const headers = buildVisitorHeaders({
+    country: request.headers.get("cf-ipcountry") ?? "",
+    ip: request.headers.get("cf-connecting-ip") ?? "",
+  });
+
   if (accessToken) {
     headers.set("Authorization", `Bearer ${accessToken}`);
   }
@@ -134,6 +142,13 @@ const proxyRequest = async (request: NextRequest, context: RouteContext) => {
     const isBodylessResponse = BODYLESS_RESPONSE_STATUSES.has(upstreamResponse.status);
     if (contentType && !isBodylessResponse) {
       responseHeaders.set("Content-Type", contentType);
+    }
+
+    // Without this the 429 reaches the browser stripped of the one thing that makes
+    // it actionable.
+    const retryAfter = upstreamResponse.headers.get("retry-after");
+    if (retryAfter) {
+      responseHeaders.set("Retry-After", retryAfter);
     }
 
     if (isBodylessResponse) {
