@@ -155,9 +155,12 @@ export default function SiteHeader({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const brandName = getLocalizedText(brand?.brand_name, language, "Lilien");
-  // "light" means the header is sitting on the hero imagery, where the regular logo
-  // can disappear into the artwork.
+  // "light" means the header bar is sitting on the hero imagery, where the regular
+  // logo can disappear into the artwork.
   const brandLogoSrc = resolveBrandLogo(brand, { contrast: headerTone === "light" });
+  // The slide-out menu and the login modal are their own light surfaces, so they keep
+  // the regular logo no matter what the bar behind them is doing.
+  const panelLogoSrc = resolveBrandLogo(brand);
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeCategorySlug, setActiveCategorySlug] = useState("");
   const [loginOpen, setLoginOpen] = useState(false);
@@ -710,7 +713,7 @@ export default function SiteHeader({
 
         <div className="mt-4 flex items-center justify-between px-6 text-slate-500">
           <Image
-            src={brandLogoSrc}
+            src={panelLogoSrc}
             alt={`${brandName} logo`}
             width={160}
             height={64}
@@ -794,7 +797,7 @@ export default function SiteHeader({
                 </button>
                 <div className="flex flex-col items-center gap-3 text-center">
                   <Image
-                    src={brandLogoSrc}
+                    src={panelLogoSrc}
                     alt={`${brandName} logo`}
                     width={320}
                     height={128}

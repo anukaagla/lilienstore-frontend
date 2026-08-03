@@ -153,8 +153,11 @@ export default function Footer({ variant = "dark" }: FooterProps) {
   );
   const facebookValue = toSocialUrl(brand?.facebook_url?.trim() || "", "facebook");
   const tiktokValue = toSocialUrl(brand?.tiktok_url?.trim() || "", "tiktok");
-  // The footer sits on a light surface, so the regular logo stays correct here.
-  const logoSrc = resolveBrandLogo(brand, { fallback: "/images/fotter-logo.png" });
+  // The dark variant renders on near-black, where the regular logo is unreadable.
+  const logoSrc = resolveBrandLogo(brand, {
+    contrast: !isLight,
+    fallback: "/images/fotter-logo.png",
+  });
   const text = {
     instagram: byLanguage({ EN: "Instagram", KA: "ინსტაგრამი" }, language),
     facebook: byLanguage({ EN: "Facebook", KA: "ფეისბუქი" }, language),
