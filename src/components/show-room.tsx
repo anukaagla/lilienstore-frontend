@@ -2,14 +2,16 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { Montserrat } from "next/font/google";
 import { usePathname, useSearchParams } from "next/navigation";
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { byLanguage, getLocalizedText } from "../lib/i18n";
 import { buildCategoryHref } from "../lib/catalog-routing";
 import {
   getHomeCollectionHeroImage,
   getHomeCollectionMobileHeroImage,
 } from "../lib/home-collection";
+import { toAbsoluteMediaUrl } from "../lib/media";
 import {
   FOOTER_NEWSLETTER_HIDDEN_SESSION_KEY,
   NEWSLETTER_DISMISSED_SESSION_KEY,
@@ -18,12 +20,19 @@ import {
 import { useBrandState } from "./brand-provider";
 import { useLanguage } from "./language-provider";
 import type { BlogPost } from "../types/blog";
+import type { ApiProductListItem } from "../types/catalog";
 import Footer from "./footer";
 import { HomePageSkeleton } from "./page-skeletons";
 import SiteHeader from "./site-header";
 
+const saleHeadingFont = Montserrat({
+  subsets: ["latin"],
+  weight: "200",
+});
+
 type ShowRoomProps = {
   posts?: BlogPost[];
+  products?: ApiProductListItem[];
 };
 
 type InstagramEmbed = {
@@ -78,6 +87,152 @@ const INSTAGRAM_EMBED_SCRIPT_URL = "https://www.instagram.com/embed.js";
 const SUCCESS_TYPING_INTERVAL_MS = 50;
 const SUCCESS_DESCRIPTION_DELAY_MS = 500;
 const HEADER_TONE_SWITCH_OFFSET_PX = 96;
+const HOME_SALE_DISCOUNTS = [50, 40, 35, 25];
+const HOME_SALE_VISIBLE_COUNT = 4;
+
+type SaleCard = {
+  href: string;
+  name: string;
+  primaryImage: string;
+  secondaryImage: string;
+  originalPrice: number;
+  salePrice: number;
+  discountPercent: number;
+};
+
+const FALLBACK_SALE_CARDS: SaleCard[] = [
+  {
+    href: "/market",
+    name: "Maria Black Dress",
+    primaryImage: "/images/marketpic1.png",
+    secondaryImage: "/images/dress5.png",
+    originalPrice: 300,
+    salePrice: 150,
+    discountPercent: 50,
+  },
+  {
+    href: "/market",
+    name: "Noir Coco Set",
+    primaryImage: "/images/marketpic2.png",
+    secondaryImage: "/images/dress6.png",
+    originalPrice: 260,
+    salePrice: 156,
+    discountPercent: 40,
+  },
+  {
+    href: "/market",
+    name: "Rhodes Set",
+    primaryImage: "/images/marketpic3.png",
+    secondaryImage: "/images/dress7.png",
+    originalPrice: 280,
+    salePrice: 182,
+    discountPercent: 35,
+  },
+  {
+    href: "/market",
+    name: "Corset",
+    primaryImage: "/images/marketpic4.png",
+    secondaryImage: "/images/dress8.png",
+    originalPrice: 300,
+    salePrice: 225,
+    discountPercent: 25,
+  },
+  {
+    href: "/market",
+    name: "Velvet Slip Dress",
+    primaryImage: "/images/dress2.png",
+    secondaryImage: "/images/marketpic.png",
+    originalPrice: 320,
+    salePrice: 160,
+    discountPercent: 50,
+  },
+  {
+    href: "/market",
+    name: "Silk Evening Dress",
+    primaryImage: "/images/dress3.png",
+    secondaryImage: "/images/dress4.png",
+    originalPrice: 340,
+    salePrice: 204,
+    discountPercent: 40,
+  },
+  {
+    href: "/market",
+    name: "Midnight Satin Dress",
+    primaryImage: "/images/dress4.png",
+    secondaryImage: "/images/dress3.png",
+    originalPrice: 360,
+    salePrice: 234,
+    discountPercent: 35,
+  },
+];
+
+const salePriceFormatter = new Intl.NumberFormat("en-US", {
+  maximumFractionDigits: 2,
+  minimumFractionDigits: 0,
+});
+
+const formatSalePrice = (value: number) => `${salePriceFormatter.format(value)} GEL`;
+
+const buildHomeSaleCards = (
+  products: ApiProductListItem[] | undefined,
+  language: "KA" | "EN",
+): SaleCard[] => {
+  if (!products?.length) {
+    return FALLBACK_SALE_CARDS;
+  }
+
+  const mapped = products.map((item, index) => {
+    const sortedImages = [...(item.images ?? [])].sort(
+      (a, b) => a.sort_order - b.sort_order,
+    );
+    const imageUrls = sortedImages
+      .map((image) => toAbsoluteMediaUrl(image.image_url ?? image.image))
+      .filter((image): image is string => Boolean(image));
+    const primaryImageRecord = sortedImages.find((image) => image.is_primary);
+    const primaryImage =
+      toAbsoluteMediaUrl(primaryImageRecord?.image_url ?? primaryImageRecord?.image) ||
+      imageUrls[0] ||
+      FALLBACK_SALE_CARDS[index % FALLBACK_SALE_CARDS.length]?.primaryImage ||
+      "/images/dress.png";
+    const secondaryImage =
+      imageUrls.find((image) => image !== primaryImage) ??
+      FALLBACK_SALE_CARDS[index % FALLBACK_SALE_CARDS.length]?.secondaryImage ??
+      primaryImage;
+    const discountPercent =
+      HOME_SALE_DISCOUNTS[index % HOME_SALE_DISCOUNTS.length] ?? HOME_SALE_DISCOUNTS[0];
+    const originalPrice =
+      Number(item.min_price) ||
+      FALLBACK_SALE_CARDS[index % FALLBACK_SALE_CARDS.length]?.originalPrice ||
+      0;
+    const salePrice = Number(
+      (originalPrice * (1 - discountPercent / 100)).toFixed(2),
+    );
+
+    return {
+      href: `/market/${item.slug}`,
+      name: getLocalizedText(item.name, language, item.slug),
+      primaryImage,
+      secondaryImage,
+      originalPrice,
+      salePrice,
+      discountPercent,
+    };
+  });
+
+  if (!mapped.length) {
+    return FALLBACK_SALE_CARDS;
+  }
+
+  const minimumCardsNeeded = HOME_SALE_VISIBLE_COUNT + 3;
+  if (mapped.length >= minimumCardsNeeded) {
+    return mapped;
+  }
+
+  return [
+    ...mapped,
+    ...FALLBACK_SALE_CARDS.slice(mapped.length, minimumCardsNeeded),
+  ];
+};
 
 function SuccessMessageBlock({
   text,
@@ -255,7 +410,7 @@ const subscribeToNewsletter = async (
   }
 };
 
-export default function ShowRoom({ posts }: ShowRoomProps) {
+export default function ShowRoom({ posts, products }: ShowRoomProps) {
   const { language } = useLanguage();
   const { brand, isLoading: brandLoading } = useBrandState();
   const pathname = usePathname();
@@ -289,6 +444,8 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
     brand?.newsletter_signup_popup_image?.trim() ||
     "/images/newsletter-pic.png";
   const text = {
+    sale: byLanguage({ EN: "Sale", KA: "Sale" }, language),
+    newArrivals: byLanguage({ EN: "New arrivals", KA: "New arrivals" }, language),
     shopNow: byLanguage({ EN: "Shop Now", KA: "შეიძინე" }, language),
     seeMore: byLanguage({ EN: "See more", KA: "მეტის ნახვა" }, language),
     blogPostCover: byLanguage({ EN: "Blog post cover", KA: "ბლოგის ფოტო" }, language),
@@ -385,6 +542,12 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
     imageAlt: byLanguage({ EN: "Newsletter preview", KA: "ნიუსლეთერის ფოტო" }, language),
   };
   const resolvedPosts = posts ?? [];
+  const homeSaleCards = useMemo(
+    () => buildHomeSaleCards(products, language),
+    [products, language],
+  );
+  const [saleStartIndex, setSaleStartIndex] = useState(0);
+  const [arrivalStartIndex, setArrivalStartIndex] = useState(0);
   const [visibleCount, setVisibleCount] = useState(3);
   const [newsletterVisible, setNewsletterVisible] = useState(false);
   const [newsletterEmail, setNewsletterEmail] = useState("");
@@ -397,6 +560,28 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
 
   const visiblePosts = resolvedPosts.slice(0, visibleCount);
   const canShowMore = visibleCount < resolvedPosts.length;
+  const canNavigateSales = homeSaleCards.length > HOME_SALE_VISIBLE_COUNT;
+  const canNavigateArrivals = homeSaleCards.length > HOME_SALE_VISIBLE_COUNT;
+  const visibleHomeSaleCards = useMemo(() => {
+    if (homeSaleCards.length <= HOME_SALE_VISIBLE_COUNT) {
+      return homeSaleCards;
+    }
+
+    return Array.from({ length: HOME_SALE_VISIBLE_COUNT }, (_, offset) => {
+      const index = (saleStartIndex + offset) % homeSaleCards.length;
+      return homeSaleCards[index];
+    });
+  }, [homeSaleCards, saleStartIndex]);
+  const visibleArrivalCards = useMemo(() => {
+    if (homeSaleCards.length <= HOME_SALE_VISIBLE_COUNT) {
+      return homeSaleCards;
+    }
+
+    return Array.from({ length: HOME_SALE_VISIBLE_COUNT }, (_, offset) => {
+      const index = (arrivalStartIndex + offset) % homeSaleCards.length;
+      return homeSaleCards[index];
+    });
+  }, [arrivalStartIndex, homeSaleCards]);
 
   const processInstagramEmbeds = () => {
     if (typeof window === "undefined") {
@@ -560,6 +745,11 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
     };
   }, [instagramEmbeds]);
 
+  useEffect(() => {
+    setSaleStartIndex(0);
+    setArrivalStartIndex(0);
+  }, [homeSaleCards.length]);
+
   if (brandLoading && !brand) {
     return <HomePageSkeleton />;
   }
@@ -613,6 +803,162 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
       setNewsletterSubmitting(false);
     }
   };
+
+  const showPreviousSaleCards = () => {
+    if (!canNavigateSales) {
+      return;
+    }
+
+    setSaleStartIndex((current) =>
+      current === 0 ? homeSaleCards.length - 1 : current - 1,
+    );
+  };
+
+  const showNextSaleCards = () => {
+    if (!canNavigateSales) {
+      return;
+    }
+
+    setSaleStartIndex((current) => (current + 1) % homeSaleCards.length);
+  };
+
+  const showPreviousArrivalCards = () => {
+    if (!canNavigateArrivals) {
+      return;
+    }
+
+    setArrivalStartIndex((current) =>
+      current === 0 ? homeSaleCards.length - 1 : current - 1,
+    );
+  };
+
+  const showNextArrivalCards = () => {
+    if (!canNavigateArrivals) {
+      return;
+    }
+
+    setArrivalStartIndex((current) => (current + 1) % homeSaleCards.length);
+  };
+
+  const renderProductShowcaseSection = ({
+    title,
+    visibleCards,
+    canNavigate,
+    onPrevious,
+    onNext,
+    showDiscountBadge,
+    className,
+  }: {
+    title: string;
+    visibleCards: SaleCard[];
+    canNavigate: boolean;
+    onPrevious: () => void;
+    onNext: () => void;
+    showDiscountBadge: boolean;
+    className: string;
+  }) => (
+    <section className={className}>
+      <div className="mb-4 flex items-center justify-between gap-4">
+        <h2 className={`${saleHeadingFont.className} text-[2.15rem] font-extralight uppercase tracking-[0.08em] text-[#A79974] sm:text-[2.8rem]`}>
+          {title}
+        </h2>
+        <div className="flex items-center gap-3 text-[#6B6B6B]">
+          <button
+            type="button"
+            aria-label={`Previous ${title} products`}
+            onClick={onPrevious}
+            disabled={!canNavigate}
+            className="inline-flex h-8 w-8 items-center justify-center transition hover:text-black disabled:cursor-default disabled:opacity-35"
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              className="h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="m15 18-6-6 6-6" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            aria-label={`Next ${title} products`}
+            onClick={onNext}
+            disabled={!canNavigate}
+            className="inline-flex h-8 w-8 items-center justify-center transition hover:text-black disabled:cursor-default disabled:opacity-35"
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              className="h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="m9 18 6-6-6-6" />
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div className="rounded-[1.4rem] border border-[#A79974] bg-white px-4 py-4 sm:px-6 sm:py-5 lg:px-7">
+        <div className="grid grid-cols-2 gap-4 sm:gap-5 lg:grid-cols-4">
+          {visibleCards.map((product) => (
+            <Link key={`${title}-${product.href}-${product.name}`} href={product.href} className="group block">
+              <article className="mx-auto w-full max-w-[228px]">
+                <div className="relative aspect-[228/343] overflow-hidden bg-[#f4ede3]">
+                  <Image
+                    src={product.primaryImage}
+                    alt={product.name}
+                    fill
+                    sizes="(min-width: 1024px) 18rem, (min-width: 640px) 32vw, 46vw"
+                    className="object-cover transition-opacity duration-500 group-hover:opacity-0"
+                  />
+                  <Image
+                    src={product.secondaryImage}
+                    alt=""
+                    fill
+                    aria-hidden="true"
+                    sizes="(min-width: 1024px) 18rem, (min-width: 640px) 32vw, 46vw"
+                    className="object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+                  />
+                </div>
+
+                <div className="mt-3 space-y-2 text-[10px] uppercase tracking-[0.18em] text-[#6f675d] sm:text-[11px]">
+                  <p className="text-[#221d19]">{product.name}</p>
+                  {showDiscountBadge ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="line-through decoration-[1px]">
+                        {formatSalePrice(product.originalPrice)}
+                      </p>
+                      <div className="inline-flex items-center gap-2 rounded-[4px] bg-[#A79974] px-2 py-1 text-[9px] text-white sm:text-[10px]">
+                        <span>-{product.discountPercent}%</span>
+                        <span>{formatSalePrice(product.salePrice)}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <p>{formatSalePrice(product.originalPrice)}</p>
+                  )}
+                </div>
+              </article>
+            </Link>
+          ))}
+        </div>
+      </div>
+      <div className="mt-5 flex justify-center">
+        <Link
+          href="/market"
+          className="inline-flex border-b border-black pb-1 text-[13px] uppercase tracking-[0.24em] text-black"
+        >
+          {collectionViewMoreLabel}
+        </Link>
+      </div>
+    </section>
+  );
 
   const renderPost = (post: BlogPost, index: number) => {
     const layoutIndex = index % 3;
@@ -892,6 +1238,31 @@ export default function ShowRoom({ posts }: ShowRoomProps) {
             </div>
           </div>
         </section>
+
+        {homeSaleCards.length ? (
+          <>
+            {renderProductShowcaseSection({
+              title: text.sale,
+              visibleCards: visibleHomeSaleCards,
+              canNavigate: canNavigateSales,
+              onPrevious: showPreviousSaleCards,
+              onNext: showNextSaleCards,
+              showDiscountBadge: true,
+              className:
+                "relative left-1/2 mt-[30px] w-[84vw] max-w-[1400px] -translate-x-1/2 pb-0 pt-7 sm:pt-8",
+            })}
+            {renderProductShowcaseSection({
+              title: text.newArrivals,
+              visibleCards: visibleArrivalCards,
+              canNavigate: canNavigateArrivals,
+              onPrevious: showPreviousArrivalCards,
+              onNext: showNextArrivalCards,
+              showDiscountBadge: false,
+              className:
+                "relative left-1/2 mt-[75px] w-[84vw] max-w-[1400px] -translate-x-1/2 pb-6 pt-0 sm:pb-8",
+            })}
+          </>
+        ) : null}
 
         <div className="w-full bg-white">
           <div className="mx-auto flex w-full max-w-6xl flex-col px-4 pb-14 pt-8 sm:px-6 sm:pb-16">
