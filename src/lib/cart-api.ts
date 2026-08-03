@@ -1,6 +1,7 @@
 import type { CartItem } from "./cart";
 import { fetchWithAuthRetry } from "./auth";
 import { readCart, writeCart } from "./cart";
+import { normalizeCurrency } from "./currency";
 import { LANGUAGE_STORAGE_KEY, getLocalizedText, normalizeLanguage } from "./i18n";
 import { toAbsoluteMediaUrl } from "./media";
 
@@ -31,9 +32,10 @@ type ApiCartItem = {
   added_at: string;
   unit_price: number;
   line_total: number;
+  currency?: string | null;
 };
 
-type ApiCart = {
+export type ApiCart = {
   id: number;
   status: string;
   items: ApiCartItem[];
@@ -41,6 +43,7 @@ type ApiCart = {
   subtotal: number;
   shipping_price: number;
   estimated_total: number;
+  currency?: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -61,8 +64,10 @@ const mapCartItems = (cart: ApiCart): CartItem[] =>
   cart.items.map((item) => ({
     id: String(item.id),
     productId: String(item.product.id),
+    variantId: item.variant?.id,
     name: getLocalizedText(item.product.name, getCurrentLanguage(), item.product.slug),
     price: item.unit_price,
+    currency: normalizeCurrency(item.currency ?? cart.currency),
     size: item.variant?.size?.trim() || "One Size",
     color:
       item.variant?.color?.trim() || item.variant?.hex_color?.trim() || undefined,

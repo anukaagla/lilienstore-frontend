@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { HomePageSkeleton } from "../components/page-skeletons";
 import ShowRoom from "../components/show-room";
 import { fetchBlogPosts } from "../lib/blog";
-import { fetchCatalogProducts } from "../lib/catalog-api";
+import { fetchHomeSections } from "../lib/catalog-api";
 import {
   indexableRobots,
   normalizeDescription,
@@ -46,9 +46,11 @@ export const metadata: Metadata = {
 };
 
 async function ShowRoomContent() {
-  const posts = await fetchBlogPosts();
-  const products = await fetchCatalogProducts();
-  return <ShowRoom posts={posts} products={products} />;
+  const [posts, sections] = await Promise.all([
+    fetchBlogPosts(),
+    fetchHomeSections(),
+  ]);
+  return <ShowRoom posts={posts} sections={sections} />;
 }
 
 export default function Page() {

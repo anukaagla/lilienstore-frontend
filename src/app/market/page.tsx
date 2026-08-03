@@ -6,6 +6,7 @@ import { MarketPageSkeleton } from "../../components/page-skeletons";
 import {
   fetchCatalogCategories,
   fetchCatalogProducts,
+  fetchCatalogProductsResult,
   getCategoryNameBySlug,
   getListItemPrimaryImage,
   humanizeSlug,
@@ -134,14 +135,15 @@ export default async function MarketPage({ searchParams }: MarketPageProps) {
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const { category, query, sort } = resolveMarketQueryState(resolvedSearchParams);
 
-  const [products, categories] = await Promise.all([
-    fetchCatalogProducts({
+  const [productsResult, categories] = await Promise.all([
+    fetchCatalogProductsResult({
       category,
       q: query,
       sort,
     }),
     fetchCatalogCategories(),
   ]);
+  const products = productsResult.data;
 
   const canonicalUrl = toCanonicalUrl(
     "/market",
@@ -195,7 +197,11 @@ export default async function MarketPage({ searchParams }: MarketPageProps) {
         }}
       />
       <Suspense fallback={<MarketPageSkeleton />}>
-        <Market products={products} categories={categories} />
+        <Market
+          products={products}
+          categories={categories}
+          throttled={productsResult.status === 429}
+        />
       </Suspense>
     </>
   );

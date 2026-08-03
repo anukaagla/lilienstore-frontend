@@ -15,6 +15,13 @@ import {
   writeAddresses,
 } from "../lib/addresses";
 import { fetchWithAuthRetry } from "../lib/auth";
+import { getThrottleMessageFromResponse, isThrottled } from "../lib/api-errors";
+import {
+  DEFAULT_CURRENCY,
+  formatMoney,
+  normalizeCurrency,
+  type CurrencyCode,
+} from "../lib/currency";
 import { byLanguage } from "../lib/i18n";
 import { writeOrderConfirmation } from "../lib/order-confirmation";
 import Footer from "./footer";
@@ -67,6 +74,8 @@ type ShippingSettings = {
   tbilisiPrice: number;
   georgiaOtherPrice: number;
   internationalPrice: number;
+  // Field names are unchanged, but the amounts follow the visitor's currency.
+  currency: CurrencyCode;
 };
 
 const emptyForm: CheckoutFormState = {
@@ -87,7 +96,6 @@ const LEGACY_DELIVERY_FEE = 5;
 const GEORGIA_COUNTRY_NAMES = new Set(["georgia", "ge", "sakartvelo", "საქართველო"]);
 const TBILISI_LOCATION_NAMES = ["tbilisi", "თბილისი"];
 
-const formatPrice = (value: number) => `${value.toFixed(2)} GEL`;
 const normalizeString = (value: unknown) =>
   typeof value === "string" ? value : "";
 const normalizeTrimmedString = (value: string) => value.trim();
@@ -233,7 +241,23 @@ const normalizeShippingSettingsResponse = (payload: unknown): ShippingSettings |
     tbilisiPrice: parsePriceValue(payload.tbilisi_price) ?? 0,
     georgiaOtherPrice: parsePriceValue(payload.georgia_other_price) ?? 0,
     internationalPrice: parsePriceValue(payload.international_price) ?? 0,
+    currency: normalizeCurrency(payload.currency),
   };
+};
+
+// Raised when the bag holds a variant with no price in the visitor's currency.
+// The code is stable; the English sentence in non_field_errors is not.
+const UNAVAILABLE_VARIANT_CODE = "variant_currency_unavailable";
+
+const readUnavailableVariantIds = (payload: unknown): number[] | null => {
+  if (!isRecord(payload) || payload.code !== UNAVAILABLE_VARIANT_CODE) {
+    return null;
+  }
+
+  const ids = Array.isArray(payload.variant_ids) ? payload.variant_ids : [];
+  return ids
+    .map((id) => (typeof id === "number" ? id : Number(id)))
+    .filter((id): id is number => Number.isInteger(id));
 };
 
 const isGeorgiaAddress = (address: Address) => {
@@ -381,6 +405,7 @@ export default function Checkout() {
   const [addressError, setAddressError] = useState<string | null>(null);
   const [orderSubmitting, setOrderSubmitting] = useState(false);
   const [orderError, setOrderError] = useState<string | null>(null);
+  const [unavailableVariantIds, setUnavailableVariantIds] = useState<number[]>([]);
   const text = {
     addedAddresses: byLanguage({ EN: "Added Addresses", KA: "დამატებული მისამართები" }, language),
     home: byLanguage({ EN: "Home", KA: "სახლი" }, language),
@@ -461,6 +486,17 @@ export default function Checkout() {
         EN: "We could not place your order. Please try again.",
         KA: "შეკვეთის გაფორმება ვერ მოხერხდა. სცადეთ ხელახლა.",
       },
+      language,
+    ),
+    variantUnavailable: byLanguage(
+      {
+        EN: "Your bag contains an item that is unavailable in your region. Please remove it and try again.",
+        KA: "კალათაში არის პროდუქტი, რომელიც თქვენს რეგიონში მიუწვდომელია. წაშალეთ და სცადეთ თავიდან.",
+      },
+      language,
+    ),
+    itemUnavailable: byLanguage(
+      { EN: "Unavailable in your region", KA: "მიუწვდომელია თქვენს რეგიონში" },
       language,
     ),
     checkoutIdMissing: byLanguage(
@@ -699,6 +735,10 @@ export default function Checkout() {
     return getShippingFeeForAddress(selectedAddress, shippingSettings);
   }, [selectedAddress, shippingSettings, subtotal]);
   const total = subtotal + deliveryFee;
+  // Cart items and shipping settings are quoted in the same visitor currency, so
+  // either source is valid; items win because they load first.
+  const currency: CurrencyCode =
+    items[0]?.currency ?? shippingSettings?.currency ?? DEFAULT_CURRENCY;
   const checkoutAddressId = useMemo(() => {
     const candidate = selectedAddressId ?? "";
     const parsed = Number.parseInt(candidate, 10);
@@ -755,6 +795,10 @@ export default function Checkout() {
       if (!response.ok) {
         if (response.status === 401 || response.status === 403) {
           setAddressError(text.missingAccessToken);
+          return;
+        }
+        if (isThrottled(response)) {
+          setAddressError(getThrottleMessageFromResponse(response, language));
           return;
         }
         setAddressError(getApiMessage(payload, text.addressCreateFailed));
@@ -825,9 +869,24 @@ export default function Checkout() {
           setOrderError(text.missingAccessToken);
           return;
         }
+
+        if (isThrottled(response)) {
+          setOrderError(getThrottleMessageFromResponse(response, language));
+          return;
+        }
+
+        const unavailableIds = readUnavailableVariantIds(payload);
+        if (unavailableIds) {
+          setUnavailableVariantIds(unavailableIds);
+          setOrderError(text.variantUnavailable);
+          return;
+        }
+
         setOrderError(getApiMessage(payload, text.placeOrderFailed));
         return;
       }
+
+      setUnavailableVariantIds([]);
 
       const checkoutId = pickPayloadText(payload, [
         "id",
@@ -866,6 +925,10 @@ export default function Checkout() {
       if (!payResponse.ok) {
         if (payResponse.status === 401 || payResponse.status === 403) {
           setOrderError(text.missingAccessToken);
+          return;
+        }
+        if (isThrottled(payResponse)) {
+          setOrderError(getThrottleMessageFromResponse(payResponse, language));
           return;
         }
         setOrderError(getApiMessage(payPayload, text.paymentStartFailed));
@@ -1154,31 +1217,48 @@ export default function Checkout() {
                     {text.emptyBag}
                   </div>
                 ) : (
-                  items.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center justify-between border-b border-black/10 pb-2"
-                    >
-                      <span>
-                        {item.name} x{item.quantity}
-                      </span>
-                      <span>{formatPrice(item.price * item.quantity)}</span>
-                    </div>
-                  ))
+                  items.map((item) => {
+                    const isUnavailable =
+                      item.variantId !== undefined &&
+                      unavailableVariantIds.includes(item.variantId);
+
+                    return (
+                      <div
+                        key={item.id}
+                        className={`flex items-center justify-between border-b pb-2 ${
+                          isUnavailable
+                            ? "border-red-300 text-red-600"
+                            : "border-black/10"
+                        }`}
+                      >
+                        <span>
+                          {item.name} x{item.quantity}
+                          {isUnavailable ? (
+                            <span className="ml-2 text-[9px] tracking-[0.18em]">
+                              — {text.itemUnavailable}
+                            </span>
+                          ) : null}
+                        </span>
+                        <span>
+                          {formatMoney(item.price * item.quantity, item.currency)}
+                        </span>
+                      </div>
+                    );
+                  })
                 )}
               </div>
               <div className="mt-6 space-y-3">
                 <div className="flex items-center justify-between border-b border-black/20 pb-2">
                   <span>{text.subtotal}</span>
-                  <span>{formatPrice(subtotal)}</span>
+                  <span>{formatMoney(subtotal, currency)}</span>
                 </div>
                 <div className="flex items-center justify-between border-b border-black/20 pb-2">
                   <span>{text.delivery}</span>
-                  <span>{formatPrice(deliveryFee)}</span>
+                  <span>{formatMoney(deliveryFee, currency)}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span>{text.total}</span>
-                  <span>{formatPrice(total)}</span>
+                  <span>{formatMoney(total, currency)}</span>
                 </div>
               </div>
             </div>

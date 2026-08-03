@@ -9,6 +9,7 @@ import { clearLegacyAuthStorage, fetchAuthSession } from "../lib/auth";
 import { byLanguage, getLocalizedText } from "../lib/i18n";
 import { buildCategoryHref } from "../lib/catalog-routing";
 import type { Category } from "../types/catalog";
+import { resolveBrandLogo } from "../lib/brand";
 import { useBrandState } from "./brand-provider";
 import { SkeletonBlock } from "./page-skeletons";
 import { useLanguage } from "./language-provider";
@@ -154,7 +155,9 @@ export default function SiteHeader({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const brandName = getLocalizedText(brand?.brand_name, language, "Lilien");
-  const brandLogoSrc = brand?.logo_url?.trim() || brand?.logo?.trim() || "/images/full.png";
+  // "light" means the header is sitting on the hero imagery, where the regular logo
+  // can disappear into the artwork.
+  const brandLogoSrc = resolveBrandLogo(brand, { contrast: headerTone === "light" });
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeCategorySlug, setActiveCategorySlug] = useState("");
   const [loginOpen, setLoginOpen] = useState(false);

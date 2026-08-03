@@ -1,8 +1,18 @@
+import { DEFAULT_CURRENCY, normalizeCurrency, type CurrencyCode } from "./currency";
+
 export type CartItem = {
   id: string;
   productId: string;
+  /** Backend variant id — the checkout error reports unavailability by variant. */
+  variantId?: number;
   name: string;
   price: number;
+  /**
+   * Stored alongside the price because the cart lives in localStorage: a visitor who
+   * changes country (or switches on a VPN) would otherwise keep stale amounts from
+   * the previous currency.
+   */
+  currency: CurrencyCode;
   size: string;
   color?: string;
   colorHex?: string;
@@ -17,7 +27,12 @@ const safeParse = (value: string | null): CartItem[] => {
   if (!value) return [];
   try {
     const parsed = JSON.parse(value);
-    return Array.isArray(parsed) ? (parsed as CartItem[]) : [];
+    if (!Array.isArray(parsed)) return [];
+    // Carts persisted before currency existed have no `currency` field.
+    return (parsed as CartItem[]).map((item) => ({
+      ...item,
+      currency: normalizeCurrency(item?.currency),
+    }));
   } catch {
     return [];
   }
@@ -66,8 +81,10 @@ const buildCartItemId = (payload: {
 
 export const addToCart = (payload: {
   productId: string;
+  variantId?: number;
   name: string;
   price: number;
+  currency?: CurrencyCode;
   size: string;
   color?: string;
   colorHex?: string;
@@ -93,8 +110,10 @@ export const addToCart = (payload: {
     items.push({
       id: buildCartItemId(payload),
       productId: payload.productId,
+      variantId: payload.variantId,
       name: payload.name,
       price: payload.price,
+      currency: payload.currency ?? DEFAULT_CURRENCY,
       size: payload.size,
       color: payload.color?.trim() || undefined,
       colorHex: payload.colorHex?.trim() || undefined,

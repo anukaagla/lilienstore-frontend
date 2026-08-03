@@ -42,6 +42,8 @@ export type Brand = {
   return_and_refund_policy: LocalizedText;
   shipping_and_delivery_policy: LocalizedText;
   logo: string | null;
+  /** Alternate logo for dark/imagery backgrounds. Null when nothing was uploaded. */
+  contrast_logo: string | null;
   hero_image: string | null;
   mobile_hero_image: string | null;
   about_us_image_1: string | null;
@@ -49,6 +51,7 @@ export type Brand = {
   newsletter_signup_popup_image: string | null;
   hero_category: BrandHeroCategory | null;
   logo_url: string | null;
+  contrast_logo_url: string | null;
   hero_image_url: string | null;
   mobile_hero_image_url: string | null;
   about_us_image_1_url: string | null;

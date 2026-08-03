@@ -8,6 +8,7 @@ import { useSearchParams } from "next/navigation";
 import type { Product, ProductVariant } from "../data/products";
 import { addToCart, readCart, subscribeToCart } from "../lib/cart";
 import { addCartItem } from "../lib/cart-api";
+import { formatMoney } from "../lib/currency";
 import { byLanguage, getLocalizedText } from "../lib/i18n";
 import Breadcrumbs from "./breadcrumbs";
 import Footer from "./footer";
@@ -225,6 +226,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
     );
   }, [filteredVariants, hasVariantData, resolvedSelectedSize]);
   const displayPrice = selectedVariant?.price ?? product.price;
+  const displayCurrency = selectedVariant?.currency ?? product.currency;
   const thumbnails = useMemo(
     () => Array.from(new Set(gallery.filter(Boolean))).slice(0, 5),
     [gallery]
@@ -386,7 +388,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
             <div className="space-y-5 pt-6">
               <div className="space-y-2">
                 <h1 className="text-slate-900">{displayName}</h1>
-                <p>{displayPrice} GEL</p>
+                <p>{formatMoney(displayPrice, displayCurrency)}</p>
               </div>
               <div className="h-px w-full bg-black/20" />
 
@@ -513,8 +515,10 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                       const fallbackAdd = () => {
                         addToCart({
                           productId: product.id,
+                          variantId: selectedVariant?.id,
                           name: displayName,
                           price: displayPrice,
+                          currency: displayCurrency,
                           size: resolvedSelectedSize,
                           color:
                             selectedVariant?.color.trim() ||
