@@ -737,7 +737,7 @@ export default function ShowRoom({ posts, sections }: ShowRoomProps) {
   }) => (
     <section className={className} key={keyPrefix ?? title}>
       <div className="mb-4 flex items-center justify-between gap-4">
-        <h2 className={`${saleHeadingFont.className} text-[2.15rem] font-extralight uppercase tracking-[0.08em] text-[#A79974] sm:text-[2.8rem]`}>
+        <h2 className={`${saleHeadingFont.className} text-[2.15rem] font-extralight uppercase tracking-[0.08em] text-black sm:text-[2.8rem]`}>
           {title}
         </h2>
         <div className="flex items-center gap-3 text-[#6B6B6B]">
@@ -783,7 +783,7 @@ export default function ShowRoom({ posts, sections }: ShowRoomProps) {
           </button>
         </div>
       </div>
-      <div className="rounded-[1.4rem] border border-[#A79974] bg-white px-4 py-4 sm:px-6 sm:py-5 lg:px-7">
+      <div className="rounded-[1.4rem] border border-black bg-white px-4 py-4 sm:px-6 sm:py-5 lg:px-7">
         <div className="grid grid-cols-2 gap-4 sm:gap-5 lg:grid-cols-4">
           {visibleCards.map((product) => (
             <Link
