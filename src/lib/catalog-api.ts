@@ -20,10 +20,11 @@ import type {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? process.env.API_BASE_URL ?? "";
 
-// Brand and categories carry no prices, so they are identical for every visitor and
-// safe to share across requests. Anything price-bearing must stay no-store, or one
-// visitor's GEL response would be served to another visitor in USD.
-const CURRENCY_FREE_REVALIDATE_SECONDS = 300;
+// Categories carry no prices, so they are identical for every visitor and safe to
+// share across requests. Anything price-bearing must stay no-store, or one visitor's
+// GEL response would be served to another visitor in USD.
+// Short window so admin edits show up promptly rather than looking unsaved.
+const CURRENCY_FREE_REVALIDATE_SECONDS = 60;
 
 type CategoryApiRecord = {
   slug?: unknown;

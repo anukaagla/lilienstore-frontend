@@ -6,7 +6,9 @@ import { STATIC_BRAND_NAME } from "./site-config";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
 // Carries no prices, so one response is valid for every visitor regardless of country.
-const BRAND_REVALIDATE_SECONDS = 300;
+// Kept short because this is what the admin edits — hero imagery, logos, policy copy —
+// and a long window makes those edits look like they did not save.
+const BRAND_REVALIDATE_SECONDS = 60;
 
 type BrandApiResponse = Partial<Brand> & {
   logo_url?: string | null;
