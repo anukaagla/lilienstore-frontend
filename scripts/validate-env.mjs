@@ -109,6 +109,25 @@ if (!serverApiUrl) {
   );
 }
 
+// The backend derives the visitor's currency from Cloudflare's CF-IPCountry header.
+// A *.onrender.com origin bypasses Cloudflare entirely, so every price silently
+// falls back to GEL. This must fail the build, not merely warn.
+const CDN_BYPASS_HOSTS = ["onrender.com"];
+
+const isCdnBypassHost = (parsed) =>
+  CDN_BYPASS_HOSTS.some(
+    (host) => parsed.hostname === host || parsed.hostname.endsWith(`.${host}`),
+  );
+
+// Leaking the shared secret to the browser would let anyone forge their own currency.
+for (const key of Object.keys(process.env)) {
+  if (key.startsWith("NEXT_PUBLIC_") && key.includes("INTERNAL_PROXY_TOKEN")) {
+    errors.push(
+      `${key} must not be public. Rename it to INTERNAL_PROXY_TOKEN so it stays server-side.`,
+    );
+  }
+}
+
 if (mode === "production") {
   const productionUrls = [
     ["NEXT_PUBLIC_API_BASE_URL", publicApiUrl],
@@ -123,6 +142,23 @@ if (mode === "production") {
         `${key} should use https in production. Received: ${parsed.toString()}`,
       );
     }
+  }
+
+  for (const [key, parsed] of productionUrls.slice(0, 2)) {
+    if (!parsed) continue;
+    if (isCdnBypassHost(parsed)) {
+      errors.push(
+        `${key} must point at the Cloudflare-fronted API domain, not ${parsed.hostname}. ` +
+          "Origins that bypass Cloudflare break currency detection (everything becomes GEL).",
+      );
+    }
+  }
+
+  if (!trim(process.env.INTERNAL_PROXY_TOKEN)) {
+    warnings.push(
+      "INTERNAL_PROXY_TOKEN is not set; the backend will ignore the visitor country/IP " +
+        "we forward and fall back to CF-IPCountry, which resolves to this server, not the visitor.",
+    );
   }
 }
 

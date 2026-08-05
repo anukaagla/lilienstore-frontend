@@ -6,6 +6,8 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore } from "react";
 
 import { fetchWithAuthRetry } from "../lib/auth";
+import { getThrottleMessageFromResponse, isThrottled } from "../lib/api-errors";
+import { DEFAULT_CURRENCY, formatMoney } from "../lib/currency";
 import { writeCart } from "../lib/cart";
 import { byLanguage } from "../lib/i18n";
 import { toAbsoluteMediaUrl } from "../lib/media";
@@ -26,7 +28,6 @@ import Footer from "./footer";
 import { useLanguage } from "./language-provider";
 import SiteHeader from "./site-header";
 
-const formatPrice = (value: number) => `${value.toFixed(2)} GEL`
 const subscribeToSnapshot = () => () => {}
 
 const successIcon = (
@@ -159,6 +160,8 @@ export default function PaymentSuccess() {
         if (isActive) {
           if (response.status === 401 || response.status === 403) {
             setOrderError(missingAccessTokenMessage)
+          } else if (isThrottled(response)) {
+            setOrderError(getThrottleMessageFromResponse(response, language))
           } else {
             setOrderError(getApiMessage(payload, orderLoadFailedMessage))
           }
@@ -286,6 +289,7 @@ export default function PaymentSuccess() {
     orderId: orderId || "-",
     orderNumber: "#-",
     status: text.confirmed,
+    currency: DEFAULT_CURRENCY,
     subtotal: 0,
     shippingFee: 0,
     total: 0,
@@ -436,7 +440,7 @@ export default function PaymentSuccess() {
                         </div>
 
                         <p className="text-sm font-semibold text-slate-700">
-                          {formatPrice(item.price * item.quantity)}
+                          {formatMoney(item.price * item.quantity, summary.currency)}
                         </p>
                       </div>
                     </div>
@@ -459,15 +463,15 @@ export default function PaymentSuccess() {
               <div className="mt-5 space-y-3 text-[11px] uppercase tracking-[0.16em] text-slate-600">
                 <div className="flex items-center justify-between border-b border-black/10 pb-3">
                   <span>{text.subtotal}</span>
-                  <span>{formatPrice(summary.subtotal)}</span>
+                  <span>{formatMoney(summary.subtotal, summary.currency)}</span>
                 </div>
                 <div className="flex items-center justify-between border-b border-black/10 pb-3">
                   <span>{text.shipping}</span>
-                  <span>{formatPrice(summary.shippingFee)}</span>
+                  <span>{formatMoney(summary.shippingFee, summary.currency)}</span>
                 </div>
                 <div className="flex items-center justify-between text-slate-900">
                   <span>{text.total}</span>
-                  <span className="text-base font-semibold">{formatPrice(summary.total)}</span>
+                  <span className="text-base font-semibold">{formatMoney(summary.total, summary.currency)}</span>
                 </div>
               </div>
             </aside>

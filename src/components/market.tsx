@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { readCart, subscribeToCart } from "../lib/cart";
+import { formatMoney, normalizeCurrency, type CurrencyCode } from "../lib/currency";
 import { byLanguage, getLocalizedText } from "../lib/i18n";
 import { toAbsoluteMediaUrl } from "../lib/media";
 import type { ApiProductListItem, Category } from "../types/catalog";
@@ -18,6 +19,7 @@ type MarketProductCard = {
   slug: string;
   name: string;
   price: number;
+  currency: CurrencyCode;
   primaryImage: string;
   secondaryImage: string;
   createdAt: string;
@@ -26,6 +28,8 @@ type MarketProductCard = {
 type MarketProps = {
   products?: ApiProductListItem[];
   categories?: Category[];
+  /** Distinguishes "the catalog is empty" from "we hit the rate limit". */
+  throttled?: boolean;
   basePath?: string;
   pageLabel?: {
     EN: string;
@@ -88,6 +92,7 @@ const mapApiProduct = (
     slug: item.slug,
     name: getLocalizedText(item.name, language, item.slug),
     price: item.min_price,
+    currency: normalizeCurrency(item.currency),
     primaryImage,
     secondaryImage,
     createdAt: item.created_at,
@@ -97,6 +102,7 @@ const mapApiProduct = (
 export default function Market({
   products: apiProducts,
   categories,
+  throttled = false,
   basePath = "/market",
   pageLabel,
   emptyStateLabel,
@@ -147,6 +153,13 @@ export default function Market({
       {
         EN: "No products available right now.",
         KA: "პროდუქტები ამ ეტაპზე არ არის ხელმისაწვდომი.",
+      },
+      language
+    ),
+    throttled: byLanguage(
+      {
+        EN: "Too many requests right now. Please refresh in a moment.",
+        KA: "ამ წუთში ძალიან ბევრი მოთხოვნაა. გთხოვთ, ცოტა ხანში განაახლოთ გვერდი.",
       },
       language
     ),
@@ -205,9 +218,11 @@ export default function Market({
   const basePageLabel = pageLabel
     ? byLanguage(pageLabel, language)
     : text.shop;
-  const emptyStateText = emptyStateLabel
-    ? byLanguage(emptyStateLabel, language)
-    : text.noProducts;
+  const emptyStateText = throttled
+    ? text.throttled
+    : emptyStateLabel
+      ? byLanguage(emptyStateLabel, language)
+      : text.noProducts;
   const selectedCategoryLabel = useMemo(() => {
     if (!currentCategory) {
       return null;
@@ -424,7 +439,7 @@ export default function Market({
                       </div>
                       <div className="mt-3 space-y-1 text-[11px] uppercase tracking-[0.18em] text-slate-500">
                         <p className="text-slate-900">{product.name}</p>
-                        <p>{product.price} GEL</p>
+                        <p>{formatMoney(product.price, product.currency)}</p>
                       </div>
                     </article>
                   </Link>

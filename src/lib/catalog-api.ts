@@ -1,11 +1,30 @@
+import "server-only";
+
 import { cache } from "react";
 
 import type { Product } from "../data/products";
+import { normalizeCurrency } from "./currency";
 import { toLocalizedText } from "./i18n";
 import { toAbsoluteMediaUrl } from "./media";
-import type { ApiProductDetail, ApiProductListItem, Category } from "../types/catalog";
+import {
+  buildVisitorHeaders,
+  readVisitorContext,
+  type VisitorContext,
+} from "./server/visitor-context";
+import type {
+  ApiHomeSection,
+  ApiProductDetail,
+  ApiProductListItem,
+  Category,
+} from "../types/catalog";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? process.env.API_BASE_URL ?? "";
+
+// Categories carry no prices, so they are identical for every visitor and safe to
+// share across requests. Anything price-bearing must stay no-store, or one visitor's
+// GEL response would be served to another visitor in USD.
+// Short window so admin edits show up promptly rather than looking unsaved.
+const CURRENCY_FREE_REVALIDATE_SECONDS = 60;
 
 type CategoryApiRecord = {
   slug?: unknown;
@@ -22,7 +41,14 @@ export type CatalogProductQuery = {
   category?: string;
   q?: string;
   sort?: string;
+  /**
+   * Overrides the country derived from the incoming request. Used by the sitemap so
+   * crawlers see the full GEL catalog instead of whichever region Google crawls from.
+   */
+  visitor?: VisitorContext;
 };
+
+export const MAX_HOME_SECTIONS = 2;
 
 export const hasCatalogApiBaseUrl = Boolean(API_BASE_URL);
 
@@ -36,17 +62,31 @@ export const normalizeSortParam = (value?: string) => {
   return value;
 };
 
-const fetchJson = async <T,>(url: string): Promise<T | undefined> => {
+export type CatalogFetchResult<T> = {
+  data?: T;
+  /** Upstream HTTP status, or 0 when the request never completed. */
+  status: number;
+};
+
+const fetchJson = async <T,>(
+  url: string,
+  init?: RequestInit,
+): Promise<CatalogFetchResult<T>> => {
   try {
-    const response = await fetch(url, { cache: "no-store" });
+    const response = await fetch(url, init);
     if (!response.ok) {
-      return undefined;
+      return { status: response.status };
     }
-    return (await response.json()) as T;
+    return { data: (await response.json()) as T, status: response.status };
   } catch {
-    return undefined;
+    return { status: 0 };
   }
 };
+
+const priceAwareInit = (visitor: VisitorContext): RequestInit => ({
+  cache: "no-store",
+  headers: buildVisitorHeaders(visitor),
+});
 
 const toNumber = (value: unknown): number | null => {
   if (typeof value === "number" && Number.isFinite(value)) {
@@ -141,12 +181,14 @@ const fetchCatalogCategoriesCached = cache(async (): Promise<
   }
 
   const categoriesUrl = new URL("/api/categories/", API_BASE_URL);
-  const payload = await fetchJson<unknown>(categoriesUrl.toString());
-  if (!payload) {
+  const { data } = await fetchJson<unknown>(categoriesUrl.toString(), {
+    next: { revalidate: CURRENCY_FREE_REVALIDATE_SECONDS },
+  });
+  if (!data) {
     return undefined;
   }
 
-  return normalizeCategories(payload);
+  return normalizeCategories(data);
 });
 
 export const fetchCatalogCategories = async () => {
@@ -158,9 +200,11 @@ const fetchCatalogProductsCached = cache(
     category: string,
     query: string,
     sort: string,
-  ): Promise<ApiProductListItem[] | undefined> => {
+    country: string,
+    ip: string,
+  ): Promise<CatalogFetchResult<ApiProductListItem[]>> => {
     if (!API_BASE_URL) {
-      return undefined;
+      return { status: 0 };
     }
 
     const productsUrl = new URL("/api/products/", API_BASE_URL);
@@ -168,44 +212,100 @@ const fetchCatalogProductsCached = cache(
     if (query) productsUrl.searchParams.set("q", query);
     if (sort) productsUrl.searchParams.set("sort", sort);
 
-    return fetchJson<ApiProductListItem[]>(productsUrl.toString());
+    return fetchJson<ApiProductListItem[]>(
+      productsUrl.toString(),
+      priceAwareInit({ country, ip }),
+    );
   },
 );
 
-export const fetchCatalogProducts = async (
+const resolveVisitor = async (override?: VisitorContext) =>
+  override ?? (await readVisitorContext());
+
+export const fetchCatalogProductsResult = async (
   options: CatalogProductQuery = {},
-): Promise<ApiProductListItem[] | undefined> => {
+): Promise<CatalogFetchResult<ApiProductListItem[]>> => {
   const category = options.category?.trim() ?? "";
   const query = options.q?.trim() ?? "";
   const sort = normalizeSortParam(options.sort?.trim()) ?? "";
+  const visitor = await resolveVisitor(options.visitor);
 
-  return fetchCatalogProductsCached(category, query, sort);
+  return fetchCatalogProductsCached(
+    category,
+    query,
+    sort,
+    visitor.country,
+    visitor.ip,
+  );
 };
 
-const fetchCatalogProductDetailCached = cache(async (slug: string) => {
-  if (!API_BASE_URL) {
-    return null;
-  }
+export const fetchCatalogProducts = async (
+  options: CatalogProductQuery = {},
+): Promise<ApiProductListItem[] | undefined> =>
+  (await fetchCatalogProductsResult(options)).data;
 
-  try {
+const fetchCatalogProductDetailCached = cache(
+  async (
+    slug: string,
+    country: string,
+    ip: string,
+  ): Promise<CatalogFetchResult<ApiProductDetail>> => {
+    if (!API_BASE_URL) {
+      return { status: 0 };
+    }
+
     const productUrl = new URL(
       `/api/products/${encodeURIComponent(slug)}/`,
       API_BASE_URL,
     );
-    const response = await fetch(productUrl.toString(), { cache: "no-store" });
 
-    if (!response.ok) {
-      return null;
+    return fetchJson<ApiProductDetail>(
+      productUrl.toString(),
+      priceAwareInit({ country, ip }),
+    );
+  },
+);
+
+export const fetchCatalogProductDetailResult = async (
+  slug: string,
+  visitorOverride?: VisitorContext,
+): Promise<CatalogFetchResult<ApiProductDetail>> => {
+  const visitor = await resolveVisitor(visitorOverride);
+  return fetchCatalogProductDetailCached(slug, visitor.country, visitor.ip);
+};
+
+export const fetchCatalogProductDetail = async (slug: string) =>
+  (await fetchCatalogProductDetailResult(slug)).data ?? null;
+
+const fetchHomeSectionsCached = cache(
+  async (
+    country: string,
+    ip: string,
+  ): Promise<CatalogFetchResult<ApiHomeSection[]>> => {
+    if (!API_BASE_URL) {
+      return { status: 0 };
     }
 
-    return (await response.json()) as ApiProductDetail;
-  } catch {
-    return null;
-  }
-});
+    const sectionsUrl = new URL("/api/sections/", API_BASE_URL);
+    return fetchJson<ApiHomeSection[]>(
+      sectionsUrl.toString(),
+      priceAwareInit({ country, ip }),
+    );
+  },
+);
 
-export const fetchCatalogProductDetail = async (slug: string) => {
-  return fetchCatalogProductDetailCached(slug);
+export const fetchHomeSections = async (
+  visitorOverride?: VisitorContext,
+): Promise<ApiHomeSection[] | undefined> => {
+  const visitor = await resolveVisitor(visitorOverride);
+  const { data } = await fetchHomeSectionsCached(visitor.country, visitor.ip);
+  if (!Array.isArray(data)) {
+    return undefined;
+  }
+
+  // The backend caps this at 2, but the homepage layout depends on it, so it is
+  // not a guarantee worth inheriting.
+  return data.slice(0, MAX_HOME_SECTIONS);
 };
 
 const resolveBrandName = (brandValue: ApiProductDetail["brand"]): string | undefined => {
@@ -257,6 +357,7 @@ export const mapApiProductDetailToProduct = (item: ApiProductDetail): Product =>
     toNumber(item.price) ??
     toNumber(item.max_price) ??
     0;
+  const currency = normalizeCurrency(item.currency);
   const nameLocalized = toLocalizedText(item.name, item.slug);
   const descriptionLocalized = toLocalizedText(item.description, "");
   const careLocalized = toLocalizedText(item.care, "");
@@ -271,6 +372,7 @@ export const mapApiProductDetailToProduct = (item: ApiProductDetail): Product =>
           ? variant.hex_color
           : "#000000",
       price: toNumber(variant.price) ?? price,
+      currency: normalizeCurrency(variant.currency ?? item.currency),
       stockQty:
         typeof variant.stock_qty === "number" && Number.isFinite(variant.stock_qty)
           ? Math.max(0, Math.floor(variant.stock_qty))
@@ -287,10 +389,6 @@ export const mapApiProductDetailToProduct = (item: ApiProductDetail): Product =>
     ? normalizeCategoryName(item.category.name, categorySlug ?? "")
     : undefined;
   const sku = typeof item.sku === "string" && item.sku.trim() ? item.sku.trim() : undefined;
-  const currency =
-    typeof item.currency === "string" && item.currency.trim()
-      ? item.currency.trim().toUpperCase()
-      : "GEL";
 
   return {
     id: String(item.id),

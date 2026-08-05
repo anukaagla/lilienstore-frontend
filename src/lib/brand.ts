@@ -5,8 +5,14 @@ import { STATIC_BRAND_NAME } from "./site-config";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
+// Carries no prices, so one response is valid for every visitor regardless of country.
+// Kept short because this is what the admin edits — hero imagery, logos, policy copy —
+// and a long window makes those edits look like they did not save.
+const BRAND_REVALIDATE_SECONDS = 60;
+
 type BrandApiResponse = Partial<Brand> & {
   logo_url?: string | null;
+  contrast_logo_url?: string | null;
   hero_image_url?: string | null;
   mobile_hero_image_url?: string | null;
   about_us_image_1_url?: string | null;
@@ -238,15 +244,36 @@ const resolveHomeCollection = (data: BrandApiResponse) => {
   };
 };
 
+/**
+ * Picks the logo for the surface it sits on. `contrast` falls back to the regular
+ * logo, since contrast_logo is optional and often null.
+ */
+export const resolveBrandLogo = (
+  brand: Brand | null | undefined,
+  {
+    contrast = false,
+    fallback = "/images/full.png",
+  }: { contrast?: boolean; fallback?: string } = {},
+) =>
+  (contrast
+    ? brand?.contrast_logo_url?.trim() || brand?.contrast_logo?.trim() || ""
+    : "") ||
+  brand?.logo_url?.trim() ||
+  brand?.logo?.trim() ||
+  fallback;
+
 export const fetchBrand = async (): Promise<Brand | null> => {
   if (!API_BASE_URL) return null;
 
   try {
     const url = new URL("/api/brand/", API_BASE_URL);
-    const response = await fetch(url.toString(), { cache: "no-store" });
+    const response = await fetch(url.toString(), {
+      next: { revalidate: BRAND_REVALIDATE_SECONDS },
+    });
     if (!response.ok) return null;
     const data = (await response.json()) as BrandApiResponse;
     const logoUrl = readMediaUrl(data.logo_url, data.logo);
+    const contrastLogoUrl = readMediaUrl(data.contrast_logo_url, data.contrast_logo);
     const heroImageUrl = readMediaUrl(data.hero_image_url, data.hero_image);
     const mobileHeroImageUrl = readMediaUrl(
       data.mobile_hero_image_url,
@@ -273,6 +300,7 @@ export const fetchBrand = async (): Promise<Brand | null> => {
       brand_name: toLocalizedText(data.brand_name, STATIC_BRAND_NAME.EN),
       hero_title: heroTitle,
       logo: logoUrl,
+      contrast_logo: contrastLogoUrl,
       hero_image: heroImageUrl,
       mobile_hero_image: mobileHeroImageUrl,
       about_us_image_1: aboutUsImage1Url,
@@ -280,6 +308,7 @@ export const fetchBrand = async (): Promise<Brand | null> => {
       newsletter_signup_popup_image: newsletterSignupPopupImageUrl,
       hero_category: normalizeHeroCategory((data as RecordValue).hero_category),
       logo_url: logoUrl,
+      contrast_logo_url: contrastLogoUrl,
       hero_image_url: heroImageUrl,
       mobile_hero_image_url: mobileHeroImageUrl,
       about_us_image_1_url: aboutUsImage1Url,

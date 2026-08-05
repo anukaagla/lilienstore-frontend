@@ -7,4 +7,5 @@ export const STATIC_BRAND_NAME: Brand["brand_name"] = {
   KA: "Lilien",
 };
 
-export const STATIC_FAVICON_PATH = "/images/Logo.png";
+// Favicons now come from src/app/icon.png and src/app/apple-icon.png, which Next
+// links automatically — no path constant needed.

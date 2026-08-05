@@ -1,4 +1,5 @@
 import type { CartItem } from "./cart"
+import { normalizeCurrency, type CurrencyCode } from "./currency"
 import { getLocalizedText, type Language } from "./i18n"
 import { toAbsoluteMediaUrl } from "./media"
 import { normalizeOrderId } from "./order-confirmation"
@@ -112,6 +113,11 @@ export type OrderDetailsSummary = {
   orderId: string
   orderNumber: string
   status: string
+  /**
+   * The currency the order was placed in. Always read this rather than the visitor's
+   * current currency — order history must not be re-quoted after the fact.
+   */
+  currency: CurrencyCode
   subtotal: number
   shippingFee: number
   total: number
@@ -298,6 +304,7 @@ export const normalizeOrderDetailsSummary = (
         productId,
         name,
         price: unitPrice,
+        currency: normalizeCurrency(entry.currency ?? record.currency),
         size,
         color: color || undefined,
         quantity,
@@ -307,9 +314,11 @@ export const normalizeOrderDetailsSummary = (
     .filter((item): item is CartItem => item !== null)
 
   const itemCount = items.reduce((total, item) => total + item.quantity, 0)
+  const currency = normalizeCurrency(record.currency)
 
   return {
     orderId,
+    currency,
     orderNumber: formatOrderNumber(
       pickRecordText(record, [
         "order_number",

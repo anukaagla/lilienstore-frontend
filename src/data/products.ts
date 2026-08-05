@@ -1,3 +1,5 @@
+import type { CurrencyCode } from "../lib/currency";
+
 export type Product = {
   id: string;
   slug?: string;
@@ -13,7 +15,7 @@ export type Product = {
   };
   brandName?: string;
   sku?: string;
-  currency?: string;
+  currency: CurrencyCode;
   price: number;
   primaryImage: string;
   secondaryImage: string;
@@ -43,6 +45,7 @@ export type ProductVariant = {
   color: string;
   hexColor: string;
   price: number;
+  currency: CurrencyCode;
   stockQty: number;
   allowOrder: boolean;
 };

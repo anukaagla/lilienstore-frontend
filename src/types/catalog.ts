@@ -31,8 +31,31 @@ export type ApiProductListItem = {
     EN: string;
   };
   images: ApiProductImage[];
+  /** Quoted in `currency`, which follows the visitor's country. */
   min_price: number;
+  currency?: string | null;
   created_at: string;
+};
+
+export type ApiHomeSection = {
+  id: number;
+  title: {
+    KA: string;
+    EN: string;
+  };
+  category: {
+    slug: string;
+    name: {
+      KA: string;
+      EN: string;
+    };
+  };
+  /**
+   * Same shape as /api/products/. May be empty when every product in the section
+   * lacks a price in the visitor's currency — that is a normal response, not an error.
+   */
+  products: ApiProductListItem[];
+  updated_at: string;
 };
 
 export type ApiProductDetail = {
@@ -92,7 +115,9 @@ export type ApiProductDetail = {
     size: string;
     color: string;
     hex_color: string;
+    /** String, unlike the numeric min_price. `price_usd` is no longer returned. */
     price: number | string;
+    currency?: string | null;
     stock_qty: number;
     allow_order?: boolean;
   }>;

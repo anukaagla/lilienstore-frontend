@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { BrandProvider } from "../components/brand-provider";
 import { LanguageProvider } from "../components/language-provider";
-import { WEBSITE_NAME, STATIC_FAVICON_PATH } from "../lib/site-config";
+import { WEBSITE_NAME } from "../lib/site-config";
 import { fetchBrand } from "../lib/brand";
 import { getLocalizedText } from "../lib/i18n";
 import {
@@ -54,11 +54,6 @@ export const metadata: Metadata = {
   verification: GOOGLE_SITE_VERIFICATION
     ? { google: GOOGLE_SITE_VERIFICATION }
     : undefined,
-  icons: {
-    icon: STATIC_FAVICON_PATH,
-    shortcut: STATIC_FAVICON_PATH,
-    apple: STATIC_FAVICON_PATH,
-  },
 };
 
 const toSocialUrl = (
