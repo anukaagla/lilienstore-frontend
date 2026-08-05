@@ -740,7 +740,7 @@ export default function ShowRoom({ posts, sections }: ShowRoomProps) {
         <h2 className={`${saleHeadingFont.className} text-[2.15rem] font-extralight uppercase tracking-[0.08em] text-black sm:text-[2.8rem]`}>
           {title}
         </h2>
-        <div className="flex items-center gap-3 text-[#6B6B6B]">
+        <div className="hidden items-center gap-3 text-[#6B6B6B] sm:flex">
           <button
             type="button"
             aria-label={`Previous ${title} products`}
