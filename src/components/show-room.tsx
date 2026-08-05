@@ -906,9 +906,9 @@ export default function ShowRoom({ posts, products }: ShowRoomProps) {
         </div>
       </div>
       <div className="rounded-[1.4rem] border border-[#A79974] bg-white px-4 py-4 sm:px-6 sm:py-5 lg:px-7">
-        <div className="grid grid-cols-2 gap-4 sm:gap-5 lg:grid-cols-4">
+        <div className="flex gap-4 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:grid sm:grid-cols-2 sm:gap-5 sm:overflow-visible sm:pb-0 lg:grid-cols-4">
           {visibleCards.map((product) => (
-            <Link key={`${title}-${product.href}-${product.name}`} href={product.href} className="group block">
+            <Link key={`${title}-${product.href}-${product.name}`} href={product.href} className="group block w-[68vw] max-w-[228px] flex-none sm:w-auto sm:max-w-none">
               <article className="mx-auto w-full max-w-[228px]">
                 <div className="relative aspect-[228/343] overflow-hidden bg-[#f4ede3]">
                   <Image
