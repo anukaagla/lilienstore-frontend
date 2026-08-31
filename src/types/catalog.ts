@@ -1,9 +1,9 @@
+// Text fields are plain strings. The backend is mid-migration from per-language
+// objects, so mappers read them through `readText` (src/lib/localized.ts), which
+// still accepts the old `{ EN, KA }` shape at runtime.
 export type Category = {
   slug: string;
-  name: {
-    KA: string;
-    EN: string;
-  };
+  name: string;
   children?: Category[];
 };
 
@@ -21,15 +21,9 @@ export type ApiProductListItem = {
   slug: string;
   category: {
     slug: string;
-    name: {
-      KA: string;
-      EN: string;
-    };
+    name: string;
   };
-  name: {
-    KA: string;
-    EN: string;
-  };
+  name: string;
   images: ApiProductImage[];
   /** Quoted in `currency`, which follows the visitor's country. */
   min_price: number;
@@ -39,16 +33,10 @@ export type ApiProductListItem = {
 
 export type ApiHomeSection = {
   id: number;
-  title: {
-    KA: string;
-    EN: string;
-  };
+  title: string;
   category: {
     slug: string;
-    name: {
-      KA: string;
-      EN: string;
-    };
+    name: string;
   };
   /**
    * Same shape as /api/products/. May be empty when every product in the section
@@ -63,53 +51,19 @@ export type ApiProductDetail = {
   slug: string;
   category?: {
     slug: string;
-    name: {
-      KA: string;
-      EN: string;
-    };
+    name: string;
   };
-  brand?:
-    | string
-    | {
-        name?:
-          | string
-          | {
-              KA?: string;
-              EN?: string;
-            };
-      }
-    | null;
+  brand?: string | { name?: string } | null;
   sku?: string | null;
   currency?: string | null;
-  name: {
-    KA: string;
-    EN: string;
-  };
-  description?:
-    | {
-        KA: string;
-        EN: string;
-      }
-    | string
-    | null;
+  name: string;
+  description?: string | null;
   images?: ApiProductImage[];
   min_price?: number | string | null;
   max_price?: number | string | null;
   price?: number | string | null;
-  care?:
-    | {
-        KA: string;
-        EN: string;
-      }
-    | string
-    | null;
-  material?:
-    | {
-        KA: string;
-        EN: string;
-      }
-    | string
-    | null;
+  care?: string | null;
+  material?: string | null;
   variants?: Array<{
     id: number;
     size: string;

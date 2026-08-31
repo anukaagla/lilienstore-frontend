@@ -38,7 +38,7 @@ const resolveCategoryLabel = async (slug: string) => {
     ? getCategoryNameBySlug(categories, slug)
     : undefined;
 
-  return categoryName?.EN || humanizeSlug(slug) || "Collection";
+  return categoryName || humanizeSlug(slug) || "Collection";
 };
 
 const resolveMarketQueryState = (
@@ -150,7 +150,7 @@ export default async function MarketPage({ searchParams }: MarketPageProps) {
     category ? { category } : undefined,
   );
   const categoryLabel = category
-    ? (categories?.length ? getCategoryNameBySlug(categories, category)?.EN : undefined) ||
+    ? (categories?.length ? getCategoryNameBySlug(categories, category) : undefined) ||
       humanizeSlug(category) ||
       "Collection"
     : undefined;
@@ -181,7 +181,7 @@ export default async function MarketPage({ searchParams }: MarketPageProps) {
         url: toCanonicalUrl(`/market/${product.slug}`),
         item: {
           "@type": "Product",
-          name: product.name.EN,
+          name: product.name,
           image: resolveOgImageUrl(getListItemPrimaryImage(product)),
         },
       })),

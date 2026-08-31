@@ -7,12 +7,11 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { readCart, subscribeToCart } from "../lib/cart";
 import { formatMoney, normalizeCurrency, type CurrencyCode } from "../lib/currency";
-import { byLanguage, getLocalizedText } from "../lib/i18n";
+import { readText } from "../lib/localized";
 import { toAbsoluteMediaUrl } from "../lib/media";
 import type { ApiProductListItem, Category } from "../types/catalog";
 import Breadcrumbs from "./breadcrumbs";
 import Footer from "./footer";
-import { useLanguage } from "./language-provider";
 import SiteHeader from "./site-header";
 
 type MarketProductCard = {
@@ -31,27 +30,20 @@ type MarketProps = {
   /** Distinguishes "the catalog is empty" from "we hit the rate limit". */
   throttled?: boolean;
   basePath?: string;
-  pageLabel?: {
-    EN: string;
-    KA: string;
-  };
-  emptyStateLabel?: {
-    EN: string;
-    KA: string;
-  };
+  pageLabel?: string;
+  emptyStateLabel?: string;
 };
 
 const findCategoryName = (
   categories: Category[],
-  slug: string,
-  language: "KA" | "EN"
+  slug: string
 ): string | null => {
   for (const category of categories) {
     if (category.slug === slug) {
-      return category.name[language];
+      return readText(category.name, category.slug);
     }
     if (category.children?.length) {
-      const nested = findCategoryName(category.children, slug, language);
+      const nested = findCategoryName(category.children, slug);
       if (nested) {
         return nested;
       }
@@ -70,10 +62,7 @@ const humanizeSlug = (value: string) =>
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
 
-const mapApiProduct = (
-  item: ApiProductListItem,
-  language: "KA" | "EN"
-): MarketProductCard => {
+const mapApiProduct = (item: ApiProductListItem): MarketProductCard => {
   const sortedImages = [...(item.images ?? [])].sort(
     (a, b) => a.sort_order - b.sort_order
   );
@@ -90,7 +79,7 @@ const mapApiProduct = (
 
   return {
     slug: item.slug,
-    name: getLocalizedText(item.name, language, item.slug),
+    name: readText(item.name, item.slug),
     price: item.min_price,
     currency: normalizeCurrency(item.currency),
     primaryImage,
@@ -107,7 +96,6 @@ export default function Market({
   pageLabel,
   emptyStateLabel,
 }: MarketProps) {
-  const { language } = useLanguage();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -120,51 +108,21 @@ export default function Market({
   const [searchValue, setSearchValue] = useState("");
   const [cartCount, setCartCount] = useState(0);
   const text = {
-    searchPlaceholder: byLanguage(
-      {
-        EN: "e.g. satin dress",
-        KA: "მაგ. ატლასის კაბა",
-      },
-      language
-    ),
-    searchAria: byLanguage(
-      {
-        EN: "Search products",
-        KA: "პროდუქტების ძებნა",
-      },
-      language
-    ),
-    sortBy: byLanguage({ EN: "Sort by", KA: "დალაგება" }, language),
-    save: byLanguage({ EN: "Save", KA: "შენახვა" }, language),
-    view: byLanguage({ EN: "View", KA: "განლაგება" }, language),
-    smallGrid: byLanguage({ EN: "Grid view small", KA: "პატარა ბადე" }, language),
-    largeGrid: byLanguage({ EN: "Grid view large", KA: "დიდი ბადე" }, language),
-    priceLowToHigh: byLanguage(
-      { EN: "Price: low to high", KA: "ფასი: დაბლიდან მაღლა" },
-      language
-    ),
-    priceHighToLow: byLanguage(
-      { EN: "Price: high to low", KA: "ფასი: მაღლიდან დაბლა" },
-      language
-    ),
-    shop: byLanguage({ EN: "Shop", KA: "პროდუქცია" }, language),
-    newest: byLanguage({ EN: "Newest", KA: "უახლესი" }, language),
-    noProducts: byLanguage(
-      {
-        EN: "No products available right now.",
-        KA: "პროდუქტები ამ ეტაპზე არ არის ხელმისაწვდომი.",
-      },
-      language
-    ),
-    throttled: byLanguage(
-      {
-        EN: "Too many requests right now. Please refresh in a moment.",
-        KA: "ამ წუთში ძალიან ბევრი მოთხოვნაა. გთხოვთ, ცოტა ხანში განაახლოთ გვერდი.",
-      },
-      language
-    ),
-    home: byLanguage({ EN: "Home", KA: "მთავარი" }, language),
-    shoppingBag: byLanguage({ EN: "Shopping bag", KA: "კალათა" }, language),
+    searchPlaceholder: "e.g. satin dress",
+    searchAria: "Search products",
+    sortBy: "Sort by",
+    save: "Save",
+    view: "View",
+    smallGrid: "Grid view small",
+    largeGrid: "Grid view large",
+    priceLowToHigh: "Price: low to high",
+    priceHighToLow: "Price: high to low",
+    shop: "Shop",
+    newest: "Newest",
+    noProducts: "No products available right now.",
+    throttled: "Too many requests right now. Please refresh in a moment.",
+    home: "Home",
+    shoppingBag: "Shopping bag",
   };
 
   const normalizeSort = (value: string | null) => {
@@ -211,29 +169,25 @@ export default function Market({
   };
 
   const resolvedProducts = useMemo<MarketProductCard[]>(
-    () => (apiProducts ?? []).map((item) => mapApiProduct(item, language)),
-    [apiProducts, language]
+    () => (apiProducts ?? []).map((item) => mapApiProduct(item)),
+    [apiProducts]
   );
   const resolvedCategories = useMemo(() => categories ?? [], [categories]);
-  const basePageLabel = pageLabel
-    ? byLanguage(pageLabel, language)
-    : text.shop;
+  const basePageLabel = pageLabel ?? text.shop;
   const emptyStateText = throttled
     ? text.throttled
-    : emptyStateLabel
-      ? byLanguage(emptyStateLabel, language)
-      : text.noProducts;
+    : (emptyStateLabel ?? text.noProducts);
   const selectedCategoryLabel = useMemo(() => {
     if (!currentCategory) {
       return null;
     }
 
     return (
-      findCategoryName(resolvedCategories, currentCategory, language) ||
+      findCategoryName(resolvedCategories, currentCategory) ||
       humanizeSlug(currentCategory) ||
       null
     );
-  }, [currentCategory, language, resolvedCategories]);
+  }, [currentCategory, resolvedCategories]);
   const pageHeading = selectedCategoryLabel
     ? `${selectedCategoryLabel} ${basePageLabel}`
     : basePageLabel;

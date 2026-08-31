@@ -1,6 +1,6 @@
 import type { CartItem } from "./cart"
 import { normalizeCurrency, type CurrencyCode } from "./currency"
-import { getLocalizedText, type Language } from "./i18n"
+import { readText } from "./localized"
 import { toAbsoluteMediaUrl } from "./media"
 import { normalizeOrderId } from "./order-confirmation"
 
@@ -204,7 +204,6 @@ export const pickOrderIdFromSearchParams = (
 
 export const normalizeOrderDetailsSummary = (
   payload: unknown,
-  language: Language,
 ): OrderDetailsSummary | null => {
   const record = pickOrderRecord(payload)
   if (!record) {
@@ -281,11 +280,7 @@ export const normalizeOrderDetailsSummary = (
       const fallbackName =
         (productRecord ? pickRecordText(productRecord, ["slug"]) : "") ||
         `Item ${index + 1}`
-      const name = getLocalizedText(
-        productRecord ? productRecord.name : null,
-        language,
-        fallbackName,
-      )
+      const name = readText(productRecord ? productRecord.name : null, fallbackName)
       const quantity = normalizeQuantity(entry.quantity)
       const lineTotal = pickRecordNumber(entry, ["line_total", "total", "amount"])
       const unitPrice =

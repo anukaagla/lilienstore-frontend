@@ -7,10 +7,9 @@ import { useMemo, useState } from "react";
 
 import { useBrandState } from "../../components/brand-provider";
 import Footer from "../../components/footer";
-import { useLanguage } from "../../components/language-provider";
 import SiteHeader from "../../components/site-header";
 import { clearLegacyAuthStorage } from "../../lib/auth";
-import { byLanguage, getLocalizedText } from "../../lib/i18n";
+import { readText } from "../../lib/localized";
 
 const getApiMessage = (payload: unknown, fallback: string) => {
   if (typeof payload === "string" && payload.trim()) {
@@ -55,9 +54,8 @@ const getApiMessage = (payload: unknown, fallback: string) => {
 export default function ResetPasswordPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { language } = useLanguage();
   const { brand } = useBrandState();
-  const brandName = getLocalizedText(brand?.brand_name, language, "Lilien");
+  const brandName = readText(brand?.brand_name, "Lilien");
   const brandLogoSrc = brand?.logo_url?.trim() || brand?.logo?.trim() || "/images/full.png";
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -73,50 +71,17 @@ export default function ResetPasswordPage() {
   const submitDisabled = !newPassword.trim() || !confirmPassword.trim() || submitting;
 
   const text = {
-    resetPassword: byLanguage(
-      { EN: "Reset password", KA: "პაროლის აღდგენა" },
-      language
-    ),
-    newPassword: byLanguage({ EN: "New password", KA: "ახალი პაროლი" }, language),
-    confirmPassword: byLanguage(
-      { EN: "Confirm new password", KA: "გაიმეორე ახალი პაროლი" },
-      language
-    ),
-    newPasswordPlaceholder: byLanguage(
-      { EN: "Enter new password", KA: "შეიყვანე ახალი პაროლი" },
-      language
-    ),
-    confirmPasswordPlaceholder: byLanguage(
-      { EN: "Repeat new password", KA: "გაიმეორე ახალი პაროლი" },
-      language
-    ),
-    changePassword: byLanguage({ EN: "Change password", KA: "პაროლის შეცვლა" }, language),
-    changingPassword: byLanguage(
-      { EN: "Changing...", KA: "იცვლება..." },
-      language
-    ),
-    passwordsDoNotMatch: byLanguage(
-      { EN: "Passwords do not match.", KA: "პაროლები არ ემთხვევა." },
-      language
-    ),
-    invalidResetLink: byLanguage(
-      {
-        EN: "Reset link is invalid or incomplete.",
-        KA: "აღდგენის ბმული არასწორია ან არასრულია.",
-      },
-      language
-    ),
-    resetFailed: byLanguage(
-      { EN: "Failed to reset password.", KA: "პაროლის შეცვლა ვერ მოხერხდა." },
-      language
-    ),
-    resetFailedRetry: byLanguage(
-      {
-        EN: "Failed to reset password. Please try again.",
-        KA: "პაროლის შეცვლა ვერ მოხერხდა. სცადე თავიდან.",
-      },
-      language
-    ),
+    resetPassword: "Reset password",
+    newPassword: "New password",
+    confirmPassword: "Confirm new password",
+    newPasswordPlaceholder: "Enter new password",
+    confirmPasswordPlaceholder: "Repeat new password",
+    changePassword: "Change password",
+    changingPassword: "Changing...",
+    passwordsDoNotMatch: "Passwords do not match.",
+    invalidResetLink: "Reset link is invalid or incomplete.",
+    resetFailed: "Failed to reset password.",
+    resetFailedRetry: "Failed to reset password. Please try again.",
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {

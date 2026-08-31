@@ -1,5 +1,6 @@
 import type { Brand } from "../types/brand";
 import type { ApiProductListItem } from "../types/catalog";
+import { readText } from "./localized";
 
 type CollectionQuery = {
   category?: string;
@@ -16,11 +17,9 @@ const matchesCollectionSearch = (product: ApiProductListItem, query: string) => 
 
   const candidates = [
     product.slug,
-    product.name.EN,
-    product.name.KA,
+    readText(product.name),
     product.category?.slug,
-    product.category?.name?.EN,
-    product.category?.name?.KA,
+    readText(product.category?.name),
   ];
 
   return candidates.some(

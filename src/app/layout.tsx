@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { BrandProvider } from "../components/brand-provider";
-import { LanguageProvider } from "../components/language-provider";
 import { WEBSITE_NAME } from "../lib/site-config";
 import { fetchBrand } from "../lib/brand";
-import { getLocalizedText } from "../lib/i18n";
+import { readText } from "../lib/localized";
 import {
   buildOrganizationSchema,
   buildWebSiteSchema,
@@ -76,9 +75,9 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const brand = await fetchBrand();
-  const brandName = getLocalizedText(brand?.brand_name, "EN", WEBSITE_NAME);
-  const brandDescription = getLocalizedText(brand?.description, "EN", "");
-  const brandAddress = getLocalizedText(brand?.address, "EN", "");
+  const brandName = readText(brand?.brand_name, WEBSITE_NAME);
+  const brandDescription = readText(brand?.description, "");
+  const brandAddress = readText(brand?.address, "");
   const brandLogo = (brand?.logo_url ?? brand?.logo ?? "").trim();
   const socialUrls = [
     toSocialUrl(brand?.instagram_url ?? "", "instagram"),
@@ -105,9 +104,7 @@ export default async function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: jsonLdStringify(schemaGraph) }}
         />
-        <LanguageProvider>
-          <BrandProvider initialBrand={brand}>{children}</BrandProvider>
-        </LanguageProvider>
+        <BrandProvider initialBrand={brand}>{children}</BrandProvider>
       </body>
     </html>
   );

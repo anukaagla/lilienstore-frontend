@@ -1,12 +1,11 @@
 "use client";
 
-import { getLocalizedText, type Language } from "../lib/i18n";
+import { readText } from "../lib/localized";
 import type { Brand } from "../types/brand";
 import Footer from "./footer";
 import Breadcrumbs from "./breadcrumbs";
 import SiteHeader from "./site-header";
 import { useBrandState } from "./brand-provider";
-import { useLanguage } from "./language-provider";
 import { StaticContentPageSkeleton } from "./page-skeletons";
 
 type PolicyKey =
@@ -16,9 +15,9 @@ type PolicyKey =
   | "shipping_and_delivery_policy";
 
 type PolicyPageProps = {
-  title: { EN: string; KA: string };
+  title: string;
   policyKey: PolicyKey;
-  fallbackText?: { EN: string; KA: string };
+  fallbackText?: string;
 };
 
 type ParsedNumberedPolicy = {
@@ -26,14 +25,8 @@ type ParsedNumberedPolicy = {
   items: string[];
 };
 
-const resolvePolicyText = (
-  brand: Brand | null,
-  policyKey: PolicyKey,
-  language: Language
-) => {
-  const policy = brand?.[policyKey];
-  return getLocalizedText(policy, language, "");
-};
+const resolvePolicyText = (brand: Brand | null, policyKey: PolicyKey) =>
+  readText(brand?.[policyKey], "");
 
 const splitTextBlocks = (value: string) =>
   value
@@ -91,20 +84,16 @@ const parseNumberedPolicy = (value: string): ParsedNumberedPolicy | null => {
 export default function PolicyPage({
   title,
   policyKey,
-  fallbackText = {
-    EN: "This policy is not available yet.",
-    KA: "ეს პოლიტიკა ჯერ მიუწვდომელია.",
-  },
+  fallbackText = "This policy is not available yet.",
 }: PolicyPageProps) {
-  const { language } = useLanguage();
   const { brand, isLoading: brandLoading } = useBrandState();
-  const homeText = language === "EN" ? "Home" : "მთავარი";
+  const homeText = "Home";
 
   if (brandLoading && !brand) {
     return <StaticContentPageSkeleton />;
   }
 
-  const policyText = resolvePolicyText(brand, policyKey, language);
+  const policyText = resolvePolicyText(brand, policyKey);
   const numberedPolicy = parseNumberedPolicy(policyText);
   const sections = numberedPolicy ? [] : splitTextBlocks(policyText);
 
@@ -116,13 +105,13 @@ export default function PolicyPage({
           className="mb-5 mt-1"
           items={[
             { label: homeText, href: "/" },
-            { label: title[language] },
+            { label: title },
           ]}
         />
         <div className="h-px w-full bg-black" />
         <section className="mt-12 space-y-8">
           <h1 className="text-center text-2xl font-semibold uppercase tracking-[0.2em] text-[#A79974] md:text-3xl">
-            {title[language]}
+            {title}
           </h1>
           {numberedPolicy ? (
             <div className="space-y-8 text-sm leading-7 tracking-[0.01em] text-slate-700 md:text-base">
@@ -157,7 +146,7 @@ export default function PolicyPage({
             </div>
           ) : (
             <p className="text-center text-sm uppercase tracking-[0.2em] text-slate-500">
-              {fallbackText[language]}
+              {fallbackText}
             </p>
           )}
         </section>

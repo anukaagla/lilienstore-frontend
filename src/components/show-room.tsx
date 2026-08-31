@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Montserrat } from "next/font/google";
 import { usePathname, useSearchParams } from "next/navigation";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
-import { byLanguage, getLocalizedText } from "../lib/i18n";
+import { readText } from "../lib/localized";
 import { buildCategoryHref } from "../lib/catalog-routing";
 import {
   getCurrencySymbol,
@@ -24,7 +24,6 @@ import {
 } from "../lib/newsletter";
 import { resolveBrandLogo } from "../lib/brand";
 import { useBrandState } from "./brand-provider";
-import { useLanguage } from "./language-provider";
 import type { BlogPost } from "../types/blog";
 import type { ApiHomeSection, ApiProductListItem } from "../types/catalog";
 import Footer from "./footer";
@@ -124,10 +123,7 @@ const takeVisibleCards = (cards: SaleCard[], startIndex: number): SaleCard[] => 
   );
 };
 
-const toShowcaseCard = (
-  item: ApiProductListItem,
-  language: "KA" | "EN",
-): SaleCard => {
+const toShowcaseCard = (item: ApiProductListItem): SaleCard => {
   const sortedImages = [...(item.images ?? [])].sort(
     (a, b) => a.sort_order - b.sort_order,
   );
@@ -144,7 +140,7 @@ const toShowcaseCard = (
 
   return {
     href: `/market/${item.slug}`,
-    name: getLocalizedText(item.name, language, item.slug),
+    name: readText(item.name, item.slug),
     primaryImage,
     secondaryImage,
     price: Number(item.min_price) || 0,
@@ -329,26 +325,13 @@ const subscribeToNewsletter = async (
 };
 
 export default function ShowRoom({ posts, sections }: ShowRoomProps) {
-  const { language } = useLanguage();
   const { brand, isLoading: brandLoading } = useBrandState();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const brandName = getLocalizedText(brand?.brand_name, language, "Lilien");
-  const collectionTitle = getLocalizedText(
-    brand?.hero_title ?? brand?.home_collection?.title,
-    language,
-    "New Collection Is Here"
-  );
-  const collectionViewMoreLabel = getLocalizedText(
-    brand?.home_collection?.view_more_label,
-    language,
-    "View More"
-  );
-  const collectionViewAllProductsLabel = getLocalizedText(
-    brand?.home_collection?.view_all_products_label,
-    language,
-    "View All Products"
-  );
+  const brandName = readText(brand?.brand_name, "Lilien");
+  const collectionTitle = readText(brand?.hero_title ?? brand?.home_collection?.title, "New Collection Is Here");
+  const collectionViewMoreLabel = readText(brand?.home_collection?.view_more_label, "View More");
+  const collectionViewAllProductsLabel = readText(brand?.home_collection?.view_all_products_label, "View All Products");
   const collectionHeroSrc = getHomeCollectionHeroImage(brand);
   const collectionMobileHeroSrc = getHomeCollectionMobileHeroImage(brand);
   const collectionViewMoreHref = buildCategoryHref({
@@ -362,100 +345,37 @@ export default function ShowRoom({ posts, sections }: ShowRoomProps) {
     brand?.newsletter_signup_popup_image?.trim() ||
     "/images/newsletter-pic.png";
   const text = {
-    shopNow: byLanguage({ EN: "Shop Now", KA: "შეიძინე" }, language),
-    seeMore: byLanguage({ EN: "See more", KA: "მეტის ნახვა" }, language),
-    blogPostCover: byLanguage({ EN: "Blog post cover", KA: "ბლოგის ფოტო" }, language),
-    homeHeading: byLanguage(
-      { EN: `${brandName} Fashion Showroom`, KA: `${brandName} შოურუმი` },
-      language
-    ),
-    mainShowroom: byLanguage(
-      { EN: "Main fashion showroom", KA: "მთავარი შოურუმი" },
-      language
-    ),
+    shopNow: "Shop Now",
+    seeMore: "See more",
+    blogPostCover: "Blog post cover",
+    homeHeading: `${brandName} Fashion Showroom`,
+    mainShowroom: "Main fashion showroom",
   };
   const heroText = {
     homeHeading: `${brandName} ${collectionTitle}`.trim(),
   };
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const footerSignupText = {
-    title: byLanguage(
-      { EN: "Sign Up To Our Newsletter", KA: "გამოიწერე ჩვენი ნიუსლეთერი" },
-      language
-    ),
-    button: byLanguage({ EN: "Subscribe", KA: "გამოწერა" }, language),
-    placeholder: byLanguage(
-      { EN: "ENTER YOUR EMAIL", KA: "შეიყვანე შენი ელფოსტა" },
-      language
-    ),
+    title: "Sign Up To Our Newsletter",
+    button: "Subscribe",
+    placeholder: "ENTER YOUR EMAIL",
   };
-  const newsletterSuccessText = byLanguage(
-    { EN: "Thank you for subscribing!", KA: "გმადლობთ, რომ გამოიწერეთ!" },
-    language
-  );
-  const newsletterSuccessDescription = byLanguage(
-    {
-      EN: "You’ll be first to hear about new pieces, special releases, and exclusive news.",
-      KA: "თქვენ პირველი შეიტყობთ ახალი ნივთების, განსაკუთრებული გამოშვებების და ექსკლუზიური სიახლეების შესახებ.",
-    },
-    language
-  );
+  const newsletterSuccessText = "Thank you for subscribing!";
+  const newsletterSuccessDescription = "You’ll be first to hear about new pieces, special releases, and exclusive news.";
   const newsletterText = {
-    title: byLanguage(
-      { EN: "SIGN UP ON NEWSLETTER", KA: "გამოიწერე ნიუსლეთერი" },
-      language
-    ),
-    heading: byLanguage(
-      { EN: "DISCOVER LILIEN FIRST", KA: "აღმოაჩინე LILIEN პირველი" },
-      language
-    ),
-    description: byLanguage(
-      {
-        EN: "Be the first to discover new collections, curated pieces, and showroom updates.",
-        KA: "პირველმა გაიგე ახალი კოლექციების, შერჩეული ნივთებისა და showroom-ის სიახლეების შესახებ.",
-      },
-      language
-    ),
-    emailPlaceholder: byLanguage(
-      { EN: "ENTER YOUR EMAIL", KA: "შეიყვანე შენი ელფოსტა" },
-      language
-    ),
-    signUp: byLanguage({ EN: "SIGN UP", KA: "გამოწერა" }, language),
-    privacyPrefix: byLanguage(
-      { EN: "BY SIGNING UP YOU AGREE TO OUR", KA: "რეგისტრაციით ეთანხმები ჩვენს" },
-      language
-    ),
-    privacyLabel: byLanguage(
-      { EN: "PRIVACY POLICY", KA: "კონფიდენციალურობის პოლიტიკას" },
-      language
-    ),
-    invalidEmail: byLanguage(
-      { EN: "Please enter a valid email address.", KA: "გთხოვ, სწორად შეიყვანე ელფოსტა." },
-      language
-    ),
-    success: byLanguage(
-      {
-        EN: "Thank you for subscribing!",
-        KA: "გამოწერა დასრულებულია.",
-      },
-      language
-    ),
-    successDescription: byLanguage(
-      {
-        EN: "You’ll be first to hear about new pieces, special releases, and exclusive news.",
-        KA: "თქვენ პირველი შეიტყობთ ახალი ნივთების, განსაკუთრებული გამოშვებების და ექსკლუზიური სიახლეების შესახებ.",
-      },
-      language
-    ),
-    failed: byLanguage(
-      {
-        EN: "Subscription could not be completed.",
-        KA: "გამოწერა ვერ შესრულდა.",
-      },
-      language
-    ),
-    close: byLanguage({ EN: "Close newsletter", KA: "ნიუსლეთერის დახურვა" }, language),
-    imageAlt: byLanguage({ EN: "Newsletter preview", KA: "ნიუსლეთერის ფოტო" }, language),
+    title: "SIGN UP ON NEWSLETTER",
+    heading: "DISCOVER LILIEN FIRST",
+    description: "Be the first to discover new collections, curated pieces, and showroom updates.",
+    emailPlaceholder: "ENTER YOUR EMAIL",
+    signUp: "SIGN UP",
+    privacyPrefix: "BY SIGNING UP YOU AGREE TO OUR",
+    privacyLabel: "PRIVACY POLICY",
+    invalidEmail: "Please enter a valid email address.",
+    success: "Thank you for subscribing!",
+    successDescription: "You’ll be first to hear about new pieces, special releases, and exclusive news.",
+    failed: "Subscription could not be completed.",
+    close: "Close newsletter",
+    imageAlt: "Newsletter preview",
   };
   const resolvedPosts = posts ?? [];
   // A section whose products were all filtered out (no price in this visitor's
@@ -468,9 +388,9 @@ export default function ShowRoom({ posts, sections }: ShowRoomProps) {
           id: section.id,
           title: section.title,
           href: buildCategoryHref({ slug: section.category?.slug }),
-          cards: section.products.map((item) => toShowcaseCard(item, language)),
+          cards: section.products.map((item) => toShowcaseCard(item)),
         })),
-    [sections, language],
+    [sections],
   );
   // One carousel offset per section, keyed by section id — the number of sections is
   // decided by the API, so a hook per section is not an option.
@@ -832,8 +752,8 @@ export default function ShowRoom({ posts, sections }: ShowRoomProps) {
 
   const renderPost = (post: BlogPost, index: number) => {
     const layoutIndex = index % 3;
-    const title = getLocalizedText(post.title, language, "");
-    const content = getLocalizedText(post.content, language, "");
+    const title = readText(post.title, "");
+    const content = readText(post.content, "");
     const coverImage = post.cover_image || "/images/BB.png";
     const animationDelay = `${220 + index * 120}ms`;
 
@@ -1123,7 +1043,7 @@ export default function ShowRoom({ posts, sections }: ShowRoomProps) {
 
               return renderProductShowcaseSection({
                 keyPrefix: `section-${section.id}`,
-                title: getLocalizedText(section.title, language, ""),
+                title: readText(section.title, ""),
                 visibleCards: takeVisibleCards(section.cards, startIndex),
                 canNavigate: total > HOME_SALE_VISIBLE_COUNT,
                 onPrevious: () => shiftSection(section.id, total, -1),

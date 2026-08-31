@@ -1,6 +1,6 @@
 import type { Brand, BrandHeroCategory, BrandHeroCategoryLink } from "../types/brand";
 import { toAbsoluteMediaUrl } from "./media";
-import { toLocalizedText } from "./i18n";
+import { readText } from "./localized";
 import { STATIC_BRAND_NAME } from "./site-config";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
@@ -134,7 +134,7 @@ const normalizeHeroCategoryLink = (value: unknown): BrandHeroCategoryLink | null
 
   return {
     slug,
-    name: toLocalizedText(value.name, slug),
+    name: readText(value.name, slug),
   };
 };
 
@@ -214,7 +214,7 @@ const resolveHomeCollection = (data: BrandApiResponse) => {
   );
 
   return {
-    title: toLocalizedText(
+    title: readText(
       (data as RecordValue).hero_title ??
         nestedRecord.title ??
         (data as RecordValue).home_collection_title ??
@@ -222,7 +222,7 @@ const resolveHomeCollection = (data: BrandApiResponse) => {
         (data as RecordValue).collection_title,
       "New Collection Is Here",
     ),
-    view_more_label: toLocalizedText(
+    view_more_label: readText(
       nestedRecord.view_more_label ??
         (nestedRecord as RecordValue).cta_label ??
         (data as RecordValue).home_collection_view_more_label ??
@@ -230,7 +230,7 @@ const resolveHomeCollection = (data: BrandApiResponse) => {
         (data as RecordValue).collection_view_more_label,
       "View More",
     ),
-    view_all_products_label: toLocalizedText(
+    view_all_products_label: readText(
       nestedRecord.view_all_products_label ??
         (data as RecordValue).home_collection_view_all_products_label ??
         (data as RecordValue).new_collection_view_all_products_label ??
@@ -293,11 +293,11 @@ export const fetchBrand = async (): Promise<Brand | null> => {
       data.newsletter_signup_popup_image,
     );
     const homeCollection = resolveHomeCollection(data);
-    const heroTitle = toLocalizedText(data.hero_title ?? homeCollection.title, "New Collection Is Here");
+    const heroTitle = readText(data.hero_title ?? homeCollection.title, "New Collection Is Here");
 
     return {
       ...(data as Brand),
-      brand_name: toLocalizedText(data.brand_name, STATIC_BRAND_NAME.EN),
+      brand_name: readText(data.brand_name, STATIC_BRAND_NAME),
       hero_title: heroTitle,
       logo: logoUrl,
       contrast_logo: contrastLogoUrl,

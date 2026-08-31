@@ -5,9 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useBrandState } from "../../components/brand-provider";
-import { useLanguage } from "../../components/language-provider";
 import { RegisterPageSkeleton } from "../../components/page-skeletons";
-import { byLanguage, getLocalizedText } from "../../lib/i18n";
+import { readText } from "../../lib/localized";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -84,9 +83,8 @@ const buildApiUrl = (path: string) => {
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { language } = useLanguage();
   const { brand, isLoading: brandLoading } = useBrandState();
-  const brandName = getLocalizedText(brand?.brand_name, language, "Lilien");
+  const brandName = readText(brand?.brand_name, "Lilien");
   const [form, setForm] = useState<RegisterForm>(initialForm);
   const [agreedToPolicies, setAgreedToPolicies] = useState(false);
   const [confirmedAdult, setConfirmedAdult] = useState(false);
@@ -108,166 +106,55 @@ export default function RegisterPage() {
   }
 
   const text = {
-    passwordsDoNotMatch: byLanguage(
-      { EN: "Passwords do not match.", KA: "პაროლები არ ემთხვევა." },
-      language
-    ),
-    missingApiBaseUrl: byLanguage(
-      { EN: "Missing API base URL.", KA: "API მისამართი მითითებული არ არის." },
-      language
-    ),
-    registrationFailed: byLanguage(
-      { EN: "Registration failed.", KA: "რეგისტრაცია ვერ შესრულდა." },
-      language
-    ),
-    accountCreated: byLanguage({ EN: "Account created.", KA: "ანგარიში შეიქმნა." }, language),
-    accountCreatedVerify: byLanguage(
-      {
-        EN: "Account created. Verify your email to activate it.",
-        KA: "ანგარიში შეიქმნა. გასააქტიურებლად დაადასტურე ელ.ფოსტა.",
-      },
-      language
-    ),
-    registrationFailedRetry: byLanguage(
-      {
-        EN: "Registration failed. Please try again.",
-        KA: "რეგისტრაცია ვერ შესრულდა. სცადე თავიდან.",
-      },
-      language
-    ),
-    goToShowroom: byLanguage({ EN: "Go to showroom", KA: "შოურუმზე გადასვლა" }, language),
-    createAccount: byLanguage({ EN: "Create account", KA: "ანგარიშის შექმნა" }, language),
-    name: byLanguage({ EN: "Name", KA: "სახელი" }, language),
-    yourName: byLanguage({ EN: "e.g. Nino", KA: "მაგ. ნინო" }, language),
-    lastName: byLanguage({ EN: "Lastname", KA: "გვარი" }, language),
-    yourLastname: byLanguage({ EN: "e.g. Beridze", KA: "მაგ. ბერიძე" }, language),
-    email: byLanguage({ EN: "Email", KA: "ელ.ფოსტა" }, language),
-    emailPlaceholder: byLanguage(
-      { EN: "e.g. nino@example.com", KA: "მაგ. nino@example.com" },
-      language
-    ),
-    password: byLanguage({ EN: "Password", KA: "პაროლი" }, language),
-    passwordPlaceholder: byLanguage(
-      { EN: "Use 8+ characters", KA: "გამოიყენე 8+ სიმბოლო" },
-      language
-    ),
-    confirmPassword: byLanguage({ EN: "Confirm password", KA: "გაიმეორე პაროლი" }, language),
-    confirmPasswordPlaceholder: byLanguage(
-      { EN: "Repeat your password", KA: "გაიმეორე შენი პაროლი" },
-      language
-    ),
-    phoneOptional: byLanguage(
-      { EN: "Phone number (optional)", KA: "ტელეფონის ნომერი (არასავალდებულო)" },
-      language
-    ),
-    phonePlaceholder: byLanguage(
-      { EN: "e.g. +995 555 12 34 56", KA: "მაგ. +995 555 12 34 56" },
-      language
-    ),
-    confirmAdult: byLanguage(
-      {
-        EN: "I confirm that I am 18 years old or older.",
-        KA: "ვადასტურებ, რომ ვარ 18 წლის ან მეტი.",
-      },
-      language
-    ),
-    acceptPolicies: byLanguage({ EN: "I accept", KA: "ვეთანხმები" }, language),
-    privacyPolicy: byLanguage(
-      { EN: "Privacy Policy", KA: "კონფიდენციალურობის პოლიტიკას" },
-      language
-    ),
-    termsOfUse: byLanguage({ EN: "Terms of Use", KA: "მოხმარების წესებს" }, language),
-    and: byLanguage({ EN: "and", KA: "და" }, language),
-    creating: byLanguage({ EN: "Creating...", KA: "მიმდინარეობს შექმნა..." }, language),
-    createAccountButton: byLanguage(
-      { EN: "Create Account", KA: "ანგარიშის შექმნა" },
-      language
-    ),
-    alreadyAccount: byLanguage(
-      { EN: "Already have an account?", KA: "უკვე გაქვს ანგარიში?" },
-      language
-    ),
-    signIn: byLanguage({ EN: "Sign In", KA: "შესვლა" }, language),
-    verifyEmailTitle: byLanguage({ EN: "Verify Email", KA: "ელ.ფოსტის დადასტურება" }, language),
-    verifyEmailDescription: byLanguage(
-      {
-        EN: "Enter the verification code sent to this email address.",
-        KA: "შეიყვანე ამ ელ.ფოსტაზე გამოგზავნილი დადასტურების კოდი.",
-      },
-      language
-    ),
-    codeLabel: byLanguage({ EN: "Verification code", KA: "დადასტურების კოდი" }, language),
-    codePlaceholder: byLanguage({ EN: "123456", KA: "123456" }, language),
-    back: byLanguage({ EN: "Back", KA: "უკან" }, language),
-    confirm: byLanguage({ EN: "Confirm", KA: "დადასტურება" }, language),
-    confirming: byLanguage({ EN: "Confirming...", KA: "მიმდინარეობს დადასტურება..." }, language),
-    resendCode: byLanguage({ EN: "Resend code", KA: "კოდის თავიდან გაგზავნა" }, language),
-    resendingCode: byLanguage({ EN: "Resending...", KA: "თავიდან იგზავნება..." }, language),
-    sendingCode: byLanguage({ EN: "Sending verification code...", KA: "იგზავნება დადასტურების კოდი..." }, language),
-    codeSentFallback: byLanguage(
-      {
-        EN: "If an account exists with this email, a verification code has been sent.",
-        KA: "თუ ეს ელ.ფოსტა ანგარიშთან არის დაკავშირებული, დადასტურების კოდი გაიგზავნა.",
-      },
-      language
-    ),
-    verificationCodeRequired: byLanguage(
-      {
-        EN: "Please enter the verification code.",
-        KA: "გთხოვ შეიყვანე დადასტურების კოდი.",
-      },
-      language
-    ),
-    invalidOrExpiredCode: byLanguage(
-      { EN: "Wrong code or expired code.", KA: "კოდი არასწორია ან ვადა გაუვიდა." },
-      language
-    ),
-    verificationRequestFailed: byLanguage(
-      {
-        EN: "Failed to send verification code.",
-        KA: "დადასტურების კოდის გაგზავნა ვერ მოხერხდა.",
-      },
-      language
-    ),
-    verificationConfirmFailed: byLanguage(
-      {
-        EN: "Failed to verify email. Please try again.",
-        KA: "ელ.ფოსტის დადასტურება ვერ მოხერხდა. სცადე თავიდან.",
-      },
-      language
-    ),
-    verificationSessionExpired: byLanguage(
-      {
-        EN: "Verification session expired. Please register again.",
-        KA: "დადასტურების სესია ამოიწურა. გთხოვ თავიდან დარეგისტრირდი.",
-      },
-      language
-    ),
-    signedInAfterVerification: byLanguage(
-      { EN: "Email verified. You are now signed in.", KA: "ელ.ფოსტა დადასტურდა. შენ უკვე შესული ხარ." },
-      language
-    ),
-    autoLoginFailedAfterVerification: byLanguage(
-      {
-        EN: "Email verified, but automatic sign in failed. Please sign in manually.",
-        KA: "ელ.ფოსტა დადასტურდა, თუმცა ავტომატური შესვლა ვერ მოხერხდა. გთხოვ შეხვიდე ხელით.",
-      },
-      language
-    ),
-    policyAgreementRequired: byLanguage(
-      {
-        EN: "Please accept the Privacy Policy and Terms of Use to register.",
-        KA: "რეგისტრაციისთვის დაეთანხმე კონფიდენციალურობის პოლიტიკას და მოხმარების წესებს.",
-      },
-      language
-    ),
-    adultConfirmationRequired: byLanguage(
-      {
-        EN: "Please confirm that you are 18 years old or older.",
-        KA: "გთხოვ დაადასტურე, რომ ხარ 18 წლის ან მეტი.",
-      },
-      language
-    ),
+    passwordsDoNotMatch: "Passwords do not match.",
+    missingApiBaseUrl: "Missing API base URL.",
+    registrationFailed: "Registration failed.",
+    accountCreated: "Account created.",
+    accountCreatedVerify: "Account created. Verify your email to activate it.",
+    registrationFailedRetry: "Registration failed. Please try again.",
+    goToShowroom: "Go to showroom",
+    createAccount: "Create account",
+    name: "Name",
+    yourName: "e.g. Nino",
+    lastName: "Lastname",
+    yourLastname: "e.g. Beridze",
+    email: "Email",
+    emailPlaceholder: "e.g. nino@example.com",
+    password: "Password",
+    passwordPlaceholder: "Use 8+ characters",
+    confirmPassword: "Confirm password",
+    confirmPasswordPlaceholder: "Repeat your password",
+    phoneOptional: "Phone number (optional)",
+    phonePlaceholder: "e.g. +995 555 12 34 56",
+    confirmAdult: "I confirm that I am 18 years old or older.",
+    acceptPolicies: "I accept",
+    privacyPolicy: "Privacy Policy",
+    termsOfUse: "Terms of Use",
+    and: "and",
+    creating: "Creating...",
+    createAccountButton: "Create Account",
+    alreadyAccount: "Already have an account?",
+    signIn: "Sign In",
+    verifyEmailTitle: "Verify Email",
+    verifyEmailDescription: "Enter the verification code sent to this email address.",
+    codeLabel: "Verification code",
+    codePlaceholder: "123456",
+    back: "Back",
+    confirm: "Confirm",
+    confirming: "Confirming...",
+    resendCode: "Resend code",
+    resendingCode: "Resending...",
+    sendingCode: "Sending verification code...",
+    codeSentFallback: "If an account exists with this email, a verification code has been sent.",
+    verificationCodeRequired: "Please enter the verification code.",
+    invalidOrExpiredCode: "Wrong code or expired code.",
+    verificationRequestFailed: "Failed to send verification code.",
+    verificationConfirmFailed: "Failed to verify email. Please try again.",
+    verificationSessionExpired: "Verification session expired. Please register again.",
+    signedInAfterVerification: "Email verified. You are now signed in.",
+    autoLoginFailedAfterVerification: "Email verified, but automatic sign in failed. Please sign in manually.",
+    policyAgreementRequired: "Please accept the Privacy Policy and Terms of Use to register.",
+    adultConfirmationRequired: "Please confirm that you are 18 years old or older.",
   };
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {

@@ -22,10 +22,8 @@ import {
 import { fetchAuthSession, fetchWithAuthRetry } from "../lib/auth";
 import { isThrottled } from "../lib/api-errors";
 import { DEFAULT_CURRENCY, formatMoney, normalizeCurrency } from "../lib/currency";
-import { byLanguage } from "../lib/i18n";
 import { toAbsoluteMediaUrl } from "../lib/media";
 import Footer from "./footer";
-import { useLanguage } from "./language-provider";
 import { ShoppingBagPageSkeleton } from "./page-skeletons";
 import SiteHeader from "./site-header";
 
@@ -72,7 +70,6 @@ const fetchAccountActiveStatus = async (): Promise<boolean | null> => {
 };
 
 export default function ShoppingBag() {
-  const { language } = useLanguage();
   const router = useRouter();
   const [items, setItems] = useState<CartItem[]>([]);
   const [serverCart, setServerCart] = useState<ApiCart | null>(null);
@@ -82,51 +79,24 @@ export default function ShoppingBag() {
   const [loginOpenRequest, setLoginOpenRequest] = useState(0);
   const [cartReloadKey, setCartReloadKey] = useState(0);
   const text = {
-    back: byLanguage({ EN: "Back", KA: "უკან" }, language),
-    product: byLanguage({ EN: "Product", KA: "პროდუქტი" }, language),
-    price: byLanguage({ EN: "Price", KA: "ფასი" }, language),
-    emptyBag: byLanguage(
-      { EN: "Your shopping bag is empty", KA: "შენი კალათა ცარიელია" },
-      language
-    ),
-    remove: byLanguage({ EN: "Remove", KA: "წაშლა" }, language),
-    color: byLanguage({ EN: "Colour", KA: "ფერი" }, language),
-    size: byLanguage({ EN: "Size", KA: "ზომა" }, language),
-    clearBag: byLanguage(
-      { EN: "Clear Shopping Bag", KA: "კალათის გასუფთავება" },
-      language
-    ),
-    orderSummary: byLanguage({ EN: "Order Summary", KA: "შეკვეთის შეჯამება" }, language),
-    subtotal: byLanguage({ EN: "Subtotal", KA: "პროდუქციის ფასი" }, language),
-    delivery: byLanguage({ EN: "Delivery", KA: "მიწოდება" }, language),
-    total: byLanguage({ EN: "Total", KA: "სულ" }, language),
-    deliveryInfo: byLanguage(
-      { EN: "Delivery Information", KA: "მიწოდების ინფორმაცია" },
-      language
-    ),
-    proceedToCheckout: byLanguage(
-      { EN: "Proceed To Checkout", KA: "გადადი გადახდაზე" },
-      language
-    ),
-    loginRequired: byLanguage(
-      {
-        EN: "Please log in first to view your shopping bag.",
-        KA: "კალათის სანახავად ჯერ გაიარე ავტორიზაცია.",
-      },
-      language
-    ),
-    verifyEmailRequired: byLanguage(
-      {
-        EN: "Please verify your email first to access your shopping bag.",
-        KA: "კალათაზე წვდომისთვის ჯერ დაადასტურე ელ.ფოსტა.",
-      },
-      language
-    ),
-    logIn: byLanguage({ EN: "Log In", KA: "შესვლა" }, language),
-    verifyEmail: byLanguage(
-      { EN: "Verify Email", KA: "ელ.ფოსტის დადასტურება" },
-      language
-    ),
+    back: "Back",
+    product: "Product",
+    price: "Price",
+    emptyBag: "Your shopping bag is empty",
+    remove: "Remove",
+    color: "Colour",
+    size: "Size",
+    clearBag: "Clear Shopping Bag",
+    orderSummary: "Order Summary",
+    subtotal: "Subtotal",
+    delivery: "Delivery",
+    total: "Total",
+    deliveryInfo: "Delivery Information",
+    proceedToCheckout: "Proceed To Checkout",
+    loginRequired: "Please log in first to view your shopping bag.",
+    verifyEmailRequired: "Please verify your email first to access your shopping bag.",
+    logIn: "Log In",
+    verifyEmail: "Verify Email",
   };
   // The server owns the amounts, including which currency they are quoted in.
   // Declared above the effect that calls it so the effect always sees this binding.

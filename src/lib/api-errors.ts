@@ -1,5 +1,3 @@
-import { byLanguage, type Language } from "./i18n";
-
 export const isThrottled = (response: Pick<Response, "status">) =>
   response.status === 429;
 
@@ -26,31 +24,14 @@ export const getRetryAfterSeconds = (response: Response) => {
   return null;
 };
 
-export const getThrottleMessage = (
-  language: Language,
-  retryAfterSeconds: number | null,
-) => {
+export const getThrottleMessage = (retryAfterSeconds: number | null) => {
   if (retryAfterSeconds === null) {
-    return byLanguage(
-      {
-        KA: "ძალიან ბევრი მოთხოვნა. გთხოვთ, ცოტა ხანში სცადოთ თავიდან.",
-        EN: "Too many requests. Please try again in a moment.",
-      },
-      language,
-    );
+    return "Too many requests. Please try again in a moment.";
   }
 
-  return byLanguage(
-    {
-      KA: `ძალიან ბევრი მოთხოვნა. სცადეთ თავიდან ${retryAfterSeconds} წამში.`,
-      EN: `Too many requests. Please try again in ${retryAfterSeconds} seconds.`,
-    },
-    language,
-  );
+  return `Too many requests. Please try again in ${retryAfterSeconds} seconds.`;
 };
 
 /** Convenience for the common `if (!response.ok)` branch. */
-export const getThrottleMessageFromResponse = (
-  response: Response,
-  language: Language,
-) => getThrottleMessage(language, getRetryAfterSeconds(response));
+export const getThrottleMessageFromResponse = (response: Response) =>
+  getThrottleMessage(getRetryAfterSeconds(response));

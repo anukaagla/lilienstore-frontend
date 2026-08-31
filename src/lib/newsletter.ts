@@ -1,5 +1,3 @@
-import { byLanguage, type Language } from "./i18n";
-
 export const NEWSLETTER_DISMISSED_SESSION_KEY = "lilien-newsletter-dismissed";
 export const FOOTER_NEWSLETTER_HIDDEN_SESSION_KEY = "lilien-footer-newsletter-hidden";
 export const FOOTER_NEWSLETTER_HIDE_EVENT = "lilien-footer-newsletter-hide";
@@ -25,65 +23,24 @@ export type FooterNewsletterStripText = {
   placeholder: string;
 };
 
-export const getNewsletterText = (language: Language): NewsletterText => ({
-  title: byLanguage(
-    { EN: "SIGN UP ON NEWSLETTER", KA: "გამოიწერე ნიუსლეთერი" },
-    language
-  ),
-  heading: byLanguage(
-    { EN: "DISCOVER LILIEN FIRST", KA: "აღმოაჩინე LILIEN პირველი" },
-    language
-  ),
-  description: byLanguage(
-    {
-      EN: "Be the first to discover new collections, curated pieces, and showroom updates.",
-      KA: "პირველმა გაიგე ახალი კოლექციების, შერჩეული ნივთებისა და showroom-ის სიახლეების შესახებ.",
-    },
-    language
-  ),
-  emailPlaceholder: byLanguage(
-    { EN: "ENTER YOUR EMAIL", KA: "შეიყვანე შენი ელფოსტა." },
-    language
-  ),
-  signUp: byLanguage({ EN: "SIGN UP", KA: "გამოწერა" }, language),
-  privacyPrefix: byLanguage(
-    { EN: "BY SIGNING UP YOU AGREE TO OUR", KA: "რეგისტრაციით ეთანხმები ჩვენს" },
-    language
-  ),
-  privacyLabel: byLanguage(
-    { EN: "PRIVACY POLICY", KA: "კონფიდენციალურობის პოლიტიკას" },
-    language
-  ),
-  invalidEmail: byLanguage(
-    {
-      EN: "Please enter a valid email address.",
-      KA: "გთხოვ, სწორად შეიყვანე ელფოსტა.",
-    },
-    language
-  ),
-  success: byLanguage(
-    {
-      EN: "Thank you for subscribing!",
-      KA: "თქვენ წარმატებით გამოიწერეთ ნიუსლეთერი, დაელოდეთ სიახლეებს.",
-    },
-    language
-  ),
-  close: byLanguage({ EN: "Close newsletter", KA: "ნიუსლეთერის დახურვა" }, language),
-  imageAlt: byLanguage({ EN: "Newsletter preview", KA: "ნიუსლეთერის ფოტო" }, language),
+export const getNewsletterText = (): NewsletterText => ({
+  title: "SIGN UP ON NEWSLETTER",
+  heading: "DISCOVER LILIEN FIRST",
+  description: "Be the first to discover new collections, curated pieces, and showroom updates.",
+  emailPlaceholder: "ENTER YOUR EMAIL",
+  signUp: "SIGN UP",
+  privacyPrefix: "BY SIGNING UP YOU AGREE TO OUR",
+  privacyLabel: "PRIVACY POLICY",
+  invalidEmail: "Please enter a valid email address.",
+  success: "Thank you for subscribing!",
+  close: "Close newsletter",
+  imageAlt: "Newsletter preview",
 });
 
-export const getFooterNewsletterStripText = (
-  language: Language
-): FooterNewsletterStripText => ({
-  title: byLanguage(
-    { EN: "Sign Up To Our Newsletter", KA: "გამოიწერე ჩვენი ნიუსლეთერი" },
-    language
-  ),
-  button: byLanguage({ EN: "Subscribe", KA: "გამოწერა" }, language),
-  placeholder: byLanguage(
-    { EN: "ENTER YOUR EMAIL", KA: "შეიყვანე შენი ელფოსტა" },
-    language
-  ),
+export const getFooterNewsletterStripText = (): FooterNewsletterStripText => ({
+  title: "Sign Up To Our Newsletter",
+  button: "Subscribe",
+  placeholder: "ENTER YOUR EMAIL",
 });
 
 export const isValidNewsletterEmail = (value: string) =>

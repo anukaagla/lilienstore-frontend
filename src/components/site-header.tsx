@@ -6,13 +6,12 @@ import { useEffect, useMemo, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { createPortal } from "react-dom";
 import { clearLegacyAuthStorage, fetchAuthSession } from "../lib/auth";
-import { byLanguage, getLocalizedText } from "../lib/i18n";
+import { readText } from "../lib/localized";
 import { buildCategoryHref } from "../lib/catalog-routing";
 import type { Category } from "../types/catalog";
 import { resolveBrandLogo } from "../lib/brand";
 import { useBrandState } from "./brand-provider";
 import { SkeletonBlock } from "./page-skeletons";
-import { useLanguage } from "./language-provider";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
@@ -34,30 +33,8 @@ type CategoryApiRecord = {
   children?: unknown;
 };
 
-const normalizeCategoryName = (
-  name: unknown,
-  fallback: string
-): Category["name"] => {
-  if (name && typeof name === "object") {
-    const localized = name as { KA?: unknown; EN?: unknown };
-    const ka =
-      typeof localized.KA === "string" && localized.KA.trim()
-        ? localized.KA
-        : fallback;
-    const en =
-      typeof localized.EN === "string" && localized.EN.trim()
-        ? localized.EN
-        : ka || fallback;
-    return {
-      KA: ka || en || fallback,
-      EN: en || ka || fallback,
-    };
-  }
-  if (typeof name === "string" && name.trim()) {
-    return { KA: name, EN: name };
-  }
-  return { KA: fallback, EN: fallback };
-};
+const normalizeCategoryName = (name: unknown, fallback: string): string =>
+  readText(name, fallback);
 
 const mapCategory = (entry: unknown): Category | null => {
   if (!entry || typeof entry !== "object") return null;
@@ -150,11 +127,10 @@ export default function SiteHeader({
   loginOpenRequest,
   onLoginSuccess,
 }: SiteHeaderProps) {
-  const { language, toggleLanguage } = useLanguage();
   const { brand, isLoading: brandLoading } = useBrandState();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const brandName = getLocalizedText(brand?.brand_name, language, "Lilien");
+  const brandName = readText(brand?.brand_name, "Lilien");
   // "light" means the header bar is sitting on the hero imagery, where the regular
   // logo can disappear into the artwork.
   const brandLogoSrc = resolveBrandLogo(brand, { contrast: headerTone === "light" });
@@ -175,7 +151,6 @@ export default function SiteHeader({
   const [passwordResetRequestSuccess, setPasswordResetRequestSuccess] = useState<string | null>(null);
   const [fetchedCategories, setFetchedCategories] = useState<Category[]>([]);
   const [portalReady, setPortalReady] = useState(false);
-  const languageSwitchLabel = language === "EN" ? "GE" : "ENG";
   const isLightTone = headerTone === "light";
   const headerPrimaryClass = isLightTone ? "text-white" : "text-slate-900";
   const headerSecondaryClass = isLightTone ? "text-white/78" : "text-slate-900";
@@ -185,84 +160,36 @@ export default function SiteHeader({
       isLightTone ? "after:bg-white/65" : "after:bg-slate-900"
     }`;
   const text = {
-    search: byLanguage({ EN: "Search", KA: "ძებნა" }, language),
-    profile: byLanguage({ EN: "Profile", KA: "პროფილი" }, language),
-    logIn: byLanguage({ EN: "Log In", KA: "შესვლა" }, language),
-    shoppingBag: byLanguage({ EN: "Shopping Bag", KA: "კალათა" }, language),
-    help: byLanguage({ EN: "Help", KA: "დახმარება" }, language),
-    shop: byLanguage({ EN: "Shop", KA: "პროდუქცია" }, language),
-    comingSoon: byLanguage({ EN: "Coming soon", KA: "მალე დაემატება" }, language),
-    blog: byLanguage({ EN: "Blog", KA: "ბლოგი" }, language),
-    aboutUs: byLanguage({ EN: "About Us", KA: "ჩვენს შესახებ" }, language),
-    contactUs: byLanguage({ EN: "Contact Us", KA: "კონტაქტი" }, language),
-    closeLogin: byLanguage({ EN: "Close login", KA: "შესვლის დახურვა" }, language),
-    welcomeBack: byLanguage({ EN: "Welcome back", KA: "კეთილი დაბრუნება" }, language),
-    email: byLanguage({ EN: "Email", KA: "ელ.ფოსტა" }, language),
-    emailPlaceholder: byLanguage(
-      { EN: "e.g. nino@example.com", KA: "მაგ. nino@example.com" },
-      language
-    ),
-    password: byLanguage({ EN: "Password", KA: "პაროლი" }, language),
-    passwordPlaceholder: byLanguage(
-      { EN: "Enter your password", KA: "შეიყვანე შენი პაროლი" },
-      language
-    ),
-    forgotPassword: byLanguage(
-      { EN: "Forgot your password?", KA: "დაგავიწყდა პაროლი?" },
-      language
-    ),
-    resetPassword: byLanguage(
-      { EN: "Reset your password", KA: "პაროლის აღდგენა" },
-      language
-    ),
-    sendResetLink: byLanguage(
-      { EN: "Send password reset link", KA: "პაროლის აღდგენის ბმულის გაგზავნა" },
-      language
-    ),
-    sendingResetLink: byLanguage(
-      { EN: "Sending...", KA: "იგზავნება..." },
-      language
-    ),
-    passwordResetEmailSent: byLanguage(
-      {
-        EN: "Email was sent successfully.",
-        KA: "ელ.ფოსტა წარმატებით გაიგზავნა.",
-      },
-      language
-    ),
-    signingIn: byLanguage({ EN: "Signing in...", KA: "მიმდინარეობს შესვლა..." }, language),
-    signIn: byLanguage({ EN: "Sign In", KA: "შესვლა" }, language),
-    noAccount: byLanguage(
-      { EN: "Don't have an account?", KA: "ანგარიში არ გაქვს?" },
-      language
-    ),
-    register: byLanguage({ EN: "Register", KA: "რეგისტრაცია" }, language),
-    missingApiBaseUrl: byLanguage(
-      { EN: "Missing API base URL.", KA: "API მისამართი მითითებული არ არის." },
-      language
-    ),
-    loginFailed: byLanguage(
-      { EN: "Login failed.", KA: "შესვლა ვერ შესრულდა." },
-      language
-    ),
-    loginFailedRetry: byLanguage(
-      { EN: "Login failed. Please try again.", KA: "შესვლა ვერ შესრულდა. სცადე თავიდან." },
-      language
-    ),
-    passwordResetRequestFailed: byLanguage(
-      {
-        EN: "Failed to send password reset email.",
-        KA: "პაროლის აღდგენის ელ.ფოსტის გაგზავნა ვერ მოხერხდა.",
-      },
-      language
-    ),
-    passwordResetRequestFailedRetry: byLanguage(
-      {
-        EN: "Failed to send password reset email. Please try again.",
-        KA: "პაროლის აღდგენის ელ.ფოსტის გაგზავნა ვერ მოხერხდა. სცადე თავიდან.",
-      },
-      language
-    ),
+    search: "Search",
+    profile: "Profile",
+    logIn: "Log In",
+    shoppingBag: "Shopping Bag",
+    help: "Help",
+    shop: "Shop",
+    comingSoon: "Coming soon",
+    blog: "Blog",
+    aboutUs: "About Us",
+    contactUs: "Contact Us",
+    closeLogin: "Close login",
+    welcomeBack: "Welcome back",
+    email: "Email",
+    emailPlaceholder: "e.g. nino@example.com",
+    password: "Password",
+    passwordPlaceholder: "Enter your password",
+    forgotPassword: "Forgot your password?",
+    resetPassword: "Reset your password",
+    sendResetLink: "Send password reset link",
+    sendingResetLink: "Sending...",
+    passwordResetEmailSent: "Email was sent successfully.",
+    signingIn: "Signing in...",
+    signIn: "Sign In",
+    noAccount: "Don't have an account?",
+    register: "Register",
+    missingApiBaseUrl: "Missing API base URL.",
+    loginFailed: "Login failed.",
+    loginFailedRetry: "Login failed. Please try again.",
+    passwordResetRequestFailed: "Failed to send password reset email.",
+    passwordResetRequestFailedRetry: "Failed to send password reset email. Please try again.",
   };
   const shouldFetchCategories = !categories?.length;
   const resolvedCategories = useMemo(
@@ -475,7 +402,7 @@ export default function SiteHeader({
         <div className="flex items-center gap-4">
           <button
             type="button"
-            aria-label={byLanguage({ EN: "Toggle menu", KA: "მენიუს გახსნა" }, language)}
+            aria-label={"Toggle menu"}
             aria-expanded={menuOpen}
             aria-controls="site-menu"
             onClick={() => setMenuOpen((open) => !open)}
@@ -497,13 +424,7 @@ export default function SiteHeader({
             ) : (
               <Link
                 href="/"
-                aria-label={byLanguage(
-                  {
-                    EN: `Go to ${brandName} blog`,
-                    KA: `${brandName}-ის ბლოგზე გადასვლა`,
-                  },
-                  language
-                )}
+                aria-label={`Go to ${brandName} blog`}
               >
                 <Image
                   src={brandLogoSrc}
@@ -524,20 +445,6 @@ export default function SiteHeader({
           }`}
         >
           <div className="flex items-center gap-x-6">
-            <button
-              type="button"
-              onClick={toggleLanguage}
-              className={`transition ${headerHoverClass}`}
-              aria-label={byLanguage(
-                {
-                  EN: "Switch language to Georgian",
-                  KA: "Switch language to English",
-                },
-                language
-              )}
-            >
-              {languageSwitchLabel}
-            </button>
             {onSearchClick ? (
               <button
                 type="button"
@@ -663,7 +570,7 @@ export default function SiteHeader({
                       : ""
                   }`}
                 >
-                  {getLocalizedText(category.name, language, category.slug)}
+                  {readText(category.name, category.slug)}
                 </button>
               ))}
             </div>
@@ -679,7 +586,7 @@ export default function SiteHeader({
                   onClick={() => setMenuOpen(false)}
                   className="block transition hover:text-slate-900"
                 >
-                  {getLocalizedText(child.name, language, child.slug)}
+                  {readText(child.name, child.slug)}
                 </Link>
               ))
             ) : (

@@ -1,13 +1,7 @@
 export type BlogPost = {
   id: number;
-  title: {
-    KA: string;
-    EN: string;
-  };
-  content: {
-    KA: string;
-    EN: string;
-  };
+  title: string;
+  content: string;
   cover_image: string;
   cover_image_url?: string;
   published_at: string;

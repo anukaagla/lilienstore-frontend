@@ -9,7 +9,6 @@ import { fetchWithAuthRetry } from "../lib/auth";
 import { getThrottleMessageFromResponse, isThrottled } from "../lib/api-errors";
 import { DEFAULT_CURRENCY, formatMoney } from "../lib/currency";
 import { writeCart } from "../lib/cart";
-import { byLanguage } from "../lib/i18n";
 import { toAbsoluteMediaUrl } from "../lib/media";
 import {
   buildApiUrl,
@@ -25,7 +24,6 @@ import {
   writeOrderConfirmation,
 } from "../lib/order-confirmation";
 import Footer from "./footer";
-import { useLanguage } from "./language-provider";
 import SiteHeader from "./site-header";
 
 const subscribeToSnapshot = () => () => {}
@@ -48,7 +46,7 @@ const successIcon = (
   </svg>
 )
 
-const formatPlacedAt = (value: string, locale: "en-US" | "ka-GE", fallback: string) => {
+const formatPlacedAt = (value: string, locale: string, fallback: string) => {
   if (!value.trim()) return fallback
 
   const parsed = new Date(value)
@@ -63,7 +61,6 @@ const formatPlacedAt = (value: string, locale: "en-US" | "ka-GE", fallback: stri
 }
 
 export default function PaymentSuccess() {
-  const { language } = useLanguage()
   const searchParams = useSearchParams()
   const confirmationValue = useSyncExternalStore(
     subscribeToSnapshot,
@@ -88,34 +85,10 @@ export default function PaymentSuccess() {
   useEffect(() => {
     let isActive = true
 
-    const missingOrderIdMessage = byLanguage(
-      {
-        EN: "Order ID is missing. Please retry payment from checkout.",
-        KA: "შეკვეთის ID ვერ მოიძებნა. გთხოვ ჩექაუთიდან თავიდან სცადო.",
-      },
-      language,
-    )
-    const missingApiBaseUrlMessage = byLanguage(
-      {
-        EN: "API base URL is missing. Set NEXT_PUBLIC_API_BASE_URL.",
-        KA: "API მისამართი არ არის კონფიგურირებული.",
-      },
-      language,
-    )
-    const missingAccessTokenMessage = byLanguage(
-      {
-        EN: "Please log in to load your order details.",
-        KA: "შეკვეთის დეტალების სანახავად გაიარეთ ავტორიზაცია.",
-      },
-      language,
-    )
-    const orderLoadFailedMessage = byLanguage(
-      {
-        EN: "Failed to load order details.",
-        KA: "შეკვეთის დეტალების ჩატვირთვა ვერ მოხერხდა.",
-      },
-      language,
-    )
+    const missingOrderIdMessage = "Order ID is missing. Please retry payment from checkout."
+    const missingApiBaseUrlMessage = "API base URL is missing. Set NEXT_PUBLIC_API_BASE_URL."
+    const missingAccessTokenMessage = "Please log in to load your order details."
+    const orderLoadFailedMessage = "Failed to load order details."
 
     const loadOrder = async () => {
       if (!orderId) {
@@ -161,7 +134,7 @@ export default function PaymentSuccess() {
           if (response.status === 401 || response.status === 403) {
             setOrderError(missingAccessTokenMessage)
           } else if (isThrottled(response)) {
-            setOrderError(getThrottleMessageFromResponse(response, language))
+            setOrderError(getThrottleMessageFromResponse(response))
           } else {
             setOrderError(getApiMessage(payload, orderLoadFailedMessage))
           }
@@ -171,7 +144,7 @@ export default function PaymentSuccess() {
         return
       }
 
-      const normalized = normalizeOrderDetailsSummary(payload, language)
+      const normalized = normalizeOrderDetailsSummary(payload)
       if (!normalized) {
         if (isActive) {
           setOrderSummary(null)
@@ -193,7 +166,7 @@ export default function PaymentSuccess() {
     return () => {
       isActive = false
     }
-  }, [language, orderId])
+  }, [orderId])
 
   useEffect(() => {
     if (orderSummary) {
@@ -202,87 +175,39 @@ export default function PaymentSuccess() {
   }, [orderSummary])
 
   const text = {
-    pill: byLanguage({ EN: "Payment Successful", KA: "გადახდა წარმატებულია" }, language),
-    eyebrow: byLanguage({ EN: "Thank You", KA: "გმადლობთ" }, language),
-    title: byLanguage(
-      { EN: "Your Order Is Confirmed", KA: "შენი შეკვეთა დადასტურებულია" },
-      language,
-    ),
-    description: byLanguage(
-      {
-        EN: "Your payment was received successfully and your order is now being prepared.",
-        KA: "გადახდა წარმატებით მივიღეთ და შენი შეკვეთა უკვე მზადების პროცესშია.",
-      },
-      language,
-    ),
-    fallbackNote: byLanguage(
-      {
-        EN: "We could not load the full receipt details, but your confirmation page is ready.",
-        KA: "სრული ქვითრის დეტალები ვერ ჩაიტვირთა, თუმცა დადასტურების გვერდი მზად არის.",
-      },
-      language,
-    ),
-    orderNumber: byLanguage({ EN: "Order Number", KA: "შეკვეთის ნომერი" }, language),
-    status: byLanguage({ EN: "Status", KA: "სტატუსი" }, language),
-    placedAt: byLanguage({ EN: "Placed At", KA: "განთავსდა" }, language),
-    itemsTitle: byLanguage({ EN: "Items In This Order", KA: "შეკვეთაში არსებული ნივთები" }, language),
-    itemsEmpty: byLanguage(
-      {
-        EN: "Your item breakdown will appear here once the order sync finishes.",
-        KA: "ნივთების ჩამონათვალი აქ გამოჩნდება, როგორც კი შეკვეთა სრულად დასინქრონდება.",
-      },
-      language,
-    ),
-    qty: byLanguage({ EN: "Qty", KA: "რაოდ." }, language),
-    size: byLanguage({ EN: "Size", KA: "ზომა" }, language),
-    color: byLanguage({ EN: "Color", KA: "ფერი" }, language),
-    receipt: byLanguage({ EN: "Receipt Summary", KA: "ქვითრის შეჯამება" }, language),
-    subtotal: byLanguage({ EN: "Subtotal", KA: "შუალედური ჯამი" }, language),
-    shipping: byLanguage({ EN: "Delivery", KA: "მიწოდება" }, language),
-    total: byLanguage({ EN: "Total Paid", KA: "სულ გადახდილი" }, language),
-    deliveryTitle: byLanguage({ EN: "Delivery Details", KA: "მიწოდების დეტალები" }, language),
-    contact: byLanguage({ EN: "Contact", KA: "კონტაქტი" }, language),
-    paymentMethod: byLanguage({ EN: "Payment Method", KA: "გადახდის მეთოდი" }, language),
-    eta: byLanguage({ EN: "Estimated Delivery", KA: "მოსალოდნელი მიწოდება" }, language),
-    trackOrder: byLanguage({ EN: "Track In Profile", KA: "იხილე პროფილში" }, language),
-    continueShopping: byLanguage({ EN: "Continue Shopping", KA: "განაგრძე შოპინგი" }, language),
-    needHelp: byLanguage(
-      {
-        EN: "Need to update your delivery details or review the order later?",
-        KA: "გჭირდება მიწოდების დეტალების შეცვლა ან შეკვეთის შემოწმება მოგვიანებით?",
-      },
-      language,
-    ),
-    loadingReceipt: byLanguage(
-      { EN: "Loading your receipt...", KA: "მიმდინარეობს ქვითრის ჩატვირთვა..." },
-      language,
-    ),
-    confirmed: byLanguage({ EN: "Confirmed", KA: "დადასტურებულია" }, language),
-    justNow: byLanguage({ EN: "Just now", KA: "ახლახან" }, language),
-    customer: byLanguage({ EN: "Customer", KA: "მომხმარებელი" }, language),
-    fallbackAddress: byLanguage(
-      {
-        EN: "Delivery details will be attached to your order confirmation shortly.",
-        KA: "მიწოდების დეტალები მალე დაემატება შეკვეთის დადასტურებას.",
-      },
-      language,
-    ),
-    fallbackEta: byLanguage(
-      {
-        EN: "Our team will contact you shortly with delivery timing.",
-        KA: "ჩვენი გუნდი მალე დაგიკავშირდება მიწოდების დროის დასაზუსტებლად.",
-      },
-      language,
-    ),
-    updatesEmail: byLanguage(
-      {
-        EN: "Order updates will be sent to your account email.",
-        KA: "შეკვეთის განახლებები გაიგზავნება შენი ანგარიშის ელფოსტაზე.",
-      },
-      language,
-    ),
-    itemSingular: byLanguage({ EN: "item", KA: "ნივთი" }, language),
-    itemPlural: byLanguage({ EN: "items", KA: "ნივთი" }, language),
+    pill: "Payment Successful",
+    eyebrow: "Thank You",
+    title: "Your Order Is Confirmed",
+    description: "Your payment was received successfully and your order is now being prepared.",
+    fallbackNote: "We could not load the full receipt details, but your confirmation page is ready.",
+    orderNumber: "Order Number",
+    status: "Status",
+    placedAt: "Placed At",
+    itemsTitle: "Items In This Order",
+    itemsEmpty: "Your item breakdown will appear here once the order sync finishes.",
+    qty: "Qty",
+    size: "Size",
+    color: "Color",
+    receipt: "Receipt Summary",
+    subtotal: "Subtotal",
+    shipping: "Delivery",
+    total: "Total Paid",
+    deliveryTitle: "Delivery Details",
+    contact: "Contact",
+    paymentMethod: "Payment Method",
+    eta: "Estimated Delivery",
+    trackOrder: "Track In Profile",
+    continueShopping: "Continue Shopping",
+    needHelp: "Need to update your delivery details or review the order later?",
+    loadingReceipt: "Loading your receipt...",
+    confirmed: "Confirmed",
+    justNow: "Just now",
+    customer: "Customer",
+    fallbackAddress: "Delivery details will be attached to your order confirmation shortly.",
+    fallbackEta: "Our team will contact you shortly with delivery timing.",
+    updatesEmail: "Order updates will be sent to your account email.",
+    itemSingular: "item",
+    itemPlural: "items",
   }
 
   const fallbackSummary: OrderDetailsSummary = {
@@ -307,7 +232,7 @@ export default function PaymentSuccess() {
 
   const summary = orderSummary ?? fallbackSummary
   const ready = !orderLoading
-  const locale = language === "KA" ? "ka-GE" : "en-US"
+  const locale = "en-US"
   const placedAtLabel = formatPlacedAt(summary.placedAt, locale, text.justNow)
   const itemCount =
     summary.items.reduce((total, item) => total + item.quantity, 0) || summary.itemCount

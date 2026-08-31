@@ -1,12 +1,11 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { byLanguage, getLocalizedText } from "../lib/i18n";
+import { readText } from "../lib/localized";
 import Breadcrumbs from "./breadcrumbs";
 import Footer from "./footer";
 import SiteHeader from "./site-header";
 import { useBrandState } from "./brand-provider";
-import { useLanguage } from "./language-provider";
 import { ContactPageSkeleton } from "./page-skeletons";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
@@ -16,7 +15,6 @@ const sanitizeInput = (value: string, maxLength: number) =>
   value.replace(/\s+/g, " ").trim().slice(0, maxLength);
 
 export default function ContactUs() {
-  const { language } = useLanguage();
   const { brand, isLoading: brandLoading } = useBrandState();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -25,7 +23,7 @@ export default function ContactUs() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
 
-  const brandName = getLocalizedText(brand?.brand_name, language, "Lilien");
+  const brandName = readText(brand?.brand_name, "Lilien");
 
   const toSocialUrl = (value: string, platform: "instagram" | "facebook" | "tiktok") => {
     const trimmed = value.trim();
@@ -37,23 +35,9 @@ export default function ContactUs() {
     return `https://www.tiktok.com/@${cleaned}`;
   };
 
-  const addressText = getLocalizedText(
-    brand?.address,
-    language,
-    byLanguage(
-      {
-        EN: "29 Irakli Abashidze Street, Tbilisi, Georgia",
-        KA: "ირაკლი აბაშიძის ქუჩა 29, თბილისი, საქართველო",
-      },
-      language
-    )
-  );
+  const addressText = readText(brand?.address, "29 Irakli Abashidze Street, Tbilisi, Georgia");
 
-  const workingHoursText = getLocalizedText(
-    brand?.working_hours,
-    language,
-    byLanguage({ EN: "12:00-20:00", KA: "12:00-20:00" }, language)
-  );
+  const workingHoursText = readText(brand?.working_hours, "12:00-20:00");
 
   const phoneValue = brand?.phone_number?.trim() || "";
   const emailValue = brand?.email?.trim() || "lilienspprt@gmail.com";
@@ -65,68 +49,29 @@ export default function ContactUs() {
   const tiktokValue = toSocialUrl(brand?.tiktok_url?.trim() || "", "tiktok");
 
   const text = {
-    intro: byLanguage(
-      {
-        EN: "If you have any issues with your order or simply have a question about our products or services, feel free to contact us - we'll be happy to help.",
-        KA: "თუ შეკვეთასთან დაკავშირებული პრობლემა გაქვთ ან ჩვენს პროდუქტებსა თუ სერვისებზე კითხვა გაქვთ, დაგვიკავშირდით - სიამოვნებით დაგეხმარებით.",
-      },
-      language
-    ),
-    heading: byLanguage(
-      {
-        EN: `Contact ${brandName} Store`,
-        KA: `${brandName} მაღაზიასთან დაკავშირება`,
-      },
-      language
-    ),
-    home: byLanguage({ EN: "Home", KA: "მთავარი" }, language),
-    contact: byLanguage({ EN: "Contact Us", KA: "კონტაქტი" }, language),
-    yourName: byLanguage({ EN: "Your name", KA: "თქვენი სახელი" }, language),
-    namePlaceholder: byLanguage({ EN: "e.g. Nino", KA: "მაგ. ნინო" }, language),
-    yourMail: byLanguage({ EN: "Your mail", KA: "თქვენი ელ.ფოსტა" }, language),
-    emailPlaceholder: byLanguage(
-      { EN: "e.g. nino@example.com", KA: "მაგ. nino@example.com" },
-      language
-    ),
-    howCanHelp: byLanguage(
-      { EN: "How can we help?", KA: "როგორ შეგვიძლია დაგეხმაროთ?" },
-      language
-    ),
-    messagePlaceholder: byLanguage(
-      {
-        EN: "e.g. I need help with order #1024",
-        KA: "მაგ. დახმარება მჭირდება შეკვეთაზე #1024",
-      },
-      language
-    ),
-    hours: byLanguage({ EN: "Working hours", KA: "სამუშაო საათები" }, language),
-    phone: byLanguage({ EN: "Phone", KA: "ტელეფონი" }, language),
-    email: byLanguage({ EN: "Email", KA: "ელ.ფოსტა" }, language),
-    instagram: byLanguage({ EN: "Instagram", KA: "ინსტაგრამი" }, language),
-    facebook: byLanguage({ EN: "Facebook", KA: "ფეისბუქი" }, language),
-    tiktok: byLanguage({ EN: "TikTok", KA: "ტიკტოკი" }, language),
-    submit: byLanguage({ EN: "Submit", KA: "გაგზავნა" }, language),
-    sending: byLanguage({ EN: "Sending...", KA: "იგზავნება..." }, language),
-    submitSuccess: byLanguage(
-      { EN: "Message sent successfully.", KA: "შეტყობინება წარმატებით გაიგზავნა." },
-      language
-    ),
-    submitFailed: byLanguage(
-      { EN: "Failed to send message.", KA: "შეტყობინების გაგზავნა ვერ მოხერხდა." },
-      language
-    ),
-    invalidEmail: byLanguage(
-      { EN: "Please provide a valid email.", KA: "გთხოვ მიუთითე ვალიდური ელ.ფოსტა." },
-      language
-    ),
-    invalidInput: byLanguage(
-      { EN: "Please review your input fields.", KA: "გთხოვ გადაამოწმე შეყვანილი მონაცემები." },
-      language
-    ),
-    missingApiBaseUrl: byLanguage(
-      { EN: "Missing API base URL.", KA: "API-ის საბაზისო URL ვერ მოიძებნა." },
-      language
-    ),
+    intro: "If you have any issues with your order or simply have a question about our products or services, feel free to contact us - we'll be happy to help.",
+    heading: `Contact ${brandName} Store`,
+    home: "Home",
+    contact: "Contact Us",
+    yourName: "Your name",
+    namePlaceholder: "e.g. Nino",
+    yourMail: "Your mail",
+    emailPlaceholder: "e.g. nino@example.com",
+    howCanHelp: "How can we help?",
+    messagePlaceholder: "e.g. I need help with order #1024",
+    hours: "Working hours",
+    phone: "Phone",
+    email: "Email",
+    instagram: "Instagram",
+    facebook: "Facebook",
+    tiktok: "TikTok",
+    submit: "Submit",
+    sending: "Sending...",
+    submitSuccess: "Message sent successfully.",
+    submitFailed: "Failed to send message.",
+    invalidEmail: "Please provide a valid email.",
+    invalidInput: "Please review your input fields.",
+    missingApiBaseUrl: "Missing API base URL.",
   };
 
   if (brandLoading && !brand) {
