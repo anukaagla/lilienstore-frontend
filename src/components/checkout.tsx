@@ -22,10 +22,8 @@ import {
   normalizeCurrency,
   type CurrencyCode,
 } from "../lib/currency";
-import { byLanguage } from "../lib/i18n";
 import { writeOrderConfirmation } from "../lib/order-confirmation";
 import Footer from "./footer";
-import { useLanguage } from "./language-provider";
 import { CheckoutPageSkeleton } from "./page-skeletons";
 import SiteHeader from "./site-header";
 
@@ -386,7 +384,6 @@ const mapCheckoutFormToApiPayload = (form: CheckoutFormState): AddressApiPayload
 });
 
 export default function Checkout() {
-  const { language } = useLanguage();
   const router = useRouter();
   const [items, setItems] = useState<CartItem[]>([]);
   const [cartReady, setCartReady] = useState(false);
@@ -407,140 +404,53 @@ export default function Checkout() {
   const [orderError, setOrderError] = useState<string | null>(null);
   const [unavailableVariantIds, setUnavailableVariantIds] = useState<number[]>([]);
   const text = {
-    addedAddresses: byLanguage({ EN: "Added Addresses", KA: "დამატებული მისამართები" }, language),
-    home: byLanguage({ EN: "Home", KA: "სახლი" }, language),
-    edit: byLanguage({ EN: "Edit", KA: "რედაქტირება" }, language),
-    deliveryAddressDetails: byLanguage(
-      { EN: "Delivery Address Details", KA: "მიწოდების მისამართი" },
-      language
-    ),
-    firstName: byLanguage({ EN: "First Name", KA: "სახელი" }, language),
-    firstNamePlaceholder: byLanguage({ EN: "e.g. Nino", KA: "მაგ. ნინო" }, language),
-    lastName: byLanguage({ EN: "Last Name", KA: "გვარი" }, language),
-    lastNamePlaceholder: byLanguage({ EN: "e.g. Beridze", KA: "მაგ. ბერიძე" }, language),
-    phoneNumber: byLanguage({ EN: "Phone Number", KA: "ტელეფონის ნომერი" }, language),
-    phonePlaceholder: byLanguage(
-      { EN: "e.g. +995 555 12 34 56", KA: "მაგ. +995 555 12 34 56" },
-      language
-    ),
-    country: byLanguage({ EN: "Country", KA: "ქვეყანა" }, language),
-    countryPlaceholder: byLanguage({ EN: "e.g. Georgia", KA: "მაგ. საქართველო" }, language),
-    state: byLanguage({ EN: "State", KA: "რეგიონი" }, language),
-    statePlaceholder: byLanguage({ EN: "e.g. Tbilisi", KA: "მაგ. თბილისი" }, language),
-    city: byLanguage({ EN: "City", KA: "ქალაქი" }, language),
-    cityPlaceholder: byLanguage({ EN: "e.g. Tbilisi", KA: "მაგ. თბილისი" }, language),
-    addressNo1: byLanguage({ EN: "Address No 1", KA: "მისამართი 1" }, language),
-    addressNo1Placeholder: byLanguage(
-      { EN: "e.g. 12 Rustaveli Ave", KA: "მაგ. რუსთაველის გამზირი 12" },
-      language
-    ),
-    addressNo2: byLanguage({ EN: "Address No 2", KA: "მისამართი 2" }, language),
-    addressNo2Placeholder: byLanguage(
-      { EN: "e.g. Apt 8, Floor 3", KA: "მაგ. ბინა 8, სართული 3" },
-      language
-    ),
-    postalCode: byLanguage({ EN: "Postal Code", KA: "საფოსტო ინდექსი" }, language),
-    postalCodePlaceholder: byLanguage({ EN: "e.g. 0108", KA: "მაგ. 0108" }, language),
-    name: byLanguage({ EN: "Name", KA: "სახელი" }, language),
-    namePlaceholder: byLanguage({ EN: "e.g. Home", KA: "მაგ. სახლი" }, language),
-    optional: byLanguage({ EN: "optional", KA: "არასავალდებულო" }, language),
-    addAddress: byLanguage({ EN: "Add Address", KA: "მისამართის დამატება" }, language),
-    addingAddress: byLanguage(
-      { EN: "Adding Address...", KA: "მისამართი ემატება..." },
-      language,
-    ),
-    orderSummary: byLanguage({ EN: "Order Summary", KA: "შეკვეთის შეჯამება" }, language),
-    product: byLanguage({ EN: "Product", KA: "პროდუქტი" }, language),
-    total: byLanguage({ EN: "Total", KA: "სულ" }, language),
-    emptyBag: byLanguage(
-      { EN: "Your shopping bag is empty", KA: "შენი კალათა ცარიელია" },
-      language
-    ),
-    subtotal: byLanguage({ EN: "Subtotal", KA: "პროდუქციის ფასი" }, language),
-    delivery: byLanguage({ EN: "Delivery", KA: "მიწოდება" }, language),
-    placeOrder: byLanguage({ EN: "Place Order", KA: "შეკვეთის გაფორმება" }, language),
-    placingOrder: byLanguage({ EN: "Placing Order...", KA: "შეკვეთის გაფორმება..." }, language),
-    missingAccessToken: byLanguage(
-      {
-        EN: "Please log in before placing an order.",
-        KA: "შეკვეთის გასაფორმებლად გაიარეთ ავტორიზაცია.",
-      },
-      language,
-    ),
-    missingApiBaseUrl: byLanguage(
-      {
-        EN: "API base URL is missing. Set NEXT_PUBLIC_API_BASE_URL.",
-        KA: "API მისამართი არ არის კონფიგურირებული.",
-      },
-      language,
-    ),
-    addressRequired: byLanguage(
-      {
-        EN: "Select a valid saved address before placing an order.",
-        KA: "შეკვეთის გასაფორმებლად აირჩიეთ შენახული მისამართი.",
-      },
-      language,
-    ),
-    placeOrderFailed: byLanguage(
-      {
-        EN: "We could not place your order. Please try again.",
-        KA: "შეკვეთის გაფორმება ვერ მოხერხდა. სცადეთ ხელახლა.",
-      },
-      language,
-    ),
-    variantUnavailable: byLanguage(
-      {
-        EN: "Your bag contains an item that is unavailable in your region. Please remove it and try again.",
-        KA: "კალათაში არის პროდუქტი, რომელიც თქვენს რეგიონში მიუწვდომელია. წაშალეთ და სცადეთ თავიდან.",
-      },
-      language,
-    ),
-    itemUnavailable: byLanguage(
-      { EN: "Unavailable in your region", KA: "მიუწვდომელია თქვენს რეგიონში" },
-      language,
-    ),
-    checkoutIdMissing: byLanguage(
-      {
-        EN: "Order ID is missing in checkout response. Please try again.",
-        KA: "Checkout პასუხში შეკვეთის ID არ მოიძებნა. სცადეთ ხელახლა.",
-      },
-      language,
-    ),
-    paymentStartFailed: byLanguage(
-      {
-        EN: "Order created, but payment session could not be started.",
-        KA: "შეკვეთა შეიქმნა, თუმცა გადახდის სესიის დაწყება ვერ მოხერხდა.",
-      },
-      language,
-    ),
-    paymentRedirectMissing: byLanguage(
-      {
-        EN: "Payment link is missing. Please try again.",
-        KA: "გადახდის ბმული არ არის დაბრუნებული. სცადეთ ხელახლა.",
-      },
-      language,
-    ),
-    paymentNoticeLine1: byLanguage(
-      {
-        EN: "Payments are processed securely via UniPay.",
-        KA: "Payments are processed securely via UniPay.",
-      },
-      language,
-    ),
-    paymentNoticeLine2: byLanguage(
-      {
-        EN: "You will be redirected to UniPay's secure payment page to complete the transaction.",
-        KA: "You will be redirected to UniPay's secure payment page to complete the transaction.",
-      },
-      language,
-    ),
-    addressCreateFailed: byLanguage(
-      {
-        EN: "Failed to add address.",
-        KA: "მისამართის დამატება ვერ მოხერხდა.",
-      },
-      language,
-    ),
+    addedAddresses: "Added Addresses",
+    home: "Home",
+    edit: "Edit",
+    deliveryAddressDetails: "Delivery Address Details",
+    firstName: "First Name",
+    firstNamePlaceholder: "e.g. Nino",
+    lastName: "Last Name",
+    lastNamePlaceholder: "e.g. Beridze",
+    phoneNumber: "Phone Number",
+    phonePlaceholder: "e.g. +995 555 12 34 56",
+    country: "Country",
+    countryPlaceholder: "e.g. Georgia",
+    state: "State",
+    statePlaceholder: "e.g. Tbilisi",
+    city: "City",
+    cityPlaceholder: "e.g. Tbilisi",
+    addressNo1: "Address No 1",
+    addressNo1Placeholder: "e.g. 12 Rustaveli Ave",
+    addressNo2: "Address No 2",
+    addressNo2Placeholder: "e.g. Apt 8, Floor 3",
+    postalCode: "Postal Code",
+    postalCodePlaceholder: "e.g. 0108",
+    name: "Name",
+    namePlaceholder: "e.g. Home",
+    optional: "optional",
+    addAddress: "Add Address",
+    addingAddress: "Adding Address...",
+    orderSummary: "Order Summary",
+    product: "Product",
+    total: "Total",
+    emptyBag: "Your shopping bag is empty",
+    subtotal: "Subtotal",
+    delivery: "Delivery",
+    placeOrder: "Place Order",
+    placingOrder: "Placing Order...",
+    missingAccessToken: "Please log in before placing an order.",
+    missingApiBaseUrl: "API base URL is missing. Set NEXT_PUBLIC_API_BASE_URL.",
+    addressRequired: "Select a valid saved address before placing an order.",
+    placeOrderFailed: "We could not place your order. Please try again.",
+    variantUnavailable: "Your bag contains an item that is unavailable in your region. Please remove it and try again.",
+    itemUnavailable: "Unavailable in your region",
+    checkoutIdMissing: "Order ID is missing in checkout response. Please try again.",
+    paymentStartFailed: "Order created, but payment session could not be started.",
+    paymentRedirectMissing: "Payment link is missing. Please try again.",
+    paymentNoticeLine1: "Payments are processed securely via UniPay.",
+    paymentNoticeLine2: "You will be redirected to UniPay's secure payment page to complete the transaction.",
+    addressCreateFailed: "Failed to add address.",
   };
 
   useEffect(() => {
@@ -551,11 +461,6 @@ export default function Checkout() {
     });
     return () => unsubscribe();
   }, []);
-
-  useEffect(() => {
-    setAddressError(null);
-    setOrderError(null);
-  }, [language]);
 
   useEffect(() => {
     let isActive = true;
@@ -798,7 +703,7 @@ export default function Checkout() {
           return;
         }
         if (isThrottled(response)) {
-          setAddressError(getThrottleMessageFromResponse(response, language));
+          setAddressError(getThrottleMessageFromResponse(response));
           return;
         }
         setAddressError(getApiMessage(payload, text.addressCreateFailed));
@@ -871,7 +776,7 @@ export default function Checkout() {
         }
 
         if (isThrottled(response)) {
-          setOrderError(getThrottleMessageFromResponse(response, language));
+          setOrderError(getThrottleMessageFromResponse(response));
           return;
         }
 
@@ -928,7 +833,7 @@ export default function Checkout() {
           return;
         }
         if (isThrottled(payResponse)) {
-          setOrderError(getThrottleMessageFromResponse(payResponse, language));
+          setOrderError(getThrottleMessageFromResponse(payResponse));
           return;
         }
         setOrderError(getApiMessage(payPayload, text.paymentStartFailed));

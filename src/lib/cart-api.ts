@@ -2,7 +2,7 @@ import type { CartItem } from "./cart";
 import { fetchWithAuthRetry } from "./auth";
 import { readCart, writeCart } from "./cart";
 import { normalizeCurrency } from "./currency";
-import { LANGUAGE_STORAGE_KEY, getLocalizedText, normalizeLanguage } from "./i18n";
+import { readText } from "./localized";
 import { toAbsoluteMediaUrl } from "./media";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
@@ -16,10 +16,7 @@ type ApiCartItem = {
   product: {
     id: number;
     slug: string;
-    name: {
-      KA: string;
-      EN: string;
-    };
+    name: string;
     primary_image: string | null;
   };
   variant?: {
@@ -53,19 +50,12 @@ export type CartSnapshot = {
   items: CartItem[];
 };
 
-const getCurrentLanguage = () => {
-  if (typeof window === "undefined") {
-    return "EN" as const;
-  }
-  return normalizeLanguage(window.localStorage.getItem(LANGUAGE_STORAGE_KEY));
-};
-
 const mapCartItems = (cart: ApiCart): CartItem[] =>
   cart.items.map((item) => ({
     id: String(item.id),
     productId: String(item.product.id),
     variantId: item.variant?.id,
-    name: getLocalizedText(item.product.name, getCurrentLanguage(), item.product.slug),
+    name: readText(item.product.name, item.product.slug),
     price: item.unit_price,
     currency: normalizeCurrency(item.currency ?? cart.currency),
     size: item.variant?.size?.trim() || "One Size",

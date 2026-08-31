@@ -1,11 +1,6 @@
-export type LocalizedText = {
-  KA: string;
-  EN: string;
-};
-
 export type BrandHeroCategoryLink = {
   slug: string;
-  name: LocalizedText;
+  name: string;
 };
 
 export type BrandHeroCategory = BrandHeroCategoryLink & {
@@ -17,9 +12,9 @@ export type BrandHeroCategory = BrandHeroCategoryLink & {
 };
 
 export type HomeCollectionConfig = {
-  title: LocalizedText;
-  view_more_label: LocalizedText;
-  view_all_products_label: LocalizedText;
+  title: string;
+  view_more_label: string;
+  view_all_products_label: string;
   hero_image: string | null;
   hero_image_url: string | null;
   product_slugs: string[];
@@ -27,20 +22,20 @@ export type HomeCollectionConfig = {
 };
 
 export type Brand = {
-  brand_name: LocalizedText;
-  hero_title: LocalizedText;
-  description: LocalizedText;
-  address: LocalizedText;
-  working_hours: LocalizedText;
+  brand_name: string;
+  hero_title: string;
+  description: string;
+  address: string;
+  working_hours: string;
   phone_number: string;
   email: string;
   instagram_url: string;
   facebook_url: string;
   tiktok_url: string;
-  privacy_policy: LocalizedText;
-  terms_of_service: LocalizedText;
-  return_and_refund_policy: LocalizedText;
-  shipping_and_delivery_policy: LocalizedText;
+  privacy_policy: string;
+  terms_of_service: string;
+  return_and_refund_policy: string;
+  shipping_and_delivery_policy: string;
   logo: string | null;
   /** Alternate logo for dark/imagery backgrounds. Null when nothing was uploaded. */
   contrast_logo: string | null;

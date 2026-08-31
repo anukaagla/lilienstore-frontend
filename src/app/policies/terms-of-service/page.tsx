@@ -63,12 +63,9 @@ export default function TermsOfServicePage() {
         }}
       />
       <PolicyPage
-        title={{ EN: "Terms & Conditions", KA: "წესები და პირობები" }}
+        title="Terms & Conditions"
         policyKey="terms_of_service"
-        fallbackText={{
-          EN: "Terms and conditions are not available yet.",
-          KA: "წესები და პირობები ჯერ მიუწვდომელია.",
-        }}
+        fallbackText="Terms and conditions are not available yet."
       />
     </>
   );

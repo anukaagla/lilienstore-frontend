@@ -63,12 +63,9 @@ export default function PrivacyPolicyPage() {
         }}
       />
       <PolicyPage
-        title={{ EN: "Privacy Policy", KA: "კონფიდენციალურობის პოლიტიკა" }}
+        title="Privacy Policy"
         policyKey="privacy_policy"
-        fallbackText={{
-          EN: "Privacy policy is not available yet.",
-          KA: "კონფიდენციალურობის პოლიტიკა ჯერ მიუწვდომელია.",
-        }}
+        fallbackText="Privacy policy is not available yet."
       />
     </>
   );

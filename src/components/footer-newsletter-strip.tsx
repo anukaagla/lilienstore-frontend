@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { type Language } from "../lib/i18n";
 import {
   FOOTER_NEWSLETTER_HIDE_EVENT,
   FOOTER_NEWSLETTER_HIDDEN_SESSION_KEY,
@@ -81,10 +80,6 @@ const subscribeToNewsletter = async (
   }
 };
 
-type FooterNewsletterStripProps = {
-  language: Language;
-};
-
 type FeedbackState = {
   type: "success" | "error";
   message: string;
@@ -94,13 +89,10 @@ type NewsletterTextWithFailure = ReturnType<typeof getNewsletterText> & {
   failed?: string;
 };
 
-export default function FooterNewsletterStrip({
-  language,
-}: FooterNewsletterStripProps) {
-  const footerSignupText = getFooterNewsletterStripText(language);
-  const newsletterText = getNewsletterText(language) as NewsletterTextWithFailure;
-  const footerInputPlaceholder =
-    language === "KA" ? "შეიყვანე ელფოსტა." : footerSignupText.placeholder;
+export default function FooterNewsletterStrip() {
+  const footerSignupText = getFooterNewsletterStripText();
+  const newsletterText = getNewsletterText() as NewsletterTextWithFailure;
+  const footerInputPlaceholder = footerSignupText.placeholder;
   const [email, setEmail] = useState("");
   const [feedback, setFeedback] = useState<FeedbackState>(null);
   const showSuccessIndicator = feedback?.type === "success";

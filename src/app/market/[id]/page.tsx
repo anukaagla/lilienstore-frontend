@@ -66,10 +66,10 @@ export async function generateMetadata({
   }
 
   const product = mapApiProductDetailToProduct(productDetail);
-  const productName = product.nameLocalized?.EN || product.name;
+  const productName = product.name;
   const canonicalUrl = toCanonicalUrl(`/market/${slug}`);
   const description = normalizeDescription(
-    product.descriptionLocalized?.EN ||
+    product.description ||
       `${productName} by Lilienstore. Discover details, availability, and pricing.`,
   );
 
@@ -111,10 +111,10 @@ export default async function MarketProductPage({
   }
 
   const product = mapApiProductDetailToProduct(productDetail);
-  const productName = product.nameLocalized?.EN || product.name;
+  const productName = product.name;
   const canonicalUrl = toCanonicalUrl(`/market/${slug}`);
   const categoryLabel =
-    product.categoryNameLocalized?.EN ||
+    product.categoryName ||
     (product.categorySlug ? humanizeSlug(product.categorySlug) : "");
 
   const breadcrumbSchema = buildBreadcrumbListSchema([
@@ -143,7 +143,7 @@ export default async function MarketProductPage({
     "@type": "Product",
     name: productName,
     description: normalizeDescription(
-      product.descriptionLocalized?.EN || product.description || productName,
+      product.description || productName,
       productName,
     ),
     image: uniqueImages,

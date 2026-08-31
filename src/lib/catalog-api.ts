@@ -4,7 +4,7 @@ import { cache } from "react";
 
 import type { Product } from "../data/products";
 import { normalizeCurrency } from "./currency";
-import { toLocalizedText } from "./i18n";
+import { readText } from "./localized";
 import { toAbsoluteMediaUrl } from "./media";
 import {
   buildVisitorHeaders,
@@ -30,11 +30,6 @@ type CategoryApiRecord = {
   slug?: unknown;
   name?: unknown;
   children?: unknown;
-};
-
-type LocalizedText = {
-  KA?: unknown;
-  EN?: unknown;
 };
 
 export type CatalogProductQuery = {
@@ -105,30 +100,8 @@ const getImageUrl = (value: { image?: unknown; image_url?: unknown }) => {
   return toAbsoluteMediaUrl(value.image_url ?? value.image) || undefined;
 };
 
-const normalizeCategoryName = (
-  name: unknown,
-  fallback: string,
-): Category["name"] => {
-  if (name && typeof name === "object") {
-    const localized = name as LocalizedText;
-    const ka =
-      typeof localized.KA === "string" && localized.KA.trim()
-        ? localized.KA
-        : fallback;
-    const en =
-      typeof localized.EN === "string" && localized.EN.trim()
-        ? localized.EN
-        : ka || fallback;
-    return {
-      KA: ka || en || fallback,
-      EN: en || ka || fallback,
-    };
-  }
-  if (typeof name === "string" && name.trim()) {
-    return { KA: name, EN: name };
-  }
-  return { KA: fallback, EN: fallback };
-};
+const normalizeCategoryName = (name: unknown, fallback: string): string =>
+  readText(name, fallback);
 
 const mapCategory = (entry: unknown): Category | null => {
   if (!entry || typeof entry !== "object") return null;
@@ -323,14 +296,9 @@ const resolveBrandName = (brandValue: ApiProductDetail["brand"]): string | undef
       return name.trim();
     }
 
-    if (name && typeof name === "object") {
-      const localized = name as LocalizedText;
-      if (typeof localized.EN === "string" && localized.EN.trim()) {
-        return localized.EN.trim();
-      }
-      if (typeof localized.KA === "string" && localized.KA.trim()) {
-        return localized.KA.trim();
-      }
+    const localizedName = readText(name).trim();
+    if (localizedName) {
+      return localizedName;
     }
   }
 
@@ -358,10 +326,10 @@ export const mapApiProductDetailToProduct = (item: ApiProductDetail): Product =>
     toNumber(item.max_price) ??
     0;
   const currency = normalizeCurrency(item.currency);
-  const nameLocalized = toLocalizedText(item.name, item.slug);
-  const descriptionLocalized = toLocalizedText(item.description, "");
-  const careLocalized = toLocalizedText(item.care, "");
-  const materialLocalized = toLocalizedText(item.material, "");
+  const name = readText(item.name, item.slug);
+  const description = readText(item.description, "");
+  const care = readText(item.care, "");
+  const material = readText(item.material, "");
   const variants = (item.variants ?? [])
     .map((variant) => ({
       id: variant.id,
@@ -385,7 +353,7 @@ export const mapApiProductDetailToProduct = (item: ApiProductDetail): Product =>
     typeof item.category?.slug === "string" && item.category.slug.trim()
       ? item.category.slug.trim()
       : undefined;
-  const categoryNameLocalized = item.category?.name
+  const categoryName = item.category?.name
     ? normalizeCategoryName(item.category.name, categorySlug ?? "")
     : undefined;
   const sku = typeof item.sku === "string" && item.sku.trim() ? item.sku.trim() : undefined;
@@ -393,10 +361,9 @@ export const mapApiProductDetailToProduct = (item: ApiProductDetail): Product =>
   return {
     id: String(item.id),
     slug: item.slug,
-    name: nameLocalized.EN,
-    nameLocalized,
+    name,
     categorySlug,
-    categoryNameLocalized,
+    categoryName,
     brandName: resolveBrandName(item.brand),
     sku,
     currency,
@@ -405,12 +372,9 @@ export const mapApiProductDetailToProduct = (item: ApiProductDetail): Product =>
     secondaryImage,
     createdAt: item.created_at ?? new Date().toISOString(),
     detailImages,
-    description: descriptionLocalized.EN,
-    descriptionLocalized,
-    care: careLocalized.EN,
-    careLocalized,
-    material: materialLocalized.EN,
-    materialLocalized,
+    description,
+    care,
+    material,
     variants,
   };
 };

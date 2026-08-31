@@ -1,26 +1,9 @@
 import type { BlogPost } from "../types/blog";
+import { readText } from "./localized";
 import { toAbsoluteMediaUrl } from "./media";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 const BLOG_ENDPOINT = "/api/posts/";
-
-type LocalizedText = {
-  KA?: unknown;
-  EN?: unknown;
-};
-
-const getLocalizedText = (value: unknown, fallback = ""): { KA: string; EN: string } => {
-  if (typeof value === "string") {
-    return { KA: value, EN: value };
-  }
-  if (value && typeof value === "object") {
-    const localized = value as LocalizedText;
-    const ka = typeof localized.KA === "string" ? localized.KA : fallback;
-    const en = typeof localized.EN === "string" ? localized.EN : ka || fallback;
-    return { KA: ka || en, EN: en || ka };
-  }
-  return { KA: fallback, EN: fallback };
-};
 
 const getString = (value: unknown, fallback = "") => {
   if (typeof value === "string") return value;
@@ -86,11 +69,8 @@ const mapApiPost = (
   index: number,
 ): BlogPost => {
   const id = getNumber(entry.id, index + 1);
-  const title = getLocalizedText(entry.title, "");
-  const content = getLocalizedText(
-    entry.content ?? entry.body ?? entry.description,
-    "",
-  );
+  const title = readText(entry.title, "");
+  const content = readText(entry.content ?? entry.body ?? entry.description, "");
   const coverImage = readCoverImage(entry) || "/images/BB.png";
   const publishedAt = getString(entry.published_at, "");
   const createdAt = getString(entry.created_at, "");

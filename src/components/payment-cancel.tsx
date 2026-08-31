@@ -5,7 +5,6 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore } from "react";
 
 import { fetchWithAuthRetry } from "../lib/auth";
-import { byLanguage } from "../lib/i18n";
 import {
   buildApiUrl,
   getApiMessage,
@@ -20,7 +19,6 @@ import {
   writeOrderConfirmation,
 } from "../lib/order-confirmation";
 import Footer from "./footer";
-import { useLanguage } from "./language-provider";
 import SiteHeader from "./site-header";
 
 const subscribeToSnapshot = () => () => {}
@@ -38,7 +36,6 @@ const cancelIcon = (
 )
 
 export default function PaymentCancel() {
-  const { language } = useLanguage()
   const searchParams = useSearchParams()
   const confirmationValue = useSyncExternalStore(
     subscribeToSnapshot,
@@ -63,34 +60,10 @@ export default function PaymentCancel() {
   useEffect(() => {
     let isActive = true
 
-    const missingOrderIdMessage = byLanguage(
-      {
-        EN: "Order ID is missing. Please retry payment from checkout.",
-        KA: "შეკვეთის ID ვერ მოიძებნა. გთხოვ ჩექაუთიდან თავიდან სცადო.",
-      },
-      language,
-    )
-    const missingApiBaseUrlMessage = byLanguage(
-      {
-        EN: "API base URL is missing. Set NEXT_PUBLIC_API_BASE_URL.",
-        KA: "API მისამართი არ არის კონფიგურირებული.",
-      },
-      language,
-    )
-    const missingAccessTokenMessage = byLanguage(
-      {
-        EN: "Please log in to load your order details.",
-        KA: "შეკვეთის დეტალების სანახავად გაიარეთ ავტორიზაცია.",
-      },
-      language,
-    )
-    const orderLoadFailedMessage = byLanguage(
-      {
-        EN: "Failed to load order details.",
-        KA: "შეკვეთის დეტალების ჩატვირთვა ვერ მოხერხდა.",
-      },
-      language,
-    )
+    const missingOrderIdMessage = "Order ID is missing. Please retry payment from checkout."
+    const missingApiBaseUrlMessage = "API base URL is missing. Set NEXT_PUBLIC_API_BASE_URL."
+    const missingAccessTokenMessage = "Please log in to load your order details."
+    const orderLoadFailedMessage = "Failed to load order details."
 
     const loadOrder = async () => {
       if (!orderId) {
@@ -144,7 +117,7 @@ export default function PaymentCancel() {
         return
       }
 
-      const normalized = normalizeOrderDetailsSummary(payload, language)
+      const normalized = normalizeOrderDetailsSummary(payload)
       if (!normalized) {
         if (isActive) {
           setOrderSummary(null)
@@ -166,54 +139,24 @@ export default function PaymentCancel() {
     return () => {
       isActive = false
     }
-  }, [language, orderId])
+  }, [orderId])
 
   const text = {
-    pill: byLanguage({ EN: "Payment Cancelled", KA: "გადახდა გაუქმდა" }, language),
-    eyebrow: byLanguage({ EN: "Checkout Interrupted", KA: "შეჩერებული გადახდა" }, language),
-    title: byLanguage({ EN: "Order Was Cancelled", KA: "შეკვეთა გაუქმებულია" }, language),
-    description: byLanguage(
-      {
-        EN: "Your payment session was cancelled before completion. No charge was captured.",
-        KA: "გადახდის სესია დასრულებამდე გაუქმდა. თანხა არ ჩამოგეჭრათ.",
-      },
-      language,
-    ),
-    orderNumber: byLanguage({ EN: "Order Number", KA: "შეკვეთის ნომერი" }, language),
-    status: byLanguage({ EN: "Status", KA: "სტატუსი" }, language),
-    cancelled: byLanguage({ EN: "Cancelled", KA: "გაუქმებულია" }, language),
+    pill: "Payment Cancelled",
+    eyebrow: "Checkout Interrupted",
+    title: "Order Was Cancelled",
+    description: "Your payment session was cancelled before completion. No charge was captured.",
+    orderNumber: "Order Number",
+    status: "Status",
+    cancelled: "Cancelled",
     noOrderNumber: "#-",
-    nextSteps: byLanguage({ EN: "What You Can Do Next", KA: "შემდეგი ნაბიჯები" }, language),
-    retryHint: byLanguage(
-      {
-        EN: "Return to checkout and complete payment when you are ready.",
-        KA: "დაბრუნდი ჩექაუთზე და დაასრულე გადახდა როცა მზად იქნები.",
-      },
-      language,
-    ),
-    cartHint: byLanguage(
-      {
-        EN: "Your shopping bag items are still saved.",
-        KA: "შენი ჩანთის ნივთები შენახულია.",
-      },
-      language,
-    ),
-    supportHint: byLanguage(
-      {
-        EN: "If cancellation was accidental, you can retry immediately.",
-        KA: "თუ გაუქმება შემთხვევით მოხდა, შეგიძლია ახლავე სცადო თავიდან.",
-      },
-      language,
-    ),
-    backToBag: byLanguage({ EN: "Back To Bag", KA: "ჩანთაზე დაბრუნება" }, language),
-    continueShopping: byLanguage(
-      { EN: "Continue Shopping", KA: "შოპინგის გაგრძელება" },
-      language,
-    ),
-    loadingOrder: byLanguage(
-      { EN: "Loading order details...", KA: "შეკვეთის დეტალები იტვირთება..." },
-      language,
-    ),
+    nextSteps: "What You Can Do Next",
+    retryHint: "Return to checkout and complete payment when you are ready.",
+    cartHint: "Your shopping bag items are still saved.",
+    supportHint: "If cancellation was accidental, you can retry immediately.",
+    backToBag: "Back To Bag",
+    continueShopping: "Continue Shopping",
+    loadingOrder: "Loading order details...",
   }
 
   const orderNumber = orderSummary?.orderNumber || text.noOrderNumber

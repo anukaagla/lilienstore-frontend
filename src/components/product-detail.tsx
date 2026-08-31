@@ -9,10 +9,8 @@ import type { Product, ProductVariant } from "../data/products";
 import { addToCart, readCart, subscribeToCart } from "../lib/cart";
 import { addCartItem } from "../lib/cart-api";
 import { formatMoney } from "../lib/currency";
-import { byLanguage, getLocalizedText } from "../lib/i18n";
 import Breadcrumbs from "./breadcrumbs";
 import Footer from "./footer";
-import { useLanguage } from "./language-provider";
 import SiteHeader from "./site-header";
 
 type ProductDetailProps = {
@@ -42,7 +40,6 @@ const canPurchaseVariant = (variant: ProductVariant) =>
   variant.stockQty > 0 || variant.allowOrder;
 
 export default function ProductDetail({ product }: ProductDetailProps) {
-  const { language } = useLanguage();
   const searchParams = useSearchParams();
   const gallery = useMemo(() => {
     if (product.detailImages?.length) {
@@ -235,93 +232,42 @@ export default function ProductDetail({ product }: ProductDetailProps) {
   const apiProductId = productIdParam
     ? Number(productIdParam)
     : Number(product.id);
-  const displayName = getLocalizedText(
-    product.nameLocalized,
-    language,
-    product.name
-  );
-  const displayDescription = getLocalizedText(
-    product.descriptionLocalized,
-    language,
-    product.description
-  );
-  const displayCare = getLocalizedText(
-    product.careLocalized,
-    language,
-    product.care ?? ""
-  );
-  const displayMaterial = getLocalizedText(
-    product.materialLocalized,
-    language,
-    product.material ?? ""
-  );
-  const categoryLabel = product.categoryNameLocalized
-    ? getLocalizedText(product.categoryNameLocalized, language, "")
-    : product.categorySlug
-      ? humanizeSlug(product.categorySlug)
-      : "";
+  const displayName = product.name;
+  const displayDescription = product.description;
+  const displayCare = product.care ?? "";
+  const displayMaterial = product.material ?? "";
+  const categoryLabel =
+    product.categoryName ||
+    (product.categorySlug ? humanizeSlug(product.categorySlug) : "");
   const categoryHref = product.categorySlug
     ? `/market?category=${encodeURIComponent(product.categorySlug)}`
     : "/market";
   const text = {
-    viewImage: byLanguage({ EN: "View image", KA: "ფოტოს ნახვა" }, language),
-    mainView: byLanguage({ EN: "main view", KA: "მთავარი ხედი" }, language),
-    selectColor: byLanguage({ EN: "Select color", KA: "ფერის არჩევა" }, language),
-    selectSize: byLanguage({ EN: "Select size", KA: "ზომის არჩევა" }, language),
-    addToCart: byLanguage({ EN: "Add to cart", KA: "კალათაში დამატება" }, language),
-    addedToShoppingBag: byLanguage(
-      { EN: "Added to shopping bag", KA: "კალათაში დაემატა" },
-      language
-    ),
-    chooseSize: byLanguage({ EN: "Please choose a size", KA: "გთხოვთ აირჩიოთ ზომა" }, language),
-    checkInStore: byLanguage(
-      { EN: "Check in-store availability", KA: "მაღაზიაში ხელმისაწვდომობის შემოწმება" },
-      language
-    ),
-    shipping: byLanguage({ EN: "Shipping", KA: "მიწოდება" }, language),
-    careAndComposition: byLanguage(
-      { EN: "Care & Composition", KA: "მოვლა და შემადგენლობა" },
-      language
-    ),
-    inStoreAvailability: byLanguage(
-      { EN: "In-store availability", KA: "მაღაზიაში ხელმისაწვდომობა" },
-      language
-    ),
-    closeSidebar: byLanguage({ EN: "Close sidebar", KA: "გვერდითი პანელის დახურვა" }, language),
-    chooseSizes: byLanguage(
-      {
-        EN: "Choose a color and size to check availability in stores",
-        KA: "აირჩიე ფერი და ზომა, შემდეგ შეამოწმე ხელმისაწვდომობა მაღაზიებში",
-      },
-      language
-    ),
-    whatColor: byLanguage(
-      { EN: "Which color are you looking for?", KA: "რომელ ფერს ეძებ?" },
-      language
-    ),
-    whatSize: byLanguage(
-      { EN: "What size are you looking for?", KA: "რომელ ზომას ეძებ?" },
-      language
-    ),
-    checkAvailability: byLanguage(
-      { EN: "Check availability", KA: "ხელმისაწვდომობის შემოწმება" },
-      language
-    ),
-    inStock: byLanguage({ EN: "In stock", KA: "მარაგშია" }, language),
-    outOfStock: byLanguage({ EN: "Out of stock", KA: "არ არის მარაგში" }, language),
-    addDeliveryTimeNotice: byLanguage(
-      {
-        EN: "If ordered 3 bussines days will be added to delivery time",
-        KA: "შეკვეთის შემთხვევაში მიწოდებას დაემატება 3 სამუშაო დღე",
-      },
-      language
-    ),
-    care: byLanguage({ EN: "Care", KA: "მოვლა" }, language),
-    material: byLanguage({ EN: "Material", KA: "მასალა" }, language),
-    size: byLanguage({ EN: "size", KA: "ზომა" }, language),
-    home: byLanguage({ EN: "Home", KA: "მთავარი" }, language),
-    shop: byLanguage({ EN: "Shop", KA: "პროდუქცია" }, language),
-    shoppingBag: byLanguage({ EN: "Shopping bag", KA: "კალათა" }, language),
+    viewImage: "View image",
+    mainView: "main view",
+    selectColor: "Select color",
+    selectSize: "Select size",
+    addToCart: "Add to cart",
+    addedToShoppingBag: "Added to shopping bag",
+    chooseSize: "Please choose a size",
+    checkInStore: "Check in-store availability",
+    shipping: "Shipping",
+    careAndComposition: "Care & Composition",
+    inStoreAvailability: "In-store availability",
+    closeSidebar: "Close sidebar",
+    chooseSizes: "Choose a color and size to check availability in stores",
+    whatColor: "Which color are you looking for?",
+    whatSize: "What size are you looking for?",
+    checkAvailability: "Check availability",
+    inStock: "In stock",
+    outOfStock: "Out of stock",
+    addDeliveryTimeNotice: "If ordered 3 bussines days will be added to delivery time",
+    care: "Care",
+    material: "Material",
+    size: "size",
+    home: "Home",
+    shop: "Shop",
+    shoppingBag: "Shopping bag",
   };
 
   const resolvedMainImage = gallery.includes(mainImage)

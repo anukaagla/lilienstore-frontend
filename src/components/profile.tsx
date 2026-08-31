@@ -11,9 +11,8 @@ import SiteHeader from "./site-header";
 import { writeAddresses } from "../lib/addresses";
 import { clearLegacyAuthStorage, fetchWithAuthRetry } from "../lib/auth";
 import { formatMoney } from "../lib/currency";
-import { byLanguage, getLocalizedText, type Language } from "../lib/i18n";
+import { readText } from "../lib/localized";
 import { toAbsoluteMediaUrl } from "../lib/media";
-import { useLanguage } from "./language-provider";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
@@ -417,7 +416,7 @@ const formatOrderDate = (value: string) => {
     return trimmed;
   }
 
-  return parsed.toLocaleDateString();
+  return parsed.toLocaleDateString("en-US");
 };
 
 const mapOrderHistory = (payload: unknown[]): OrderListItem[] =>
@@ -461,8 +460,7 @@ const mapOrderHistory = (payload: unknown[]): OrderListItem[] =>
     .filter((item): item is OrderListItem => item !== null);
 
 const normalizeOrderDetailsResponse = (
-  payload: unknown,
-  language: Language
+  payload: unknown
 ): OrderDetails | null => {
   if (!payload || typeof payload !== "object") {
     return null;
@@ -533,7 +531,7 @@ const normalizeOrderDetailsResponse = (
 
       return {
         id: itemId,
-        name: getLocalizedText(productName, language, fallbackName),
+        name: readText(productName, fallbackName),
         color: variantRecord ? pickRecordValue(variantRecord, ["color"]) || "-" : "-",
         size: variantRecord ? pickRecordValue(variantRecord, ["size"]) || "-" : "-",
         quantity: normalizeDisplayValue(itemRecord.quantity),
@@ -568,7 +566,6 @@ const normalizeOrderDetailsResponse = (
 };
 
 export default function Profile() {
-  const { language } = useLanguage();
   const searchParams = useSearchParams();
   const [activeItem, setActiveItem] = useState<MenuItemId>(() =>
     searchParams?.get("tab") === "addresses" ? "addresses" : "account"
@@ -623,311 +620,128 @@ export default function Profile() {
   const [logoutSubmitting, setLogoutSubmitting] = useState(false);
   const handledEditRef = useRef<string | null>(null);
   const text = {
-    myAccount: byLanguage({ EN: "My Account", KA: "ჩემი ანგარიში" }, language),
-    orderHistory: byLanguage(
-      { EN: "Order History", KA: "შეკვეთების ისტორია" },
-      language
-    ),
-    addresses: byLanguage({ EN: "Addresses", KA: "მისამართები" }, language),
-    changePassword: byLanguage(
-      { EN: "Change Password", KA: "პაროლის შეცვლა" },
-      language
-    ),
-    logOut: byLanguage({ EN: "Log Out", KA: "გასვლა" }, language),
-    logoutQuestion: byLanguage(
-      {
-        EN: "Are you sure you want to log out?",
-        KA: "დარწმუნებული ხარ, რომ გინდა გასვლა?",
-      },
-      language
-    ),
-    yes: byLanguage({ EN: "Yes", KA: "კი" }, language),
-    no: byLanguage({ EN: "No", KA: "არა" }, language),
-    backToOrders: byLanguage(
-      { EN: "<< Back To Orders", KA: "<< შეკვეთებზე დაბრუნება" },
-      language
-    ),
-    order: byLanguage({ EN: "Order", KA: "შეკვეთა" }, language),
-    placedOn: byLanguage({ EN: "Placed On", KA: "განთავსების თარიღი" }, language),
-    status: byLanguage({ EN: "Status", KA: "სტატუსი" }, language),
-    items: byLanguage({ EN: "Items", KA: "ნივთები" }, language),
-    colour: byLanguage({ EN: "Colour", KA: "ფერი" }, language),
-    size: byLanguage({ EN: "Size", KA: "ზომა" }, language),
-    quantity: byLanguage({ EN: "Quantity", KA: "რაოდენობა" }, language),
-    unitPrice: byLanguage({ EN: "Unit Price", KA: "ერთეულის ფასი" }, language),
-    lineTotal: byLanguage({ EN: "Line Total", KA: "ხაზის ჯამი" }, language),
-    orderSummary: byLanguage({ EN: "Order Summary", KA: "შეკვეთის შეჯამება" }, language),
-    subtotal: byLanguage({ EN: "Subtotal", KA: "შუალედური ჯამი" }, language),
-    shipping: byLanguage({ EN: "Shipping", KA: "მიწოდება" }, language),
-    deliveryDetails: byLanguage(
-      { EN: "Delivery Details", KA: "მიწოდების დეტალები" },
-      language
-    ),
-    orderHelp: byLanguage(
-      {
-        EN: "Have a Problem Or Question About Order?",
-        KA: "შეკვეთასთან დაკავშირებით კითხვა ან პრობლემა გაქვს?",
-      },
-      language
-    ),
-    contactUs: byLanguage({ EN: "Contact Us", KA: "დაგვიკავშირდი" }, language),
-    firstName: byLanguage({ EN: "First Name", KA: "სახელი" }, language),
-    firstNamePlaceholder: byLanguage({ EN: "e.g. Nino", KA: "მაგ. ნინო" }, language),
-    lastName: byLanguage({ EN: "Last Name", KA: "გვარი" }, language),
-    lastNamePlaceholder: byLanguage({ EN: "e.g. Beridze", KA: "მაგ. ბერიძე" }, language),
-    email: byLanguage({ EN: "Email", KA: "ელფოსტა" }, language),
-    emailPlaceholder: byLanguage(
-      { EN: "e.g. nino@example.com", KA: "მაგ. nino@example.com" },
-      language
-    ),
-    phone: byLanguage({ EN: "Phone", KA: "ტელეფონი" }, language),
-    phonePlaceholder: byLanguage(
-      { EN: "e.g. +995 555 12 34 56", KA: "მაგ. +995 555 12 34 56" },
-      language
-    ),
-    update: byLanguage({ EN: "UPDATE", KA: "განახლება" }, language),
-    addNewAddress: byLanguage(
-      { EN: "Add New Address", KA: "მისამართის დამატება" },
-      language
-    ),
-    deleteAddresses: byLanguage({ EN: "Delete addresses", KA: "მისამართების წაშლა" }, language),
-    deleteSelected: byLanguage({ EN: "Delete Selected", KA: "არჩეულის წაშლა" }, language),
-    addressesTitle: byLanguage({ EN: "ADDRESSES", KA: "მისამართები" }, language),
-    details: byLanguage({ EN: "Details", KA: "დეტალები" }, language),
-    noAddressAddedYet: byLanguage(
-      { EN: "No Address Added Yet", KA: "მისამართი ჯერ დამატებული არ არის" },
-      language
-    ),
-    phoneNumber: byLanguage({ EN: "Phone Number", KA: "ტელეფონის ნომერი" }, language),
-    country: byLanguage({ EN: "Country", KA: "ქვეყანა" }, language),
-    countryPlaceholder: byLanguage({ EN: "e.g. Georgia", KA: "მაგ. საქართველო" }, language),
-    state: byLanguage({ EN: "State", KA: "რეგიონი" }, language),
-    statePlaceholder: byLanguage({ EN: "e.g. Tbilisi", KA: "მაგ. თბილისი" }, language),
-    city: byLanguage({ EN: "City", KA: "ქალაქი" }, language),
-    cityPlaceholder: byLanguage({ EN: "e.g. Tbilisi", KA: "მაგ. თბილისი" }, language),
-    addressNo1: byLanguage({ EN: "Address No 1", KA: "მისამართი 1" }, language),
-    addressNo1Placeholder: byLanguage(
-      { EN: "e.g. 12 Rustaveli Ave", KA: "მაგ. რუსთაველის გამზირი 12" },
-      language
-    ),
-    addressNo2: byLanguage({ EN: "Address No 2", KA: "მისამართი 2" }, language),
-    addressNo2Placeholder: byLanguage(
-      { EN: "e.g. Apt 8, Floor 3", KA: "მაგ. ბინა 8, სართული 3" },
-      language
-    ),
-    postalCode: byLanguage({ EN: "Postal Code", KA: "საფოსტო კოდი" }, language),
-    postalCodePlaceholder: byLanguage({ EN: "e.g. 0108", KA: "მაგ. 0108" }, language),
-    name: byLanguage({ EN: "Name", KA: "სახელი" }, language),
-    namePlaceholder: byLanguage({ EN: "e.g. Home", KA: "მაგ. სახლი" }, language),
-    optional: byLanguage({ EN: "(optional)", KA: "(არასავალდებულო)" }, language),
-    add: byLanguage({ EN: "ADD", KA: "დამატება" }, language),
-    closeAddressForm: byLanguage(
-      { EN: "Close address form", KA: "მისამართის ფორმის დახურვა" },
-      language
-    ),
-    deleteAddress: byLanguage({ EN: "Delete address", KA: "მისამართის წაშლა" }, language),
-    ordersTitle: byLanguage({ EN: "ORDERS", KA: "შეკვეთები" }, language),
-    orderNumber: byLanguage({ EN: "Order Number", KA: "შეკვეთის ნომერი" }, language),
-    date: byLanguage({ EN: "Date", KA: "თარიღი" }, language),
-    total: byLanguage({ EN: "Total", KA: "ჯამი" }, language),
-    noOrdersYet: byLanguage(
-      { EN: "No orders yet.", KA: "შეკვეთები ჯერ არ არის." },
-      language
-    ),
-    changePasswordTitle: byLanguage({ EN: "Change password", KA: "პაროლის შეცვლა" }, language),
-    enterNewPassword: byLanguage(
-      { EN: "Enter New Password", KA: "შეიყვანე ახალი პაროლი" },
-      language
-    ),
-    newPasswordPlaceholder: byLanguage(
-      { EN: "Use 8+ characters", KA: "გამოიყენე 8+ სიმბოლო" },
-      language
-    ),
-    confirmPassword: byLanguage({ EN: "Confirm Password", KA: "დაადასტურე პაროლი" }, language),
-    confirmPasswordPlaceholder: byLanguage(
-      { EN: "Repeat your new password", KA: "გაიმეორე ახალი პაროლი" },
-      language
-    ),
-    showPassword: byLanguage({ EN: "Show password", KA: "პაროლის ჩვენება" }, language),
-    hidePassword: byLanguage({ EN: "Hide password", KA: "პაროლის დამალვა" }, language),
-    submit: byLanguage({ EN: "Submit", KA: "გაგზავნა" }, language),
-    submitting: byLanguage({ EN: "Submitting...", KA: "იგზავნება..." }, language),
-    passwordFieldsRequired: byLanguage(
-      { EN: "Please fill in both password fields.", KA: "გთხოვ შეავსე პაროლის ორივე ველი." },
-      language
-    ),
-    passwordsDoNotMatch: byLanguage({ EN: "Passwords do not match.", KA: "პაროლები არ ემთხვევა." }, language),
-    passwordChanged: byLanguage(
-      { EN: "Password updated successfully.", KA: "პაროლი წარმატებით განახლდა." },
-      language
-    ),
-    passwordChangeFailed: byLanguage(
-      { EN: "Failed to change password.", KA: "პაროლის შეცვლა ვერ მოხერხდა." },
-      language
-    ),
-    deleteAddressTitle: byLanguage({ EN: "Delete Address", KA: "მისამართის წაშლა" }, language),
-    deleteAddressQuestion: byLanguage(
-      {
-        EN: "Are you sure you want to delete this address?",
-        KA: "დარწმუნებული ხარ, რომ გინდა ამ მისამართის წაშლა?",
-      },
-      language
-    ),
-    cancel: byLanguage({ EN: "Cancel", KA: "გაუქმება" }, language),
-    delete: byLanguage({ EN: "Delete", KA: "წაშლა" }, language),
-    deleteAccount: byLanguage({ EN: "DELETE", KA: "წაშლა" }, language),
-    edit: byLanguage({ EN: "EDIT", KA: "ჩასწორება" }, language),
-    cancelEdit: byLanguage({ EN: "CANCEL", KA: "გაუქმება" }, language),
-    updating: byLanguage({ EN: "UPDATING...", KA: "მიმდინარეობს განახლება..." }, language),
-    noChangesToUpdate: byLanguage(
-      { EN: "No changes to update.", KA: "ცვლილება არ არის." },
-      language
-    ),
-    profileUpdated: byLanguage(
-      { EN: "Profile updated.", KA: "პროფილი განახლდა." },
-      language
-    ),
-    profileUpdatedVerifyEmail: byLanguage(
-      {
-        EN: "Profile updated. Verify your new email to activate it.",
-        KA: "პროფილი განახლდა. ახალი ელ.ფოსტის გასააქტიურებლად დაადასტურე.",
-      },
-      language
-    ),
-    missingApiBaseUrl: byLanguage(
-      { EN: "Missing API base URL.", KA: "API მისამართი მითითებული არ არის." },
-      language
-    ),
-    missingAccessToken: byLanguage(
-      { EN: "You need to sign in first.", KA: "ჯერ უნდა შეხვიდე ანგარიშში." },
-      language
-    ),
-    profileLoadFailed: byLanguage(
-      { EN: "Failed to load profile.", KA: "პროფილის ჩატვირთვა ვერ მოხერხდა." },
-      language
-    ),
-    profileUpdateFailed: byLanguage(
-      { EN: "Failed to update profile.", KA: "პროფილის განახლება ვერ მოხერხდა." },
-      language
-    ),
-    profileDeleteFailed: byLanguage(
-      { EN: "Failed to delete account.", KA: "ანგარიშის წაშლა ვერ მოხერხდა." },
-      language
-    ),
-    loadingProfile: byLanguage(
-      { EN: "Loading profile...", KA: "პროფილი იტვირთება..." },
-      language
-    ),
-    loadingOrderDetails: byLanguage(
-      { EN: "Loading order details...", KA: "შეკვეთის დეტალები იტვირთება..." },
-      language
-    ),
-    orderDetailsLoadFailed: byLanguage(
-      { EN: "Failed to load order details.", KA: "შეკვეთის დეტალების ჩატვირთვა ვერ მოხერხდა." },
-      language
-    ),
-    loadingAddressDetails: byLanguage(
-      { EN: "Loading address details...", KA: "მისამართის დეტალები იტვირთება..." },
-      language
-    ),
-    addressDetailsLoadFailed: byLanguage(
-      { EN: "Failed to load address details.", KA: "მისამართის დეტალების ჩატვირთვა ვერ მოხერხდა." },
-      language
-    ),
-    addressUpdateFailed: byLanguage(
-      { EN: "Failed to update address.", KA: "მისამართის განახლება ვერ მოხერხდა." },
-      language
-    ),
-    addressCreateFailed: byLanguage(
-      { EN: "Failed to add address.", KA: "მისამართის დამატება ვერ მოხერხდა." },
-      language
-    ),
-    addressDeleteFailed: byLanguage(
-      { EN: "Failed to delete address.", KA: "მისამართის წაშლა ვერ მოხერხდა." },
-      language
-    ),
-    deleting: byLanguage({ EN: "DELETING...", KA: "მიმდინარეობს წაშლა..." }, language),
-    confirmEmailMenu: byLanguage(
-      { EN: "Confirm Email", KA: "ელ.ფოსტის დადასტურება" },
-      language
-    ),
-    confirmEmailTitle: byLanguage(
-      { EN: "Confirm Email", KA: "ელ.ფოსტის დადასტურება" },
-      language
-    ),
-    confirmEmailDescription: byLanguage(
-      {
-        EN: "Your account is inactive. Verify your email to activate it.",
-        KA: "ანგარიში არააქტიურია. გააქტიურებისთვის დაადასტურე ელ.ფოსტა.",
-      },
-      language
-    ),
-    sendVerificationCode: byLanguage(
-      { EN: "Send Verification Code", KA: "დადასტურების კოდის გაგზავნა" },
-      language
-    ),
-    verifyEmailTitle: byLanguage({ EN: "Verify Email", KA: "ელ.ფოსტის დადასტურება" }, language),
-    verifyEmailDescription: byLanguage(
-      {
-        EN: "Enter the verification code sent to this email address.",
-        KA: "შეიყვანე ამ ელ.ფოსტაზე გამოგზავნილი დადასტურების კოდი.",
-      },
-      language
-    ),
-    codeLabel: byLanguage({ EN: "Verification code", KA: "დადასტურების კოდი" }, language),
-    codePlaceholder: byLanguage({ EN: "123456", KA: "123456" }, language),
-    back: byLanguage({ EN: "Back", KA: "უკან" }, language),
-    confirm: byLanguage({ EN: "Confirm", KA: "დადასტურება" }, language),
-    confirming: byLanguage({ EN: "Confirming...", KA: "მიმდინარეობს დადასტურება..." }, language),
-    resendCode: byLanguage({ EN: "Resend code", KA: "კოდის თავიდან გაგზავნა" }, language),
-    resendingCode: byLanguage({ EN: "Resending...", KA: "თავიდან იგზავნება..." }, language),
-    sendingCode: byLanguage(
-      { EN: "Sending verification code...", KA: "იგზავნება დადასტურების კოდი..." },
-      language
-    ),
-    codeSentFallback: byLanguage(
-      {
-        EN: "If an account exists with this email, a verification code has been sent.",
-        KA: "თუ ეს ელ.ფოსტა ანგარიშთან არის დაკავშირებული, დადასტურების კოდი გაიგზავნა.",
-      },
-      language
-    ),
-    verificationCodeRequired: byLanguage(
-      {
-        EN: "Please enter the verification code.",
-        KA: "გთხოვ შეიყვანე დადასტურების კოდი.",
-      },
-      language
-    ),
-    invalidOrExpiredCode: byLanguage(
-      { EN: "Wrong code or expired code.", KA: "კოდი არასწორია ან ვადა გაუვიდა." },
-      language
-    ),
-    verificationRequestFailed: byLanguage(
-      {
-        EN: "Failed to send verification code.",
-        KA: "დადასტურების კოდის გაგზავნა ვერ მოხერხდა.",
-      },
-      language
-    ),
-    verificationConfirmFailed: byLanguage(
-      {
-        EN: "Failed to verify email. Please try again.",
-        KA: "ელ.ფოსტის დადასტურება ვერ მოხერხდა. სცადე თავიდან.",
-      },
-      language
-    ),
-    emailVerified: byLanguage(
-      { EN: "Email verified.", KA: "ელ.ფოსტა დადასტურებულია." },
-      language
-    ),
-    verificationSessionExpired: byLanguage(
-      {
-        EN: "Verification session expired. Please reopen verification.",
-        KA: "დადასტურების სესია ამოიწურა. გთხოვ თავიდან გახსენი დადასტურება.",
-      },
-      language
-    ),
+    myAccount: "My Account",
+    orderHistory: "Order History",
+    addresses: "Addresses",
+    changePassword: "Change Password",
+    logOut: "Log Out",
+    logoutQuestion: "Are you sure you want to log out?",
+    yes: "Yes",
+    no: "No",
+    backToOrders: "<< Back To Orders",
+    order: "Order",
+    placedOn: "Placed On",
+    status: "Status",
+    items: "Items",
+    colour: "Colour",
+    size: "Size",
+    quantity: "Quantity",
+    unitPrice: "Unit Price",
+    lineTotal: "Line Total",
+    orderSummary: "Order Summary",
+    subtotal: "Subtotal",
+    shipping: "Shipping",
+    deliveryDetails: "Delivery Details",
+    orderHelp: "Have a Problem Or Question About Order?",
+    contactUs: "Contact Us",
+    firstName: "First Name",
+    firstNamePlaceholder: "e.g. Nino",
+    lastName: "Last Name",
+    lastNamePlaceholder: "e.g. Beridze",
+    email: "Email",
+    emailPlaceholder: "e.g. nino@example.com",
+    phone: "Phone",
+    phonePlaceholder: "e.g. +995 555 12 34 56",
+    update: "UPDATE",
+    addNewAddress: "Add New Address",
+    deleteAddresses: "Delete addresses",
+    deleteSelected: "Delete Selected",
+    addressesTitle: "ADDRESSES",
+    details: "Details",
+    noAddressAddedYet: "No Address Added Yet",
+    phoneNumber: "Phone Number",
+    country: "Country",
+    countryPlaceholder: "e.g. Georgia",
+    state: "State",
+    statePlaceholder: "e.g. Tbilisi",
+    city: "City",
+    cityPlaceholder: "e.g. Tbilisi",
+    addressNo1: "Address No 1",
+    addressNo1Placeholder: "e.g. 12 Rustaveli Ave",
+    addressNo2: "Address No 2",
+    addressNo2Placeholder: "e.g. Apt 8, Floor 3",
+    postalCode: "Postal Code",
+    postalCodePlaceholder: "e.g. 0108",
+    name: "Name",
+    namePlaceholder: "e.g. Home",
+    optional: "(optional)",
+    add: "ADD",
+    closeAddressForm: "Close address form",
+    deleteAddress: "Delete address",
+    ordersTitle: "ORDERS",
+    orderNumber: "Order Number",
+    date: "Date",
+    total: "Total",
+    noOrdersYet: "No orders yet.",
+    changePasswordTitle: "Change password",
+    enterNewPassword: "Enter New Password",
+    newPasswordPlaceholder: "Use 8+ characters",
+    confirmPassword: "Confirm Password",
+    confirmPasswordPlaceholder: "Repeat your new password",
+    showPassword: "Show password",
+    hidePassword: "Hide password",
+    submit: "Submit",
+    submitting: "Submitting...",
+    passwordFieldsRequired: "Please fill in both password fields.",
+    passwordsDoNotMatch: "Passwords do not match.",
+    passwordChanged: "Password updated successfully.",
+    passwordChangeFailed: "Failed to change password.",
+    deleteAddressTitle: "Delete Address",
+    deleteAddressQuestion: "Are you sure you want to delete this address?",
+    cancel: "Cancel",
+    delete: "Delete",
+    deleteAccount: "DELETE",
+    edit: "EDIT",
+    cancelEdit: "CANCEL",
+    updating: "UPDATING...",
+    noChangesToUpdate: "No changes to update.",
+    profileUpdated: "Profile updated.",
+    profileUpdatedVerifyEmail: "Profile updated. Verify your new email to activate it.",
+    missingApiBaseUrl: "Missing API base URL.",
+    missingAccessToken: "You need to sign in first.",
+    profileLoadFailed: "Failed to load profile.",
+    profileUpdateFailed: "Failed to update profile.",
+    profileDeleteFailed: "Failed to delete account.",
+    loadingProfile: "Loading profile...",
+    loadingOrderDetails: "Loading order details...",
+    orderDetailsLoadFailed: "Failed to load order details.",
+    loadingAddressDetails: "Loading address details...",
+    addressDetailsLoadFailed: "Failed to load address details.",
+    addressUpdateFailed: "Failed to update address.",
+    addressCreateFailed: "Failed to add address.",
+    addressDeleteFailed: "Failed to delete address.",
+    deleting: "DELETING...",
+    confirmEmailMenu: "Confirm Email",
+    confirmEmailTitle: "Confirm Email",
+    confirmEmailDescription: "Your account is inactive. Verify your email to activate it.",
+    sendVerificationCode: "Send Verification Code",
+    verifyEmailTitle: "Verify Email",
+    verifyEmailDescription: "Enter the verification code sent to this email address.",
+    codeLabel: "Verification code",
+    codePlaceholder: "123456",
+    back: "Back",
+    confirm: "Confirm",
+    confirming: "Confirming...",
+    resendCode: "Resend code",
+    resendingCode: "Resending...",
+    sendingCode: "Sending verification code...",
+    codeSentFallback: "If an account exists with this email, a verification code has been sent.",
+    verificationCodeRequired: "Please enter the verification code.",
+    invalidOrExpiredCode: "Wrong code or expired code.",
+    verificationRequestFailed: "Failed to send verification code.",
+    verificationConfirmFailed: "Failed to verify email. Please try again.",
+    emailVerified: "Email verified.",
+    verificationSessionExpired: "Verification session expired. Please reopen verification.",
   };
   const showConfirmEmailTab = profile?.active_status === false;
   const menuItems: Array<{ id: MenuItemId; label: string }> = [
@@ -1106,7 +920,7 @@ export default function Profile() {
         return;
       }
 
-      const normalized = normalizeOrderDetailsResponse(payload, language);
+      const normalized = normalizeOrderDetailsResponse(payload);
       if (!normalized) {
         setOrderDetailsError(text.orderDetailsLoadFailed);
         return;

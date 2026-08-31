@@ -63,12 +63,9 @@ export default function ShippingAndDeliveryPolicyPage() {
         }}
       />
       <PolicyPage
-        title={{ EN: "Shipping & Delivery Policy", KA: "მიწოდების პოლიტიკა" }}
+        title="Shipping & Delivery Policy"
         policyKey="shipping_and_delivery_policy"
-        fallbackText={{
-          EN: "Shipping and delivery policy is not available yet.",
-          KA: "მიწოდების პოლიტიკა ჯერ მიუწვდომელია.",
-        }}
+        fallbackText="Shipping and delivery policy is not available yet."
       />
     </>
   );

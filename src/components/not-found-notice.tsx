@@ -2,9 +2,7 @@
 
 import Link from "next/link";
 
-import { byLanguage } from "../lib/i18n";
 import Footer from "./footer";
-import { useLanguage } from "./language-provider";
 import SiteHeader from "./site-header";
 
 type NotFoundNoticeProps = {
@@ -14,38 +12,16 @@ type NotFoundNoticeProps = {
 export default function NotFoundNotice({
   variant = "page",
 }: NotFoundNoticeProps) {
-  const { language } = useLanguage();
 
   const text = {
-    productTitle: byLanguage(
-      { EN: "Product not found", KA: "პროდუქტი ვერ მოიძებნა" },
-      language,
-    ),
+    productTitle: "Product not found",
     // Deliberately neutral: a product with no price in the visitor's currency is
     // hidden by design, so this is a normal outcome rather than a failure.
-    productBody: byLanguage(
-      {
-        EN: "This item may not be available in your region right now.",
-        KA: "შესაძლოა ეს ნივთი ამჟამად თქვენს რეგიონში მიუწვდომელია.",
-      },
-      language,
-    ),
-    pageTitle: byLanguage(
-      { EN: "Page not found", KA: "გვერდი ვერ მოიძებნა" },
-      language,
-    ),
-    pageBody: byLanguage(
-      {
-        EN: "The page you were looking for does not exist.",
-        KA: "გვერდი, რომელსაც ეძებდით, არ არსებობს.",
-      },
-      language,
-    ),
-    backToShop: byLanguage(
-      { EN: "Back to shop", KA: "დაბრუნდი მაღაზიაში" },
-      language,
-    ),
-    backHome: byLanguage({ EN: "Back home", KA: "მთავარ გვერდზე" }, language),
+    productBody: "This item may not be available in your region right now.",
+    pageTitle: "Page not found",
+    pageBody: "The page you were looking for does not exist.",
+    backToShop: "Back to shop",
+    backHome: "Back home",
   };
 
   const isProduct = variant === "product";

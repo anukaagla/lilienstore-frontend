@@ -2,12 +2,11 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { byLanguage, getLocalizedText } from "../lib/i18n";
+import { readText } from "../lib/localized";
 import { resolveBrandLogo } from "../lib/brand";
 import { useBrandState } from "./brand-provider";
 import FooterNewsletterStrip from "./footer-newsletter-strip";
 import { SkeletonBlock } from "./page-skeletons";
-import { useLanguage } from "./language-provider";
 
 const instagramIcon = (
   <svg
@@ -91,31 +90,19 @@ const toSocialUrl = (value: string, platform: "instagram" | "facebook" | "tiktok
 
 const footerLinks = [
   {
-    label: {
-      EN: "Shipping & Delivery",
-      KA: "მიწოდება",
-    },
+    label: "Shipping & Delivery",
     href: "/policies/shipping-and-delivery-policy",
   },
   {
-    label: {
-      EN: "Return & Refund",
-      KA: "დაბრუნება და ანაზღაურება",
-    },
+    label: "Return & Refund",
     href: "/policies/return-and-refund-policy",
   },
   {
-    label: {
-      EN: "Privacy Policy",
-      KA: "კონფიდენციალურობის პოლიტიკა",
-    },
+    label: "Privacy Policy",
     href: "/policies/privacy-policy",
   },
   {
-    label: {
-      EN: "Terms & Conditions",
-      KA: "წესები და პირობები",
-    },
+    label: "Terms & Conditions",
     href: "/policies/terms-of-service",
   },
 ];
@@ -126,25 +113,10 @@ type FooterProps = {
 
 export default function Footer({ variant = "dark" }: FooterProps) {
   const isLight = variant === "light";
-  const { language } = useLanguage();
   const { brand, isLoading: brandLoading } = useBrandState();
-  const brandName = getLocalizedText(brand?.brand_name, language, "Lilien");
-  const addressText = getLocalizedText(
-    brand?.address,
-    language,
-    byLanguage(
-      {
-        EN: "29 Irakli Abashidze Street, Tbilisi, Georgia",
-        KA: "ირაკლი აბაშიძის ქუჩა 29, თბილისი, საქართველო",
-      },
-      language
-    )
-  );
-  const workingHoursText = getLocalizedText(
-    brand?.working_hours,
-    language,
-    byLanguage({ EN: "12:00-20:00", KA: "12:00-20:00" }, language)
-  );
+  const brandName = readText(brand?.brand_name, "Lilien");
+  const addressText = readText(brand?.address, "29 Irakli Abashidze Street, Tbilisi, Georgia");
+  const workingHoursText = readText(brand?.working_hours, "12:00-20:00");
   const emailValue = brand?.email?.trim() || "lilienspprt@gmail.com";
   const phoneValue = brand?.phone_number?.trim() || "";
   const instagramValue = toSocialUrl(
@@ -159,27 +131,15 @@ export default function Footer({ variant = "dark" }: FooterProps) {
     fallback: "/images/fotter-logo.png",
   });
   const text = {
-    instagram: byLanguage({ EN: "Instagram", KA: "ინსტაგრამი" }, language),
-    facebook: byLanguage({ EN: "Facebook", KA: "ფეისბუქი" }, language),
-    tiktok: byLanguage({ EN: "TikTok", KA: "ტიკტოკი" }, language),
-    email: byLanguage({ EN: "Email", KA: "ელ.ფოსტა" }, language),
-    phone: byLanguage({ EN: "Phone", KA: "ტელეფონი" }, language),
-    store: byLanguage({ EN: "Store", KA: "მაღაზია" }, language),
-    hours: byLanguage({ EN: "Working Hours", KA: "სამუშაო საათები" }, language),
-    copyright: byLanguage(
-      {
-        EN: "© 2026. Designed with care. All rights reserved.",
-        KA: "© 2026. შექმნილია ყურადღებით. ყველა უფლება დაცულია.",
-      },
-      language
-    ),
-    creditPrefix: byLanguage(
-      {
-        EN: "This website was created by",
-        KA: "ვებსაიტის შემქმნელია",
-      },
-      language
-    ),
+    instagram: "Instagram",
+    facebook: "Facebook",
+    tiktok: "TikTok",
+    email: "Email",
+    phone: "Phone",
+    store: "Store",
+    hours: "Working Hours",
+    copyright: "© 2026. Designed with care. All rights reserved.",
+    creditPrefix: "This website was created by",
   };
   const socialLinks = [
     {
@@ -206,7 +166,7 @@ export default function Footer({ variant = "dark" }: FooterProps) {
 
   return (
     <>
-      <FooterNewsletterStrip language={language} />
+      <FooterNewsletterStrip />
       <footer
         className={
           isLight
@@ -324,7 +284,7 @@ export default function Footer({ variant = "dark" }: FooterProps) {
                   href={item.href}
                   className={`transition ${isLight ? "hover:text-black" : "hover:text-white"}`}
                 >
-                  {item.label[language]}
+                  {item.label}
                 </Link>
                 {index < footerLinks.length - 1 ? (
                   <span
