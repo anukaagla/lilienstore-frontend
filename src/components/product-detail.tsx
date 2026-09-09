@@ -19,6 +19,14 @@ type ProductDetailProps = {
 
 const defaultSizeOrder = ["XS", "S", "M", "L", "XL"];
 
+const sizeGuideColumns = ["XS", "S", "M", "L", "XL"];
+
+const sizeGuideRows = [
+  { label: "Bust", values: ["76-80", "80-84", "84-88", "88-92", "92-96"] },
+  { label: "Waist", values: ["58-62", "62-66", "66-70", "70-74", "74-78"] },
+  { label: "Hips", values: ["84-88", "88-92", "92-96", "96-100", "100-104"] },
+];
+
 const normalizeHexColor = (value: string) => {
   const hexColor = value.trim();
   if (/^#(?:[A-Fa-f0-9]{3}){1,2}$/.test(hexColor)) {
@@ -71,6 +79,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
   );
   const [selectedSize, setSelectedSize] = useState("");
   const [sizeOpen, setSizeOpen] = useState(false);
+  const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
   const [sizeWarning, setSizeWarning] = useState(false);
   const cartCount = useSyncExternalStore(
     (onStoreChange) => subscribeToCart(() => onStoreChange()),
@@ -251,6 +260,10 @@ export default function ProductDetail({ product }: ProductDetailProps) {
     addedToShoppingBag: "Added to shopping bag",
     chooseSize: "Please choose a size",
     checkInStore: "Check in-store availability",
+    sizeGuide: "Size guide",
+    sizeGuideTitle: "Size guide",
+    sizeGuideUnit: "Int",
+    sizeGuideRowHeader: "Size - INT",
     shipping: "Shipping",
     careAndComposition: "Care & Composition",
     inStoreAvailability: "In-store availability",
@@ -374,37 +387,49 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                     }
                   }}
                 >
-                  <button
-                    type="button"
-                    aria-haspopup="listbox"
-                    aria-expanded={sizeOpen}
-                    aria-label={text.selectSize}
-                    onClick={() => {
-                      if (!hasAvailableSize) {
-                        return;
-                      }
-                      setSizeOpen((open) => !open);
-                    }}
-                    className="flex w-full items-center justify-between rounded-full border border-black/15 bg-slate-50 px-4 py-3 text-[11px] uppercase tracking-[0.24em] text-slate-600 shadow-[0_8px_18px_-14px_rgba(0,0,0,0.45)] transition focus:border-black focus:bg-white focus:outline-none focus:ring-1 focus:ring-black/40"
-                  >
-                    <span>
-                      {resolvedSelectedSize || (hasAvailableSize ? text.selectSize : text.outOfStock)}
-                    </span>
-                    <svg
-                      aria-hidden="true"
-                      viewBox="0 0 12 8"
-                      className={`h-2.5 w-2.5 text-slate-500 transition ${
-                        sizeOpen ? "rotate-180" : ""
-                      }`}
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.4"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
+                  <div className="flex w-full items-stretch rounded-full border border-black/25 bg-white p-[3px] shadow-[0_8px_18px_-14px_rgba(0,0,0,0.45)]">
+                    <button
+                      type="button"
+                      aria-haspopup="listbox"
+                      aria-expanded={sizeOpen}
+                      aria-label={text.selectSize}
+                      onClick={() => {
+                        if (!hasAvailableSize) {
+                          return;
+                        }
+                        setSizeOpen((open) => !open);
+                      }}
+                      className="flex flex-1 items-center gap-2.5 rounded-full bg-[#E3E3E3] px-5 py-3 text-left text-[11px] uppercase tracking-[0.24em] text-slate-600 transition hover:bg-[#D9D9D9] focus:outline-none"
                     >
-                      <path d="M1 1l5 5 5-5" />
-                    </svg>
-                  </button>
+                      <span>
+                        {resolvedSelectedSize || (hasAvailableSize ? text.selectSize : text.outOfStock)}
+                      </span>
+                      <svg
+                        aria-hidden="true"
+                        viewBox="0 0 12 10"
+                        className={`h-2.5 w-3 text-slate-500 transition ${
+                          sizeOpen ? "rotate-180" : ""
+                        }`}
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M1 1.2h10L6 9Z" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSizeOpen(false);
+                        setSizeGuideOpen(true);
+                      }}
+                      className="shrink-0 whitespace-nowrap rounded-full px-5 text-[11px] uppercase tracking-[0.16em] text-slate-800 transition hover:text-black focus:outline-none"
+                    >
+                      {text.sizeGuide}
+                    </button>
+                  </div>
                   <div
                     className={`absolute left-0 right-0 top-full z-20 mt-3 rounded-2xl border border-black/10 bg-white/95 p-2 text-[10px] uppercase tracking-[0.22em] text-slate-600 shadow-[0_18px_30px_-20px_rgba(0,0,0,0.55)] backdrop-blur transition ${
                       sizeOpen
@@ -759,6 +784,75 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                 ))}
               </div>
             ) : null}
+          </div>
+        </div>
+      </aside>
+      <div
+        className={`fixed inset-0 z-50 bg-black/15 backdrop-blur-sm transition-opacity duration-300 ${
+          sizeGuideOpen ? "opacity-100" : "pointer-events-none opacity-0"
+        }`}
+        aria-hidden={!sizeGuideOpen}
+        onClick={() => setSizeGuideOpen(false)}
+      />
+
+      <aside
+        aria-label={text.sizeGuideTitle}
+        className={`fixed right-0 top-0 z-60 flex h-screen w-[300px] flex-col border-l border-black/10 bg-white shadow-xl transition-all duration-300 sm:w-[420px] ${
+          sizeGuideOpen
+            ? "translate-x-0 opacity-100"
+            : "pointer-events-none translate-x-4 opacity-0"
+        }`}
+      >
+        <button
+          type="button"
+          onClick={() => setSizeGuideOpen(false)}
+          className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-black/10 text-slate-600 transition hover:text-slate-900"
+          aria-label={text.closeSidebar}
+        >
+          X
+        </button>
+        <div className="flex-1 overflow-y-auto px-5 py-6 text-sm text-slate-600">
+          <p className="mt-8 text-[13px] uppercase tracking-[0.28em] text-black">
+            {text.sizeGuideTitle}
+          </p>
+          <span className="mt-4 inline-flex items-center rounded-full bg-black px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-white">
+            {text.sizeGuideUnit}
+          </span>
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full min-w-[340px] border-collapse text-center text-[11px] text-slate-700">
+              <thead>
+                <tr>
+                  <th className="whitespace-nowrap border border-black/15 px-2 py-2 text-left font-normal uppercase tracking-[0.06em]">
+                    {text.sizeGuideRowHeader}
+                  </th>
+                  {sizeGuideColumns.map((column) => (
+                    <th
+                      key={`size-guide-column-${column}`}
+                      className="whitespace-nowrap border border-black/15 px-2 py-2 font-semibold text-black"
+                    >
+                      {column}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {sizeGuideRows.map((row) => (
+                  <tr key={`size-guide-row-${row.label}`}>
+                    <th className="whitespace-nowrap border border-black/15 px-2 py-2 text-left font-semibold text-black">
+                      {row.label}
+                    </th>
+                    {row.values.map((value, index) => (
+                      <td
+                        key={`size-guide-${row.label}-${sizeGuideColumns[index]}`}
+                        className="whitespace-nowrap border border-black/15 px-2 py-2"
+                      >
+                        {value}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </aside>
